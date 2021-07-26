@@ -42,6 +42,7 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
     public double                  noSwingVL;
     public double                  reachVL;
     public double                  speedVL;
+    public double                  visibleVL;
 
     // Shared
     public String lastWorld			= "";
@@ -127,6 +128,14 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
         for (final CheckType checkType : checkTypes) {
             switch(checkType) {
                 // TODO: case FIGHT: ...
+                case FIGHT_HITBOX:
+                    directionVL = 0;
+                    visibleVL = 0;
+                    reachVL = 0;
+                    break;
+                case FIGHT_VISIBLE:
+                    visibleVL = 0;
+                    break;
                 case FIGHT_DIRECTION:
                     directionVL = 0;
                     break;
