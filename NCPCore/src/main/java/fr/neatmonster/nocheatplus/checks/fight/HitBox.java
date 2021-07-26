@@ -17,6 +17,7 @@ package fr.neatmonster.nocheatplus.checks.fight;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -45,27 +46,84 @@ public class HitBox extends Check {
         rayTracing.setMaxSteps(30);
     }
 
-    public boolean check(final Player player, final Location loc, 
-            final Entity damagedEntity, final boolean worldChanged, 
-            final FightData data, final FightConfig cc, final IPlayerData pData) {
-        return false;
+    public boolean check(final Player player, final Location pLoc, 
+            final Entity damaged, final boolean damagedIsFake, final Location dRef, 
+            final FightData data, final FightConfig cc, final IPlayerData pData,
+            final boolean reachEnabled, final boolean visibleEnabled) {
+        boolean cancel = false;
+        final double eyeYLocation = pLoc.getY() + player.getEyeHeight() - (player.isSneaking() ? 0.08 : 0.0);
+        final double distanceLimit = cc.reachSurvivalDistance + (player.getGameMode() == GameMode.CREATIVE ? 2.0 : 0.0);
+        final double height = damagedIsFake ? (damaged instanceof LivingEntity ? ((LivingEntity) damaged).getEyeHeight() : 1.75) : mcAccess.getHandle().getHeight(damaged);
+        final double width = damagedIsFake ? 0.6 : mcAccess.getHandle().getWidth(damaged) / 2;
+        final Vector direction = pLoc.getDirection();
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(pLoc.getWorld());
+
+        boulder.setFindNearestPointIfNotCollide(false)
+        .setRay(pLoc.getX(), eyeYLocation, pLoc.getZ(), direction.getX(), direction.getY(), direction.getZ())
+        .setAABB(dRef.getX(), dRef.getY(), dRef.getZ(), width + cc.hitBoxHorizontalExpansion, height + cc.hitBoxVerticalExpansion)
+        .loop();
+
+        if (boulder.collides()) {
+            // Direction passed
+            data.directionVL *= 0.8D;
+            // Checking distance
+            final double distance = TrigUtil.distance(boulder.getX(), boulder.getY(), boulder.getZ(), 
+                    pLoc.getX(), eyeYLocation, pLoc.getZ());
+            if (reachEnabled) {
+                if (distance > distanceLimit) {
+                    final ViolationData vd = new ViolationData(this, player, data.reachVL, distance - distanceLimit, cc.reachActions);
+                    vd.setParameter(ParameterName.REACH_DISTANCE, StringUtil.fdec3.format(distance));
+                    cancel = executeActions(vd).willCancel();
+                } else {
+                    data.reachVL *= 0.8D;
+                }
+            }
+
+            // Checking visible
+            if (visibleEnabled && !cancel) {
+                rayTracing.setBlockCache(blockCache);
+                rayTracing.setIgnoreInitiallyColliding(true);
+                rayTracing.set(pLoc.getX(), eyeYLocation, pLoc.getZ(), boulder.getX(), boulder.getY(), boulder.getZ());
+                rayTracing.loop();
+
+                if (rayTracing.collides()) {
+                    data.visibleVL++;
+                    cancel = executeActions(player, data.visibleVL, 1.0, cc.visibleActions).willCancel();
+                } else {
+                    data.visibleVL *= 0.8D;
+                }
+            }
+        } else {
+            // Direction failed. Skipping distance, visible check
+            final Vector blockEyes = new Vector(dRef.getX() - pLoc.getX(), dRef.getY() + height / 2D - eyeYLocation, dRef.getZ() - pLoc.getZ());
+            final double distance = blockEyes.crossProduct(direction).length() / direction.length();
+            data.directionVL += distance;
+            cancel = executeActions(player, data.directionVL, distance, cc.directionActions).willCancel();
+            if (cancel) {
+                // Deal an attack penalty time.
+                data.attackPenalty.applyPenalty(cc.directionPenalty);
+            }
+        }
+        rayTracing.cleanup();
+        blockCache.cleanup();
+        return cancel;
     }
 
     public boolean loopCheck(final Player player, final Location loc, final ITraceEntry dLoc, 
             final DirectionContext dirContext, final ReachContext reachContext, final VisibleContext visibleContext,
             final FightData data, final FightConfig cc,
             final boolean directionEnabled, final boolean reachEnabled, final boolean visibleEnabled) {
-        final BlockCache blockCache = wrapBlockCache.getBlockCache();
-        blockCache.setAccess(loc.getWorld());
         boolean cancel = false;
-        
         final double eyeYLocation = loc.getY() + player.getEyeHeight() - (player.isSneaking() ? 0.08 : 0.0);
         final double distanceLimit = cc.reachSurvivalDistance + (player.getGameMode() == GameMode.CREATIVE ? 2.0 : 0.0);
         if (reachEnabled) reachContext.distanceLimit = distanceLimit;
 
         boulder.setFindNearestPointIfNotCollide(false)
-        .setRay(loc.getX(), eyeYLocation, loc.getZ(), dirContext.direction.getX(), dirContext.direction.getY(), dirContext.direction.getZ())
-        .setAABB(dLoc.getX(), dLoc.getY(), dLoc.getZ(), dLoc.getBoxMarginHorizontal() + 0.125, dLoc.getBoxMarginVertical() + 0.125)
+        .setRay(loc.getX(), eyeYLocation, loc.getZ(),
+                dirContext.direction.getX(), dirContext.direction.getY(), dirContext.direction.getZ())
+        .setAABB(dLoc.getX(), dLoc.getY(), dLoc.getZ(),
+                dLoc.getBoxMarginHorizontal() + cc.hitBoxHorizontalExpansion, dLoc.getBoxMarginVertical() + cc.hitBoxVerticalExpansion)
         .loop();
 
         if (boulder.collides()) {
@@ -82,8 +140,8 @@ public class HitBox extends Check {
             }
 
             // Checking visible
-            if (visibleEnabled) {
-                rayTracing.setBlockCache(blockCache);
+            if (visibleEnabled && !cancel) {
+                rayTracing.setBlockCache(visibleContext.cache);
                 rayTracing.setIgnoreInitiallyColliding(true);
                 rayTracing.set(loc.getX(), eyeYLocation, loc.getZ(), boulder.getX(), boulder.getY(), boulder.getZ());
                 rayTracing.loop();
@@ -95,14 +153,12 @@ public class HitBox extends Check {
             }
         } else {
             // Direction failed. Skipping distance, visible check
-            final Vector blockEyes = new Vector(dLoc.getX() - loc.getX(), dLoc.getY() + dLoc.getBoxMarginVertical() / 2D - loc.getY() - player.getEyeHeight(), dLoc.getZ() - loc.getZ());
+            final Vector blockEyes = new Vector(dLoc.getX() - loc.getX(), dLoc.getY() + dLoc.getBoxMarginVertical() / 2D - eyeYLocation, dLoc.getZ() - loc.getZ());
             final double distance = blockEyes.crossProduct(dirContext.direction).length() / dirContext.lengthDirection;
             dirContext.minViolation = Math.min(dirContext.minViolation, distance);
             cancel = true;
-            //player.sendMessage("Direction flag " + dLoc.getBoxMarginVertical() + " : " + eyeYLocation + " " + dLoc.getX() + " " + dLoc.getY() + " " + dLoc.getZ());
         }
         rayTracing.cleanup();
-        blockCache.cleanup();
         return cancel;
     }
 
@@ -114,6 +170,7 @@ public class HitBox extends Check {
         final double distance = reachEnabled ? forceViolation && reachContext.minViolation != Double.MAX_VALUE ? reachContext.minViolation : reachContext.minResult : Double.MAX_VALUE;
         final double off = forceViolation && dirContext.minViolation != Double.MAX_VALUE ? dirContext.minViolation : dirContext.minResult;
         final boolean collided = visibleEnabled ? forceViolation && visibleContext.collided : false;
+        if (visibleEnabled) visibleContext.cache.cleanup();
 
         // Direction violation
         if (off != Double.MAX_VALUE && off > 0) {
@@ -148,9 +205,9 @@ public class HitBox extends Check {
         // Visible violation
         if (collided) {
             data.visibleVL++;
-            cancel = true;
+            cancel = executeActions(player, data.visibleVL, 1.0, cc.visibleActions).willCancel();
         } else {
-            data.visibleVL *= 0.8;
+            data.visibleVL *= 0.8D;
         }
         return cancel;
     }

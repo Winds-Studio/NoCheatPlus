@@ -165,7 +165,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.BLOCKINTERACT_SPEED_ACTIONS, "cancel vl>10 cancel log:bspeed:5:4:i cancel vl>500 cancel log:bspeed:0:5:icf cmdc:kickbspeed:2:5", 1154);
         // Visible
         set(ConfPaths.BLOCKINTERACT_VISIBLE_CHECK, "default", 785);
-        set(ConfPaths.BLOCKINTERACT_VISIBLE_ACTIONS, "cancel vl>30 log:bvisible:8:5:if cancel", 1154); 
+        set(ConfPaths.BLOCKINTERACT_VISIBLE_ACTIONS, "cancel vl>30 log:bvisible:8:5:if cancel", 1154);
 
 
         /* BlockPlace */
@@ -333,8 +333,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.FIGHT_ACTIVE, "default", 1144);
         // General
         set(ConfPaths.FIGHT_CANCELDEAD, true, 785);
-        // TODO: Using System.currentTimeMillis() for timestamp not server tick?
-        set(ConfPaths.FIGHT_MAXLOOPLETENCYTICKS, 8, 1154);
+        set(ConfPaths.FIGHT_MAXLOOPLETENCYMS, 2000, 1154);
         set(ConfPaths.FIGHT_TOOLCHANGEPENALTY, 0L, 1154); // Disabled for now, it interferes too much with pvp. 500L
         set(ConfPaths.FIGHT_PVP_KNOCKBACKVELOCITY, "default", 785);
         // YawRate activation flag
@@ -367,6 +366,10 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.FIGHT_GODMODE_LAGMINAGE, 1100, 785); // TODO: ndt/2 => 500-600.
         set(ConfPaths.FIGHT_GODMODE_LAGMAXAGE, 5000, 785);
         set(ConfPaths.FIGHT_GODMODE_ACTIONS, "cancel log:godmode:0:5:icf cmdc:kickgod:0:5", 1154);
+        // HitBox
+        set(ConfPaths.FIGHT_HITBOX_CHECK, "default", 1154);
+        set(ConfPaths.FIGHT_HITBOX_HORIZONTAL_EXPAND, 0.125, 1154);
+        set(ConfPaths.FIGHT_HITBOX_VERTICAL_EXPAND, 0.125, 1154);
         // NoSwing
         set(ConfPaths.FIGHT_NOSWING_CHECK, "default", 785);
         set(ConfPaths.FIGHT_NOSWING_ACTIONS, "vl>2 cancel vl>10 log:noswing:2:5:i cancel", 1154);
@@ -401,6 +404,9 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.FIGHT_SPEED_SHORTTERM_LIMIT, 5, 1154);
         set(ConfPaths.FIGHT_SPEED_IMPROBABLE_FEEDONLY, false, 1154);
         set(ConfPaths.FIGHT_SPEED_IMPROBABLE_WEIGHT, 2.0, 1154);
+        // Visible
+        set(ConfPaths.FIGHT_VISIBLE_CHECK, "default", 1154);
+        set(ConfPaths.FIGHT_VISIBLE_ACTIONS, "cancel vl>30 log:fvisible:8:5:if cancel", 1154);
 
 
         /* Inventory */
@@ -701,6 +707,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.STRINGS + ".freach", start + "tried to hit an entity from a suspicious distance (Reach: &6[reachdistance]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".fselfhit", start + "tried to hit themselves" + end, 1154);
         set(ConfPaths.STRINGS + ".fspeed", start + "clicked [violations] times over the established [limit] CPS limit" + end, 1154);
+        set(ConfPaths.STRINGS + ".fvisible", start + "tried to attack through a solid obstacle" + end, 1154);
         set(ConfPaths.STRINGS + ".godmode", start + "tried to ignore inflicted damage (Health: &7[health]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".gutenberg", start + "created a book with too many pages" + end, 785);
         set(ConfPaths.STRINGS + ".improbable", start + "is exhibiting an erratic behaviour (Check: &6[tags]&7)" + end, 1154);

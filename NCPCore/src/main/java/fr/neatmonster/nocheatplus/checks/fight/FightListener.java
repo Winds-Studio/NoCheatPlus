@@ -51,8 +51,6 @@ import fr.neatmonster.nocheatplus.checks.moving.player.UnusedVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.util.AuxMoving;
 import fr.neatmonster.nocheatplus.checks.moving.util.MovingUtil;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
-import fr.neatmonster.nocheatplus.checks.net.NetConfig;
-import fr.neatmonster.nocheatplus.checks.net.NetData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
@@ -100,6 +98,9 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
     /** The god mode check. */
     private final GodMode     godMode     = addCheck(new GodMode());
 
+    /** THe hit box check. */
+    private final HitBox      hitBox      = addCheck(new HitBox());
+
     /** The no swing check. */
     private final NoSwing     noSwing     = addCheck(new NoSwing());
 
@@ -111,6 +112,9 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
 
     /** The speed check. */
     private final Speed       speed       = addCheck(new Speed());
+
+    /** The visible check. */
+    private final Visible     visible     = addCheck(new Visible());
 
     /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
     private final Location useLoc1 = new Location(null, 0, 0, 0);
@@ -249,7 +253,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
             // TODO: Problem with NPCs: data stays (not a big problem).
             // (This is done even if the event has already been cancelled, to keep track, if the player is on a horse.)
             damagedTrace = DataManager.getPlayerData(damagedPlayer).getGenericInstance(MovingData.class)
-                           .updateTrace(damagedPlayer, damagedLoc, tick, damagedIsFake ? null : mcAccess.getHandle()); //.getTrace(damagedPlayer);
+                           .updateTrace(damagedPlayer, damagedLoc, now, damagedIsFake ? null : mcAccess.getHandle()); //.getTrace(damagedPlayer);
         }
         else {
             damagedPlayer = null; // TODO: This is a temporary workaround.
@@ -364,22 +368,31 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         if (!cancelled) {
             final boolean reachEnabled = reach.isEnabled(player, pData);
             final boolean directionEnabled = direction.isEnabled(player, pData) && mData.timeRiptiding + 3000 < now;
-            if (reachEnabled || directionEnabled) {
+            final boolean visibleEnabled = visible.isEnabled(player, pData);
+            final boolean hitboxEnabled = hitBox.isEnabled(player, pData);
+            if (reachEnabled || directionEnabled || visibleEnabled) {
                 if (damagedTrace != null) {
                     // Checks that use the LocationTrace instance of the attacked entity/player.
                     cancelled = locationTraceChecks(player, loc, data, cc, pData, 
                             damaged, damagedIsFake, damagedLoc, damagedTrace, tick, now, debug,
-                            reachEnabled, directionEnabled);
+                            reachEnabled, directionEnabled, visibleEnabled, hitboxEnabled);
                 }
                 else {
                     // Still use the classic methods for non-players. maybe[]
-                    if (reachEnabled && reach.check(player, loc, damaged, damagedIsFake, damagedLoc, 
-                            data, cc, pData)) {
-                        cancelled = true;
-                    }
+                    if (directionEnabled && hitboxEnabled) {
+                        if (hitBox.check(player, loc, damaged, damagedIsFake, damagedLoc, data, cc, pData,
+                                reachEnabled, visibleEnabled)) {
+                            cancelled = true;
+                        }
+                    } else {
+                        if (reachEnabled && reach.check(player, loc, damaged, damagedIsFake, damagedLoc,
+                                data, cc, pData)) {
+                            cancelled = true;
+                        }
 
-                    if (directionEnabled && direction.check(player, loc, damaged, damagedIsFake, damagedLoc, data, cc)) {
-                        cancelled = true;
+                        if (directionEnabled && direction.check(player, loc, damaged, damagedIsFake, damagedLoc, data, cc)) {
+                            cancelled = true;
+                        }
                     }
                 }
             }
@@ -473,6 +486,8 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
      * @param tick
      * @param reachEnabled
      * @param directionEnabled
+     * @param hitboxEnabled 
+     * @param visibleEnabled 
      * @return If to cancel (true) or not (false).
      */
     private boolean locationTraceChecks(final Player player, final Location loc, 
@@ -480,7 +495,8 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
             final Entity damaged, final boolean damagedIsFake,
             final Location damagedLoc, LocationTrace damagedTrace, 
             final long tick, final long now, final boolean debug,
-            final boolean reachEnabled, final boolean directionEnabled) {
+            final boolean reachEnabled, final boolean directionEnabled,
+            final boolean visibleEnabled, final boolean hitboxEnabled) {
         // TODO: Order / splitting off generic stuff.
         /*
          * TODO: Abstract: interface with common setup/loop/post routine, only
@@ -493,8 +509,9 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         // (Might pass generic context to factories, for shared + heavy properties.)
         final ReachContext reachContext = reachEnabled ? reach.getContext(player, loc, damaged, damagedLoc, data, cc) : null;
         final DirectionContext directionContext = directionEnabled ? direction.getContext(player, loc, damaged, damagedIsFake, damagedLoc, data, cc) : null;
+        final VisibleContext visibleContext = visibleEnabled ? visible.getContext(player, loc, damaged, damagedLoc, data, cc) : null;
 
-        final long traceOldest = tick - cc.loopMaxLatencyTicks; // TODO: Set by latency-window.
+        final long traceOldest = now - cc.loopMaxLatencyMs; // TODO: Set by latency-window.
         // TODO: Iterating direction, which, static/dynamic choice.
         final Iterator<ITraceEntry> traceIt = damagedTrace.maxAgeIterator(traceOldest);
 
@@ -510,23 +527,32 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
             // Simplistic just check both until end or hit.
             // TODO: Other default distances/tolerances.
             boolean thisPassed = true;
-            if (reachEnabled) {
-                if (reach.loopCheck(player, loc, damaged, entry, reachContext, data, cc)) {
+            if (directionEnabled && hitboxEnabled) {
+                if (hitBox.loopCheck(player, loc, entry,
+                        directionContext, reachContext, visibleContext, data, cc,
+                        directionEnabled, reachEnabled, visibleEnabled)) {
                     thisPassed = false;
                 }
-                else {
-                    reachPassed = true;
+            } else {
+                if (reachEnabled) {
+                    if (reach.loopCheck(player, loc, damaged, entry, reachContext, data, cc)) {
+                        thisPassed = false;
+                    }
+                    else {
+                        reachPassed = true;
+                    }
+                }
+                // TODO: Efficiency: don't check at all, if strict and !thisPassed.
+                if (directionEnabled && (reachPassed || !directionPassed)) {
+                    if (direction.loopCheck(player, loc, damaged, entry, directionContext, data, cc)) {
+                        thisPassed = false;
+                    }
+                    else {
+                        directionPassed = true;
+                    }
                 }
             }
-            // TODO: Efficiency: don't check at all, if strict and !thisPassed.
-            if (directionEnabled && (reachPassed || !directionPassed)) {
-                if (direction.loopCheck(player, loc, damaged, entry, directionContext, data, cc)) {
-                    thisPassed = false;
-                }
-                else {
-                    directionPassed = true;
-                }
-            }
+
             if (thisPassed) {
                 // TODO: Log/set estimated latency.
                 violation = false;
@@ -535,20 +561,29 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
                 break;
             }
         }
-        // TODO: How to treat mixed state: violation && reachPassed && directionPassed [current: use min violation // thinkable: silent cancel, if actions have cancel (!)]
-        // TODO: Adapt according to strictness settings?
-        // TODO: violation vs. reachPassed + directionPassed (current: fail one = fail all).
-        if (reachEnabled) {
-            // TODO: Might ignore if already cancelled by mixed/silent cancel.
-            if (reach.loopFinish(player, loc, damaged, reachContext, successEntry, violation, 
-                    data, cc, pData)) {
+        if (directionEnabled && hitboxEnabled) {
+            if (hitBox.loopFinish(player, loc, damaged,
+                    reachContext, directionContext, visibleContext,
+                    successEntry, violation, data, cc,
+                    reachEnabled, visibleEnabled, pData)) {
                 cancelled = true;
             }
-        }
-        if (directionEnabled) {
-            // TODO: Might ignore if already cancelled.
-            if (direction.loopFinish(player, loc, damaged, directionContext, violation, data, cc)) {
-                cancelled = true;
+        } else {
+            // TODO: How to treat mixed state: violation && reachPassed && directionPassed [current: use min violation // thinkable: silent cancel, if actions have cancel (!)]
+            // TODO: Adapt according to strictness settings?
+            // TODO: violation vs. reachPassed + directionPassed (current: fail one = fail all).
+            if (reachEnabled) {
+                // TODO: Might ignore if already cancelled by mixed/silent cancel.
+                if (reach.loopFinish(player, loc, damaged, reachContext, successEntry, violation, 
+                        data, cc, pData)) {
+                    cancelled = true;
+                }
+            }
+            if (directionEnabled) {
+                // TODO: Might ignore if already cancelled.
+                if (direction.loopFinish(player, loc, damaged, directionContext, violation, data, cc)) {
+                    cancelled = true;
+                }
             }
         }
         // TODO: Log exact state, probably record min/max latency (individually).

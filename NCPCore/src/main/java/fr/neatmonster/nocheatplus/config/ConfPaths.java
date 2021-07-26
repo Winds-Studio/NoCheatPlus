@@ -483,7 +483,7 @@ public abstract class ConfPaths {
     public static final String  FIGHT_CANCELDEAD                         = FIGHT + "canceldead";
     public static final String  FIGHT_TOOLCHANGEPENALTY                  = FIGHT + "toolchangepenalty";
     private static final String FIGHT_PVP                                = FIGHT + "pvp."; 
-	public static final String  FIGHT_MAXLOOPLETENCYTICKS                = FIGHT + "maxloopletencyticks";
+	public static final String  FIGHT_MAXLOOPLETENCYMS                   = FIGHT + "maxloopletencyms";
     public static final String  FIGHT_PVP_KNOCKBACKVELOCITY              = FIGHT_PVP + "knockbackvelocity";
 
     private static final String FIGHT_ANGLE                              = FIGHT + "angle.";
@@ -522,6 +522,11 @@ public abstract class ConfPaths {
     public static final String  FIGHT_GODMODE_LAGMINAGE                  = FIGHT_GODMODE + "minage";
     public static final String  FIGHT_GODMODE_LAGMAXAGE                  = FIGHT_GODMODE + "maxage";
     public static final String  FIGHT_GODMODE_ACTIONS                    = FIGHT_GODMODE + "actions";
+
+    private static final String FIGHT_HITBOX                             = FIGHT + "hitbox.";
+    public static final String  FIGHT_HITBOX_CHECK                       = FIGHT_HITBOX + SUB_ACTIVE;
+    public static final String  FIGHT_HITBOX_HORIZONTAL_EXPAND           = FIGHT_HITBOX + "marginhorizontal";
+    public static final String  FIGHT_HITBOX_VERTICAL_EXPAND             = FIGHT_HITBOX + "marginvertical";
 
     private static final String FIGHT_NOSWING                            = FIGHT + "noswing.";
     public static final String  FIGHT_NOSWING_CHECK                      = FIGHT_NOSWING + SUB_ACTIVE;
@@ -563,7 +568,11 @@ public abstract class ConfPaths {
     public static final String  FIGHT_SPEED_IMPROBABLE_FEEDONLY          = FIGHT_SPEED_IMPROBABLE + "feedonly";
     public static final String  FIGHT_SPEED_IMPROBABLE_WEIGHT            = FIGHT_SPEED_IMPROBABLE + "weight";
     public static final String  FIGHT_SPEED_ACTIONS                      = FIGHT_SPEED + "actions";
-    
+
+    private static final String FIGHT_VISIBLE                            = FIGHT + "visible.";
+    public static final String  FIGHT_VISIBLE_CHECK                      = FIGHT_VISIBLE + SUB_ACTIVE;
+    public static final String  FIGHT_VISIBLE_ACTIONS                    = FIGHT_VISIBLE + "actions";
+
     private static final String FIGHT_YAWRATE                            = FIGHT + "yawrate.";
     public static final String  FIGHT_YAWRATE_CHECK                      = FIGHT_YAWRATE + SUB_ACTIVE;
 

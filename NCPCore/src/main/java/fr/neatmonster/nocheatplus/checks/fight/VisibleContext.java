@@ -14,8 +14,11 @@
  */
 package fr.neatmonster.nocheatplus.checks.fight;
 
+import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
+
 public class VisibleContext {
     /** Eye location y of the attacking player. */
     public double pY;
     public boolean collided = false;
+    public BlockCache cache;
 }

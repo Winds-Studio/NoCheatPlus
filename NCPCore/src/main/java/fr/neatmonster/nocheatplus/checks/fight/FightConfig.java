@@ -86,12 +86,17 @@ public class FightConfig extends ACheckConfig {
     public final float      speedImprobableWeight;
     public final ActionList speedActions;
 
+    public final ActionList visibleActions;
+
+    public final double     hitBoxHorizontalExpansion;
+    public final double     hitBoxVerticalExpansion;
+
     // Special flags:
     public final boolean    cancelDead;
     public final boolean    knockBackVelocityPvP;
 
-    /** Maximum latency counted in ticks for the loop checks (reach, direction). */
-    public final long       loopMaxLatencyTicks; // TODO: Configurable,  sections for players and entities.
+    /** Maximum latency counted in ms for the loop checks (reach, direction). */
+    public final int       loopMaxLatencyMs; // TODO: Configurable,  sections for players and entities.
 
     /**
      * Instantiates a new fight configuration.
@@ -147,7 +152,10 @@ public class FightConfig extends ACheckConfig {
 
         noSwingActions = config.getOptimizedActionList(ConfPaths.FIGHT_NOSWING_ACTIONS, Permissions.FIGHT_NOSWING);
 
-        reachSurvivalDistance = config.getDouble(ConfPaths.FIGHT_REACH_SURVIVALDISTANCE, 3.5, 6.0, 4.4);
+        hitBoxHorizontalExpansion = config.getDouble(ConfPaths.FIGHT_HITBOX_HORIZONTAL_EXPAND, 0.125);
+        hitBoxVerticalExpansion = config.getDouble(ConfPaths.FIGHT_HITBOX_VERTICAL_EXPAND, 0.125);
+
+        reachSurvivalDistance = config.getDouble(ConfPaths.FIGHT_REACH_SURVIVALDISTANCE, 3.0, 6.0, 4.4);
         reachPenalty = config.getLong(ConfPaths.FIGHT_REACH_PENALTY);
         reachPrecision = config.getBoolean(ConfPaths.FIGHT_REACH_PRECISION);
         reachReduce = config.getBoolean(ConfPaths.FIGHT_REACH_REDUCE);
@@ -169,8 +177,10 @@ public class FightConfig extends ACheckConfig {
         speedImprobableWeight = (float) config.getDouble(ConfPaths.FIGHT_SPEED_IMPROBABLE_WEIGHT);
         speedActions = config.getOptimizedActionList(ConfPaths.FIGHT_SPEED_ACTIONS, Permissions.FIGHT_SPEED);
 
+        visibleActions = config.getOptimizedActionList(ConfPaths.FIGHT_VISIBLE_ACTIONS, Permissions.FIGHT_VISIBLE);
+
         cancelDead = config.getBoolean(ConfPaths.FIGHT_CANCELDEAD);
-		loopMaxLatencyTicks = config.getInt(ConfPaths.FIGHT_MAXLOOPLETENCYTICKS, 1, 15, 8);
+        loopMaxLatencyMs = config.getInt(ConfPaths.FIGHT_MAXLOOPLETENCYMS, 500);
         AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.FIGHT_PVP_KNOCKBACKVELOCITY, AlmostBoolean.MAYBE);
         knockBackVelocityPvP = ref == AlmostBoolean.MAYBE ? Bugs.shouldPvpKnockBackVelocity() : ref.decide();
     }

@@ -20,11 +20,15 @@ import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
 
 public class Visible extends Check {
 
+    private final WrapBlockCache wrapBlockCache;
+
     public Visible() {
         super(CheckType.FIGHT_VISIBLE);
+        wrapBlockCache = new WrapBlockCache();
     }
 
     public boolean check() {
@@ -54,6 +58,7 @@ public class Visible extends Check {
                                    final FightData data, final FightConfig cc) {
         final VisibleContext context = new VisibleContext();
         context.pY = pLoc.getY() + player.getEyeHeight();
+        context.cache = wrapBlockCache.getBlockCache().setAccess(pLoc.getWorld());
         return context;
     }
 

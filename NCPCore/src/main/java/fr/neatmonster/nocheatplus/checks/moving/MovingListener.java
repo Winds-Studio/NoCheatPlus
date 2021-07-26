@@ -1774,12 +1774,12 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             final Location ref = player.getVehicle().getLocation(useLoc);
             aux.resetPositionsAndMediumProperties(player, ref, mData, mCc); // TODO: Consider using to and intercept cheat attempts in another way.
             useLoc.setWorld(null);
-            mData.updateTrace(player, to, tick, mcAccess.getHandle()); // TODO: Can you become invincible by sending special moves?
+            mData.updateTrace(player, to, now, mcAccess.getHandle()); // TODO: Can you become invincible by sending special moves?
         }
         else if (!from.getWorld().getName().equals(toWorldName)) {
             // A teleport event should follow.
             aux.resetPositionsAndMediumProperties(player, to, mData, mCc);
-            mData.resetTrace(player, to, tick, mcAccess.getHandle(), mCc);
+            mData.resetTrace(player, to, now, mcAccess.getHandle(), mCc);
         }
         else {
             // TODO: Detect differing location (a teleport event would follow).
@@ -1791,7 +1791,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             else {
                 // Normal move, nothing to do.
             }
-            mData.updateTrace(player, to, tick, mcAccess.getHandle());
+            mData.updateTrace(player, to, now, mcAccess.getHandle());
             if (mData.hasTeleported()) onPlayerMoveMonitorNotCancelledHasTeleported(player, to, mData, pData, pData.isDebugActive(checkType));
         }
     }
