@@ -17,8 +17,6 @@ package fr.neatmonster.nocheatplus.checks.blockplace;
 import java.util.LinkedList;
 import java.util.List;
 
-import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
-import fr.neatmonster.nocheatplus.utilities.TickTask;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
@@ -28,8 +26,10 @@ import fr.neatmonster.nocheatplus.actions.ParameterName;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
+import fr.neatmonster.nocheatplus.utilities.TickTask;
 
 /**
  * Check for common behavior from a client using the "Scaffold" cheat.

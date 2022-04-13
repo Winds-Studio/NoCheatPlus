@@ -47,8 +47,8 @@ import fr.neatmonster.nocheatplus.components.registry.order.RegistrationOrder.Re
 import fr.neatmonster.nocheatplus.event.mini.MiniListener;
 import fr.neatmonster.nocheatplus.logging.Streams;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
-import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties.ToolProps;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties.ToolType;
 

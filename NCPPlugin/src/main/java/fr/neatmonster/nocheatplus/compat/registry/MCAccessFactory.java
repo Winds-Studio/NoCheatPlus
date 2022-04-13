@@ -18,14 +18,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
-import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import org.bukkit.Bukkit;
 
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.bukkit.MCAccessBukkit;
 import fr.neatmonster.nocheatplus.compat.bukkit.MCAccessBukkitModern;
 import fr.neatmonster.nocheatplus.compat.cbreflect.MCAccessCBReflect;
+import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 
 /**

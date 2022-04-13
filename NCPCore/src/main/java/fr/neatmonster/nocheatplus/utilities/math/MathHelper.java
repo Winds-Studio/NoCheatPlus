@@ -14,14 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.utilities.math;
 
-import org.bukkit.Location;
-import org.bukkit.block.Block;
-import org.bukkit.util.Vector;
-
-import fr.neatmonster.nocheatplus.components.location.IGetPosition;
-import fr.neatmonster.nocheatplus.components.location.IGetPositionWithLook;
-
-
 /**
  * Auxiliary static methods for dealing with math operations. 
  */
