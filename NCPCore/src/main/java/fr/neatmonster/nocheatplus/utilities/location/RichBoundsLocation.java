@@ -38,6 +38,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
+import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -106,6 +107,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
     /** Bounding box collides with blocks. */
     Boolean passableBox = null;
+    
+    /** Is the player above soul sand (into included) */
+    Boolean aboveSoulSand = null;
 
     /** Is the player above stairs?. */
     Boolean aboveStairs = null;
@@ -958,10 +962,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isAboveSoulSand() {
         if (isInSoulSand()) {
-            isAboveSoulSand = true;
+            aboveSoulSand = true;
         }
         else {
-            aboveSoulSand = isOnGround() && BlockProperties.collides(blockCache, minX, minY - cc.yOnGround, minZ, maxX, maxY, maxZ, BlockFlags.F_SOULSAND);
+            aboveSoulSand = isOnGround() && BlockProperties.collides(blockCache, minX, minY - yOnGround, minZ, maxX, maxY, maxZ, BlockFlags.F_SOULSAND);
         }
         return aboveSoulSand;
     }

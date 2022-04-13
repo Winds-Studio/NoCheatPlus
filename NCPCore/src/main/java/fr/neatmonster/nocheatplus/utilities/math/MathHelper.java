@@ -43,7 +43,7 @@ public class MathHelper {
     * @param minParameter
     * @param maxParameter
     */
-   public static float clampFloat(double inputValue, double minParameter, double maxParameter) {
+   public static float clampFloat(float inputValue, float minParameter, float maxParameter) {
        return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 
@@ -53,7 +53,7 @@ public class MathHelper {
     * @param minParameter
     * @param maxParameter
     */
-   public static int clampInt(double inputValue, double minParameter, double maxParameter) {
+   public static int clampInt(int inputValue, int minParameter, int maxParameter) {
        return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 }
