@@ -528,17 +528,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         }
         return nodeBelow;
     }
-
-    /**
-     * Get existing or create.
-     * @return
-     */
-    public IBlockCacheNode getOrCreateBlockCacheNodeBelow(final double yBelow) {
-        if (nodeBelow == null) {
-            nodeBelow = blockCache.getOrCreateBlockCacheNode(blockX, blockY - yBelow, blockZ, false);
-        }
-        return nodeBelow;
-    }
     
     /**
      * Get existing or create.
@@ -575,17 +564,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         return nodeBelow.getType();
     }
 
-    /**
-     * Get the material below by a custom distance margin.
-     *
-     * @return the type id below
-     */
-    public Material getTypeIdBelow(final double yBelow) {
-        if (nodeBelow == null) {
-            getOrCreateBlockCacheNodeBelow(yBelow);
-        }
-        return nodeBelow.getType();
-    }
     
     /**
      * Gets the type id slightly lower.

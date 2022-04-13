@@ -498,7 +498,7 @@ public class BlockProperties {
         pLoc.set(location, player, yOnGround);
         /** Client, rather... */
         final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 5000001D : 1.0D;
-        final Material blockBelow = pLoc.getTypeIdBelow(yBelow);
+        final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
         final double DEFAULT_FRICTION = 0.6D;
         double friction = DEFAULT_FRICTION;
         if (isBlueIce(blockBelow)) {
@@ -530,17 +530,16 @@ public class BlockProperties {
         if (pLoc.isOnHoneyBlock()) {
             speedFactor = 0.4D;
         }
-        // Note that the soul speed enchant applies even if not actually in the soul block
         if (pLoc.isAboveSoulSand()) {
-            // Soul speed nullifies the slow down.
+            // Soul speed nullifies the slow down. Also will apply even if not inside the block.
             if (BridgeEnchant.hasSoulSpeed(player)) {
                 speedFactor = 1.0D;
             } 
-            // The player is slowed down only if inside the block
+            // Soul speed is absent and the player is inside the block. Do slow down.
             else if (pLoc.isInSoulSand()) {
                 speedFactor = 0.4D;
             }
-            // Above soul sand but inside, do not slow down
+            // Above soul sand but not inside and no soul speed present, do not slow down
             else speedFactor = 1.0D;
         }
         blockCache.cleanup();
