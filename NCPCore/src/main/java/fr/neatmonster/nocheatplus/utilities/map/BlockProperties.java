@@ -1792,6 +1792,9 @@ public class BlockProperties {
                 missing.add("* BLOCK BREAKING (" + mat + tagsJoined + ") ");
             }
             else {
+                if (blocks.get(temp).hardness != temp.getHardness()) {
+                    logManager.warning(Streams.INIT, "Hardness diferents for " + temp + ":" + blocks.get(temp).hardness + "|" + temp.getHardness());
+                }
                 if (BlockFlags.getBlockFlags(temp) == 0L && !isAir(temp)) {
                     missing.add("* FLAGS (" + mat + tagsJoined + ") " + getBlockProps(temp).toString());
                 }
