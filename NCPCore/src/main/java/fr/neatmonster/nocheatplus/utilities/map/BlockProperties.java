@@ -51,6 +51,7 @@ import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.compat.blocks.init.vanilla.VanillaBlocksFactory;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.config.ConfPaths;
 import fr.neatmonster.nocheatplus.config.RawConfigFile;
@@ -66,6 +67,7 @@ import fr.neatmonster.nocheatplus.utilities.collision.PassableAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.collision.PassableRayTracing;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
+
 
 
 /**
@@ -483,6 +485,95 @@ public class BlockProperties {
     }
 
     /**
+     * NMS block friction library for horizontal speed
+     * @param player
+     * @param location
+     * @param yOnGround
+     */
+    public static final double getBlockFrictionFactor(final Player player, final Location location, final double yOnGround) {
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        pLoc.set(location, player, yOnGround);
+        /** Client, rather... */
+        final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 5000001D : 1.0D;
+        final Material blockBelow = pLoc.getTypeIdBelow(yBelow);
+        final double DEFAULT_FRICTION = 0.6D;
+        double friction = DEFAULT_FRICTION;
+        if (isBlueIce(blockBelow)) {
+            friction = 0.989D;
+        }
+        if (isIce(blockBelow)) {
+            friction = 0.98D;
+        }
+        if (isSlime(blockBelow)) {
+            friction = 0.8D;
+        }
+        blockCache.cleanup();
+        pLoc.cleanup();
+        return friction;
+    }
+
+    /**
+     * NMS block speed factor library for horizontal speed (mostly slowdown multipliers).
+     * @param player
+     * @param location
+     * @param yOnGround
+     */
+    public static final double getBlockSpeedFactor(final Player player, final Location location, final double yOnGround) {
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        pLoc.set(location, player, yOnGround);
+        double speedFactor = 1.0D;
+        if (pLoc.isOnHoneyBlock()) {
+            speedFactor = 0.4D;
+        }
+        // Note that the soul speed enchant applies even if not actually in the soul block
+        if (pLoc.isAboveSoulSand()) {
+            // Soul speed nullifies the slow down.
+            if (BridgeEnchant.hasSoulSpeed(player)) {
+                speedFactor = 1.0D;
+            } 
+            // The player is slowed down only if inside the block
+            else if (pLoc.isInSoulSand()) {
+                speedFactor = 0.4D;
+            }
+            // Above soul sand but inside, do not slow down
+            else speedFactor = 1.0D;
+        }
+        blockCache.cleanup();
+        pLoc.cleanup();
+        return speedFactor;
+    }
+
+    /**
+     * Get the NMS stuck-in-block speed factor for horizontal speed.
+     * @param player
+     * @param location
+     * @param yOnGround
+     */
+    public static final double getStuckInBlockSpeedFactor(final Player player, final Location location, final double yOnGround) {
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        pLoc.set(location, player, yOnGround);
+        double stuckInfactor = 1.0D;
+        if (pLoc.isInWeb()) {
+            stuckInfactor = 0.25D;
+        }
+        if (pLoc.isInBerryBush()) {
+            stuckInfactor = 0.800000011920929D;
+        }
+        if (pLoc.isInPowderSnow()) {
+            stuckInfactor = 0.8999999761581421D;
+        }
+        blockCache.cleanup();
+        pLoc.cleanup();
+        return stuckInfactor;
+    }
+
+    /**
      * Convenience method excluding null as air result.
      *
      * @param mat
@@ -607,8 +698,7 @@ public class BlockProperties {
                             || mat == Material.TRAPPED_CHEST
                             || mat == Material.HOPPER
                             || mat == BridgeMaterial.BARREL
-                            // Ugly.
-                            || mat.toString().endsWith("SHULKER_BOX"));
+                            || MaterialUtil.SHULKER_BOXES.contains(mat));
     }
 
     /**
@@ -722,6 +812,17 @@ public class BlockProperties {
      */
     public static final boolean isSolid(final Material mat) {
         return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_SOLID) != 0;
+    }
+
+    /**
+     * Checks if is slime.
+     *
+     * @param mat
+     *            the mat.
+     * @return true, if is slime
+     */
+    public static final boolean isSlime(final Material mat) {
+        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_SLIME) != 0;
     }
 
     /**
@@ -1708,7 +1809,6 @@ public class BlockProperties {
         }
     }
 
-
     /**
      * Sec to ms.
      *
@@ -2055,6 +2155,7 @@ public class BlockProperties {
                 isValidTool = true;
             }
         }
+        
         if (toolProps.toolType == ToolType.SWORD) {
             if (blockId == Material.JACK_O_LANTERN || blockId.name().endsWith("PUMPKIN") || blockId == Material.MELON) {
                 isValidTool = true;
@@ -2171,45 +2272,45 @@ public class BlockProperties {
     public static boolean isRightToolMaterial(final Material blockId, final MaterialBase blockMat, final MaterialBase toolMat, final boolean isValidTool) {
         if (blockMat == MaterialBase.WOOD) {
             switch(toolMat) {
-            case DIAMOND:
-            case GOLD:
-            case IRON:
-            case NETHERITE:
-            case STONE:
-            case WOOD:
-                return isValidTool;
-            default:
-                return false;
+                case DIAMOND:
+                case GOLD:
+                case IRON:
+                case NETHERITE:
+                case STONE:
+                case WOOD:
+                    return isValidTool;
+                default:
+                    return false;
             }
         }
         if (blockMat == MaterialBase.STONE) {
             switch(toolMat) {
-            case DIAMOND:
-            case IRON:
-            case NETHERITE:
-            case STONE:
-                return isValidTool;
-            default:
-                return false;
+                case DIAMOND:
+                case IRON:
+                case NETHERITE:
+                case STONE:
+                    return isValidTool;
+                default:
+                    return false;
             }
         }
         if (blockMat == MaterialBase.IRON) {
             switch(toolMat) {
-            case DIAMOND:
-            case IRON:
-            case NETHERITE:
-                return isValidTool;
-            default:
-                return false;
+                case DIAMOND:
+                case IRON:
+                case NETHERITE:
+                    return isValidTool;
+                default:
+                    return false;
             }
         }
         if (blockMat == MaterialBase.DIAMOND) {
             switch(toolMat) {
-            case DIAMOND:
-            case NETHERITE:
-                return isValidTool;
-            default:
-                return false;
+                case DIAMOND:
+                case NETHERITE:
+                    return isValidTool;
+                default:
+                    return false;
             }
         }
         return isValidTool;
@@ -2414,8 +2515,7 @@ public class BlockProperties {
      *            the y on ground
      * @return true, if is on ground or reset cond
      */
-    public static boolean isOnGroundOrResetCond(final Player player, final Location location, 
-            final double yOnGround) {
+    public static boolean isOnGroundOrResetCond(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
@@ -4103,8 +4203,7 @@ public class BlockProperties {
         // TODO: height >= ?
         // TODO: Another concept is needed for the stand-on-passable !
          // TODO: Add getMinGroundHeight, getMaxGroundHeight.
-        if (isPassableWorkaround(access, x, y, z, minX - x, minY - y, minZ - z, node, maxX - minX, maxY - minY, maxZ - minZ, 
-                                 minX, minY, minZ, maxX, maxY, maxZ, 1.0)) {
+        if (isPassableWorkaround(access, x, y, z, minX - x, minY - y, minZ - z, node, maxX - minX, maxY - minY, maxZ - minZ, minX, minY, minZ, maxX, maxY, maxZ, 1.0)) {
             if ((flags & BlockFlags.F_GROUND_HEIGHT) == 0 || getGroundMinHeight(access, x, y, z, node, flags) > maxY - y) {
                 // Don't break, though could for some cases (?), since a block below still can be ground.
                 return AlmostBoolean.MAYBE;
@@ -4349,7 +4448,7 @@ public class BlockProperties {
      */
     public static final boolean isWaterfall(final PlayerLocation from, final PlayerLocation to) {
         return isWaterfall(from.getBlockCache(), from.getBlockX(), from.getBlockY(), from.getBlockZ(), 
-                            from.getData(), to.getY() - from.getY());
+                           from.getData(), to.getY() - from.getY());
     }
 
     /**

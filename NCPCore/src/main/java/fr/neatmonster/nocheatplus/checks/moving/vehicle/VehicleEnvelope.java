@@ -90,7 +90,6 @@ public class VehicleEnvelope extends Check {
             simplifiedType = null;
             gravityTargetSpeed = MagicVehicle.boatVerticalFallTarget;
         }
-
     }
 
     /** Tags for checks. */
@@ -106,10 +105,8 @@ public class VehicleEnvelope extends Check {
     
     private final Class<?> strider;
     
-   /*
-    *
+   /**
     * Instanties a new VehicleEnvelope check
-    *
     */
     public VehicleEnvelope() {
         super(CheckType.MOVING_VEHICLE_ENVELOPE);
@@ -119,7 +116,7 @@ public class VehicleEnvelope extends Check {
     }
 
 
-  /**
+   /**
     *
     * @param player
     * @param vehicle
@@ -171,8 +168,7 @@ public class VehicleEnvelope extends Check {
     }
 
 
-  /**
-    *
+   /**
     * @param player
     */
     private void debugDetails(final Player player) {
@@ -195,7 +191,7 @@ public class VehicleEnvelope extends Check {
     }
 
 
-  /**
+   /**
     * Return the horizontal distance cap for the vehicle
     * @param type
     * @param cc
@@ -209,44 +205,65 @@ public class VehicleEnvelope extends Check {
         final Double globalcap = cc.vehicleEnvelopeHorizontalSpeedCap.get(null);
 
         if (cap == null) {
-            if(type == EntityType.BOAT){
+            if (type == EntityType.BOAT) {
                 return getHDistCapBoats(thisMove,data,1.0,globalcap);
             }
             return globalcap;
         }
         else {
-            if(type == EntityType.BOAT) {
+            if (type == EntityType.BOAT) {
                 return getHDistCapBoats(thisMove,data,cap, globalcap);
             }
             return cap;
         }
     }
+
+
     /**
-     * Return the horizontal distance cap for the boat
+     * Return the horizontal distance cap for boats
      * @param thisMove
      * @param data
      * @param multiplier
      *
      */
     private double getHDistCapBoats(final VehicleMoveData thisMove, final MovingData data, final double multiplier, final double globalcap) {
-        if(thisMove.from.onBlueIce && !thisMove.to.onBlueIce){ //workaround for when the boat leaves icy places
+        
+        final VehicleMoveData lastMove = data.vehicleMoves.getFirstPastMove();
+
+        if (lastMove.from.onBlueIce && !thisMove.from.onBlueIce) { //workaround for when the boat leaves icy places
             data.boatIceVelocityTicks = 20;
         }
-        else if (thisMove.from.onIce && !thisMove.to.onIce){
+        else if (lastMove.from.onIce && !thisMove.from.onIce){
             data.boatIceVelocityTicks = 10;
         }
-        if (thisMove.from.onBlueIce || thisMove.to.onBlueIce) return multiplier * 4.1;
-        if (thisMove.from.onIce || thisMove.to.onIce) return multiplier * 2.3;
-        if(data.boatIceVelocityTicks-- > 0){ // allow high speed for a moment
-            if (data.boatIceVelocityTicks > 10) return multiplier * 4.1;
+
+        if (thisMove.from.onBlueIce || thisMove.to.onBlueIce) {
+            return multiplier * 4.1;
+        }
+
+        if (thisMove.from.onIce || thisMove.to.onIce) {
             return multiplier * 2.3;
         }
-        if ((thisMove.from.onGround && !thisMove.from.inWater) || thisMove.to.onGround && !thisMove.to.inWater) return multiplier * 0.3;
-        if (thisMove.from.inWater || thisMove.to.inWater) return multiplier * 0.5;
+
+        if (data.boatIceVelocityTicks-- > 0) { // allow high speed for a moment
+            if (data.boatIceVelocityTicks > 10) {
+                return multiplier * 4.1;
+            }
+            return multiplier * 2.3;
+        }
+
+        if ((thisMove.from.onGround && !thisMove.from.inWater) 
+            || thisMove.to.onGround && !thisMove.to.inWater) {
+            return multiplier * 0.3;
+        }
+
+        if (thisMove.from.inWater || thisMove.to.inWater) {
+            return multiplier * 0.5;
+        }
         return multiplier == 1.0 ? globalcap : multiplier;
     }
 
-  /**
+   /**
     * Actual check
     * @param player
     * @param vehicle
@@ -257,8 +274,8 @@ public class VehicleEnvelope extends Check {
     * @param cc
     * @param debug
     * @param moveInfo
-    *
     * @return
+    * 
     */
     private boolean checkEntity(final Player player, final Entity vehicle, 
                                 final VehicleMoveData thisMove, final boolean isFake, 
@@ -475,7 +492,7 @@ public class VehicleEnvelope extends Check {
     }
     
 
-  /**
+   /**
     * @param from
     *
     */
@@ -620,7 +637,7 @@ public class VehicleEnvelope extends Check {
         if (data.sfJumpPhase > (checkDetails.canJump ? MagicVehicle.maxJumpPhaseAscend : 1)
             && thisMove.yDistance > Math.max(minDescend, -checkDetails.gravityTargetSpeed)) {
 
-            if (ColliesHoneyBlock(from)) data.sfJumpPhase = 5; 
+            if (collidesWithHoneyBlock(from)) data.sfJumpPhase = 5; 
             else if (!(vehicle instanceof LivingEntity && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier((LivingEntity)vehicle)))) {
                 tags.add("slow_fall_vdist");
                 violation = true;
@@ -647,7 +664,7 @@ public class VehicleEnvelope extends Check {
     }
 
 
-  /**
+   /**
     * @param thisMove
     * @param data
     *
@@ -673,10 +690,10 @@ public class VehicleEnvelope extends Check {
     }
     
 
-  /**
+   /**
     * @param thisMove
     * @param maxDistanceHorizontal
-    *
+    * @return If maximum hDistance was exceeded
     */
     private boolean maxDistHorizontal(final VehicleMoveData thisMove, final double maxDistanceHorizontal) {
         if (thisMove.hDistance > maxDistanceHorizontal) {
@@ -689,11 +706,10 @@ public class VehicleEnvelope extends Check {
     }
 
 
-  /**
+   /**
     * @param from
-    *
     */
-    private boolean ColliesHoneyBlock(RichEntityLocation from) {
+    private boolean collidesWithHoneyBlock(RichEntityLocation from) {
         return (from.getBlockFlags() & BlockFlags.F_STICKY) != 0;
     }
 }

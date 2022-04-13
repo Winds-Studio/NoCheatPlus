@@ -429,7 +429,7 @@ public class Magic {
      * @return
      */
     public static boolean touchedSoulSand(final PlayerMoveData thisMove) {
-        return thisMove.from.onSoulSand || thisMove.to.onSoulSand;
+        return thisMove.from.inSoulSand || thisMove.to.inSoulSand;
     }
 
     /**

@@ -31,6 +31,7 @@ import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -799,7 +800,7 @@ public class AirWorkarounds {
                 // 0: Pre 1.17 bug.
                 // TODO: Possibly confine by further criteria ?
                 || to.isHeadObstructed() && yDistance > 0.0 && yDistance < 1.2 
-                && from.getTypeId().toString().endsWith("SHULKER_BOX")
+                && MaterialUtil.SHULKER_BOXES.contains(from.getTypeId())
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_NODATA2)
         ;
 

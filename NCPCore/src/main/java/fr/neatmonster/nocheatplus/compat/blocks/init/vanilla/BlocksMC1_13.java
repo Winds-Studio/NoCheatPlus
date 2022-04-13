@@ -103,7 +103,7 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
 
         // Blue ice.
         BlockInit.setAs("BLUE_ICE", Material.ICE);
-        BlockFlags.addFlags("BLUE_ICE",BlockFlags.F_BLUE_ICE);
+        BlockFlags.addFlags("BLUE_ICE", BlockFlags.F_BLUE_ICE);
 
         // Wet sponge.
         BlockInit.setAs("WET_SPONGE", Material.SPONGE);

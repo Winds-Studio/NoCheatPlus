@@ -75,7 +75,6 @@ public class Critical extends Check {
         final double ncpFallDistance = mData.noFallFallDistance;
         final double realisticFallDistance = MovingUtil.getRealisticFallDistance(player, thisMove.from.getY(), thisMove.to.getY(), mData, pData);
 
-
         // Check if the hit was a critical hit (very small fall-distance, not on ladder, not in vehicle, and without blindness effect).
         if (mcFallDistance > 0.0 && !player.isInsideVehicle() && !player.hasPotionEffect(PotionEffectType.BLINDNESS)) {
 
@@ -87,7 +86,7 @@ public class Critical extends Check {
                 ); // + ", packet onGround: " + packet.onGround); 
             }
 
-            // Detect silent jumping (might be redundant with the mismatch check below)
+            // Check for fall distance with too little air time (might be redundant with the mismatch check below)
             if (Math.abs(ncpFallDistance - mcFallDistance) > cc.criticalFallDistLeniency 
                 && mcFallDistance <= cc.criticalFallDistance 
                 && mData.sfJumpPhase <= 1
@@ -101,19 +100,20 @@ public class Critical extends Check {
                 violation = true;
             }
             // Player is on ground with server-side fall distance; we are going to force a violation here :)
-            else if (ncpFallDistance != mcFallDistance && thisMove.from.onGround && thisMove.to.onGround 
+            // (Might want to skip the fall distance comparison part. Just checking if the player has fall distance present while on ground should suffice.)
+            else if (ncpFallDistance != mcFallDistance && BlockProperties.isOnGround(player, loc, mCC.yOnGround) 
                     && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
                 tags.add("falldist_mismatch");
                 violation = true;
             }
-            // In these media players cannot perform critical hits, but they can be faked. Always invalidate them, if so.
+            // Prenvet players from performing critical hits in mediums where they are not possible.
             else if ((thisMove.from.inBerryBush || thisMove.from.inWeb 
                     || thisMove.from.inPowderSnow) && mData.insideMediumCount > 1) { // mcFallDistance > 0.0 is checked above.
-                tags.add("fakefall");
+                tags.add("fakecrit(" + (thisMove.from.inWeb ? "web" : thisMove.from.inBerryBush ? "berry bush" : "powder snow") + ")");
                 violation = true;
-                // (Cannot fake in liquid)
-            }
-                   
+                // (Cannot seem to fake in liquid)
+            }         
+
             // Handle violations
             if (violation) {
 

@@ -49,6 +49,7 @@ import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
 public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition, IGetBox3D {
 
     // TODO: Consider switching back from default to private visibility (use getters for other places).
+    // TODO: Do any of these belong to RichEntityLocation?
 
     // Simple members // 
 
@@ -130,8 +131,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /** Is the player on the ground?. */
     Boolean onGround = null;
     
-    /** Is the player on soul sand. */
-    Boolean onSoulSand = null;
+    /** Is the player IN soul sand. */
+    Boolean inSoulSand = null;
     
     /** Is the player on a honey block. */
     Boolean onHoneyBlock = null;
@@ -523,6 +524,17 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         }
         return nodeBelow;
     }
+
+    /**
+     * Get existing or create.
+     * @return
+     */
+    public IBlockCacheNode getOrCreateBlockCacheNodeBelow(final double yBelow) {
+        if (nodeBelow == null) {
+            nodeBelow = blockCache.getOrCreateBlockCacheNode(blockX, blockY - yBelow, blockZ, false);
+        }
+        return nodeBelow;
+    }
     
     /**
      * Get existing or create.
@@ -555,6 +567,18 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public Material getTypeIdBelow() {
         if (nodeBelow == null) {
             getOrCreateBlockCacheNodeBelow();
+        }
+        return nodeBelow.getType();
+    }
+
+    /**
+     * Get the material below by a custom distance margin.
+     *
+     * @return the type id below
+     */
+    public Material getTypeIdBelow(final double yBelow) {
+        if (nodeBelow == null) {
+            getOrCreateBlockCacheNodeBelow(yBelow);
         }
         return nodeBelow.getType();
     }
@@ -645,7 +669,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 aboveStairs = false;
                 return false;
             }
-            aboveStairs = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, minY, maxZ, BlockFlags.F_STAIRS);
+            aboveStairs = isOnGround() && (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STAIRS) != 0;
         }
         return aboveStairs;
     }
@@ -657,7 +681,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInLava() {
         if (inLava == null) {
-            if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_LAVA) == 0 ) {
+            if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_LAVA) == 0) {
                 inLava = false;
                 return false;
             }
@@ -673,7 +697,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInWater() {
         if (inWater == null) {
-            if (!isInWaterLogged() && blockFlags != null && (blockFlags.longValue() & BlockFlags.F_WATER) == 0 ) {
+            if (!isInWaterLogged() && blockFlags != null && (blockFlags.longValue() & BlockFlags.F_WATER) == 0) {
                 inWater = false;
                 return false;
             }
@@ -910,21 +934,36 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check the location is on soul sand.
+     * Check the location is in soul sand.
      *
      * @return true, if is on soul sand
      */
-    public boolean isOnSoulSand() {
-        if (onSoulSand == null) {
+    public boolean isInSoulSand() {
+        if (inSoulSand == null) {
             if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_SOULSAND) == 0) {
-                onSoulSand = false;
+                inSoulSand = false;
             } 
             else {
                 // In soul block, rather.
-                onSoulSand = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_SOULSAND) != 0;
+                inSoulSand = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_SOULSAND) != 0;
             }
         }
-        return onSoulSand;
+        return inSoulSand;
+    }
+
+    /**
+     * Check the location is aboveeg soul sand.
+     *
+     * @return true, if is on soul sand
+     */
+    public boolean isAboveSoulSand() {
+        if (isInSoulSand()) {
+            isAboveSoulSand = true;
+        }
+        else {
+            aboveSoulSand = isOnGround() && BlockProperties.collides(blockCache, minX, minY - cc.yOnGround, minZ, maxX, maxY, maxZ, BlockFlags.F_SOULSAND);
+        }
+        return aboveSoulSand;
     }
 
     /**
@@ -978,7 +1017,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             } 
             else {
                 // Only count in actually being in the honeyblock, players can jump normally on the very edge.
-                onHoneyBlock = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
+                onHoneyBlock = isOnGround() && (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
             }
         }
         return onHoneyBlock;
@@ -1181,6 +1220,21 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
+     * Test if the player may back off from edge
+     * @param xMargin
+     *            the x margin
+     * @param yMargin
+     *            Extra margin added below and above.
+     * @param zMargin
+     *            the z margin
+     * @return true, if is on ground
+     */
+    public boolean isOnEdgeGround(final double xMargin, final double yMargin, final double zMargin) {
+        final boolean onGround = BlockProperties.isOnGround(blockCache, xMargin, yMargin, zMargin, xMargin, yMargin, zMargin, 0L);
+        return onGround;
+    }
+
+    /**
      * Check on-ground in a very opportunistic way, in terms of
      * fcfs+no-consistency+no-actual-side-condition-checks.
      * <hr>
@@ -1192,10 +1246,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @param blockChangeRef
      * @return
      */
-    public final boolean isOnGroundOpportune(
-            final double yOnGround, final long ignoreFlags,
-            final BlockChangeTracker blockChangeTracker, final BlockChangeReference blockChangeRef,
-            final int tick) {
+    public final boolean isOnGroundOpportune(final double yOnGround, final long ignoreFlags,
+                                             final BlockChangeTracker blockChangeTracker, final BlockChangeReference blockChangeRef,
+                                             final int tick) {
         // TODO: Consider updating onGround+dist cache.
         return blockChangeTracker.isOnGround(blockCache, blockChangeRef, tick, world.getUID(), 
                 minX, minY - yOnGround, minZ, maxX, maxY, maxZ, ignoreFlags);
@@ -1576,7 +1629,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         this.onSlimeBlock = other.isOnSlimeBlock();
         this.onIce = other.isOnIce();
         this.onBlueIce = other.isOnBlueIce();
-        this.onSoulSand = other.isOnSoulSand();
+        this.inSoulSand = other.isInSoulSand();
+        this.aboveSoulSand = other.isAboveSoulSand();
         this.inPowderSnow = other.isInPowderSnow();
         this.onClimbable = other.isOnClimbable();
         this.onBouncyBlock = other.isOnBouncyBlock();
@@ -1652,7 +1706,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
         // Reset cached values.
         node = nodeBelow = null;
-        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = onSoulSand = onHoneyBlock = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable = passableBox = inBubblestream = null;
+        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand = aboveSoulSand = onHoneyBlock = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable = passableBox = inBubblestream = null;
         onGroundMinY = Double.MAX_VALUE;
         notOnGroundMaxY = Double.MIN_VALUE;
         blockFlags = null;

@@ -92,7 +92,7 @@ public class LocationData implements IGetLocationWithLook {
         loc.collectBlockFlags(); // Just ensure.
         onClimbable = loc.isOnClimbable();
         inWeb = loc.isInWeb();
-        onSoulSand = loc.isOnSoulSand();
+        onSoulSand = loc.isInSoulSand();
         inLiquid = loc.isInLiquid();
         inBerryBush = loc.isInBerryBush();
         onSlimeBlock = loc.isOnSlimeBlock();
@@ -137,7 +137,7 @@ public class LocationData implements IGetLocationWithLook {
             onGround = other.onGround;
             onIce = other.onIce;
             onBlueIce = other.onBlueIce;
-            onSoulSand = other.onSoulSand;
+            inSoulSand = other.inSoulSand;
             inBerryBush = other.inBerryBush;
             onSlimeBlock = other.onSlimeBlock;
             onHoneyBlock = other.onHoneyBlock;

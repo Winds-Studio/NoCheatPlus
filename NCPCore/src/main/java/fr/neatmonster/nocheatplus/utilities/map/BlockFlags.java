@@ -146,13 +146,6 @@ public class BlockFlags {
     public static final long F_HEIGHT_8SIM_DEC              = f_flag();
 
     /**
-     * The height is assumed to increase with data value up to 0x7, repeating up to 0x15.<br>
-     * However the hit-box for collision checks  will be set to 0.5 height or 1.0 height only,<br>
-     * as with the 1.4.x snow levels.
-     */
-    public static final long F_HEIGHT_8SIM_INC              = f_flag();
-
-    /**
      * The height increases with data value (8 heights).<br>
      * This is for MC 1.5 snow levels.
      */
@@ -310,14 +303,8 @@ public class BlockFlags {
      */
     public static final long F_VARIABLE_REDSTONE            = f_flag();
 
-    /** Height 15/16 (0.9375 = 1 - 0.0625). */
-    public static final long F_HEIGHT16_15                  = f_flag();
-
     /** Like bubble column. */
     public static final long F_BUBBLECOLUMN                 = f_flag();
-
-    /* Indicator flag. */
-    public static final long F_ANVIL                        = f_flag();
     
     /** Flag used to workaround bugged block bounds in older servers for thin fences. */
     public static final long F_FAKEBOUNDS                   = f_flag();
@@ -482,20 +469,20 @@ public class BlockFlags {
     /**
      * Sets the block flags.
      *
-     * @param blockType
-     *            the block type
+     * @param material
+     *            the material
      * @param flags
      *            the flags
      */
-    public static final void setBlockFlags(final Material blockType, final long flags) {
+    public static final void setBlockFlags(final Material material, final long flags) {
         try {
-            if (!blockType.isBlock()) {
+            if (!material.isBlock()) {
                 // Let's not fail hard here.
-                StaticLog.logWarning("Attempt to set flags for a non-block: " + blockType);
+                StaticLog.logWarning("Attempt to set flags for a non-block: " + material);
             }
         } 
         catch (Exception e) {}
-        blockFlags.put(blockType, flags);
+        blockFlags.put(material, flags);
     }
 
     /**

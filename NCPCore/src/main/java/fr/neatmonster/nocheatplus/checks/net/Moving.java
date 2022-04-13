@@ -18,12 +18,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.Location;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
 
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
@@ -55,11 +49,6 @@ public class Moving extends Check {
         super(CheckType.NET_MOVING);
     }
 
-    long timeRespawn;
-    long timeJoin;
-    long timeTeleport;
-
-
     /**
      * Checks a player
      * 
@@ -74,18 +63,15 @@ public class Moving extends Check {
     public boolean check(final Player player, final DataPacketFlying packetData, final NetData data, final NetConfig cc, 
                          final IPlayerData pData, final Plugin plugin) {
         
+        // TODO: This will trigger if the client is waiting for chunks to load (Slow fall, on join or after a teleport)
         boolean cancel = false;
-        // Early return tests, for the case the player has teleported somewhere/respawned/joined too recently.
-        final long now = System.currentTimeMillis();
-        // TODO: This still triggers on join if chunk isn't loaded and the player is sinking...
-        if (now - timeJoin < 20000 || now - timeTeleport < 5000 || now - timeRespawn < 5000 || !player.isOnline()) {
-            return false;
-        }
         // Work as ExtremeMove but for packet sent!
         // Observed: this seems to prevent long/mid distance blink cheats.
-        else if (packetData.hasPos) {
+        if (packetData.hasPos) {
             final MovingData mData = pData.getGenericInstance(MovingData.class);
+            /** Actual Location on the server */
             final Location knownLocation = player.getLocation();
+            /** Claimed Location sent by the client */
             final Location packetLocation = new Location(null, packetData.getX(), packetData.getY(), packetData.getZ());
             final double hDistanceDiff = TrigUtil.distance(knownLocation, packetLocation);
             final double yDistanceDiff = Math.abs(knownLocation.getY() - packetLocation.getY());
@@ -135,19 +121,5 @@ public class Moving extends Check {
             }
         }
         return cancel;
-    }
-    
-    // Currently only related to these, no need to make another class.
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void playerTeleport(PlayerTeleportEvent e) {
-        timeTeleport = System.currentTimeMillis();
-    }
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void playerJoin(PlayerJoinEvent e) {
-        timeJoin = System.currentTimeMillis();
-    }
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void playerRespawn(PlayerRespawnEvent e) {
-        timeRespawn = System.currentTimeMillis();
     }
 }

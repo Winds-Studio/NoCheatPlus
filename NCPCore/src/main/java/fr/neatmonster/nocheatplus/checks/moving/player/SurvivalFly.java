@@ -1143,7 +1143,7 @@ public class SurvivalFly extends Check {
         }
         
         // Soulsand
-        else if (thisMove.from.onSoulSand) {
+        else if (thisMove.from.inSoulSand) {
             tags.add("hsoulsand");
             hAllowedDistance = Magic.modSoulSand * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
             // SoulSpeed stuff
