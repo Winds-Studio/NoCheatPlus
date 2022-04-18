@@ -15,12 +15,10 @@
 package fr.neatmonster.nocheatplus.utilities.math;
 
 /**
- * Math utilities from NMS 
+ * Math utilities from NMS/client
  */
 public class VanillaMath {
    
-    private static final int SIN_BITS = 12;
-
     private static final int SIN_MASK = 4095;
 
     private static final int SIN_COUNT = 4096;
@@ -41,12 +39,24 @@ public class VanillaMath {
 
     public static final float deg2Rad = 0.017453292F;
 
-    private static final float[] SIN_TABLE_FAST = new float[4096];
+    private static final float[] SIN_FAST = new float[4096]; // Uh, oh... Optifine might be a problem here.
 
    /**
     * A table of sin values computed from 0 (inclusive) to 2*pi (exclusive), with steps of 2*PI / 65536.
     */
-    private static float[] SIN_TABLE = new float[65536];
+    private static float[] SIN = new float[65536];
 
-   // TODO: Sin table...
+    static {
+        for (int i = 0; i < SIN.length; ++i) {
+            SIN[i] = (float) Math.sin((double) i * 3.141592653589793D * 2.0D / 65536.0D);
+        }
+    }
+
+    public static float sin(float var0) {
+      return SIN[(int)(var0 * 10430.378F) & '\uffff'];
+    }
+
+    public static float cos(float var0) {
+      return SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
+    }
 }

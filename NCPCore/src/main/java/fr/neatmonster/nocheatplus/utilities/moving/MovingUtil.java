@@ -15,6 +15,7 @@
 package fr.neatmonster.nocheatplus.utilities.moving;
 
 import java.util.UUID;
+import java.util.Collection;
 
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -51,6 +52,9 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.math.VanillaMath;
+import fr.neatmonster.nocheatplus.permissions.Permissions;
+
 
 /**
  * Static utility methods.
@@ -123,6 +127,136 @@ public class MovingUtil {
                 // Riptiding is handled by Cf.
                 && !Bridge1_13.isRiptiding(player)
             ;
+    }
+
+
+    /**
+     * From HoneyBlock.java (client 1.18.2)
+     * @param from
+     * @param mcAccess
+     * @param thisMove
+     * @return if the player is sliding on the honey block.
+     */
+    public boolean isSlidingDown(final PlayerLocation from, final MCAccess mcAccess, final PlayerMoveData thisMove, final Player player) {
+        if (thisMove.touchedGround) {
+           return false;
+        } 
+        if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
+           return false;
+        } 
+        if (thisMove.yDistance >= -0.08D) {
+           return false;
+        } 
+        double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
+        double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
+        double var7 = 0.4375D + (mcAccess.getWidth(player) / 2.0F);
+        return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
+    }
+
+
+    /**
+     * Set slide-movement speed (only horizontal for now)
+     * @param thisMove
+     * @param xDistance
+     * @param zDistance
+     */
+    public void doSlideMovement(final PlayerMoveData thisMove, double xDistance, double zDistance) {
+        if (thisMove.yDistance < -0.13D) {
+            double mult = -0.05D / thisMove.yDistance;
+            xDistance *= mult;
+            zDistance *= mult;
+            // var1.setDeltaMovement(new Vec3(var2.x * var3, -0.05D, var2.z * var3));
+            //} else {
+            //.  var1.setDeltaMovement(new Vec3(var2.x, -0.05D, var2.z));
+            // }
+        }
+    }
+
+
+    /** 
+     * Calculate the new speed to apply to the player
+     * Note that:
+     *     - Sprint multiplier is contained within "movementFactor"
+     *     - Sneak multiplier is contained within "strafe" and "forward"
+     * This is likely because Sneaking was implemented long before Sprinting
+     * 
+     * @param strafe
+     * @param forward
+     * @param movementSpeedFactor Calculated movement speed attribute factor to update hDistance with.
+     * @param xOldDistance xDistance to update
+     * @param zOldDistance zDistance to update
+     * @param from
+     * @return 
+     */
+    public void updateHorizontalSpeed(double strafe, double forward, double movementSpeedFactor, double xOldDistance, double zOldDistance, final PlayerLocation from) {
+        // TODO: Add a method to know if the player is moving: RIGHT, LEFT, FORWARD, BACKWARDS (possibly with an enum class? i.e.: MovementDirection.LEFT, MovementDirection.RIGHT etc...) 
+        // TODO: Also need to ensure that players cannot evade yaw checks by sending looking-direction packets or smoothing methods...
+        double distance = strafe * strafe + forward * forward;
+        float yaw = (float) from.getYaw();
+        
+        if (distance >= 1.0E-4) {
+            distance = movementSpeedFactor / Math.max(1.0, Math.sqrt(distance));
+            strafe = strafe * distance;
+            forward = forward * distance;
+            float sinYaw = VanillaMath.sin(yaw * (float)Math.PI / (float)180.0); 
+            float cosYaw = VanillaMath.cos(yaw * (float)Math.PI / (float)180.0);
+            // Add the newly calculated speed
+            xOldDistance += (double)(strafe * cosYaw - forward * sinYaw);
+            zOldDistance += (double)(forward * cosYaw + strafe * sinYaw);
+        }
+    }
+
+
+    /**
+     * @See: KeyboardInptut.java (1.18.2)
+     * Get the movement direction factors:
+     * moveStrafing and moveForward represent relative movement.
+     * The sneaking multiplier as well as the blocking multiplier gets applied here.
+     * 
+     * @param player
+     * @param pData
+     * @param left Movement direction(s)...
+     * @param right
+     * @param forward
+     * @param backwards
+     * @param sneaking
+     * @param checkPermissions If permissions should be checked before doing applying sneaking or blocking speed (performance)
+     * @param data
+     * @param tags
+     * @param cc
+     * @return the factors
+     */
+    public double[] getMovementDirectionFactors(final Player player, final IPlayerData pData, final boolean left, final boolean right, 
+                                                final boolean forward, final boolean backwards, final boolean sneaking, final boolean checkPermissions, 
+                                                final MovingData data, final Collection<String> tags, final MovingConfig cc) {
+
+        double moveStrafe = right ? -1.0 : left ? 1.0 : 0.0;
+        double moveForward = forward ? 1.0 : backwards ? -1.0 : 0.0;
+        // From LivingEntity.java.aiStep() (xxa)
+        // https://gyazo.com/0f1f6a9b017c67180c3d028ddf47fb72
+        // https://gyazo.com/88d714062c8de6d9cf29ae34390b71bb
+        moveStrafe *= Magic.FRICTION_MEDIUM_AIR;
+        moveForward *= Magic.FRICTION_MEDIUM_AIR;
+        // From KeyboardInptut.java
+        if (sneaking && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+            tags.add("sneaking");
+            moveStrafe *= Magic.SNEAK_MULTIPLIER;
+            moveForward *= Magic.SNEAK_MULTIPLIER;
+            // Account for NCP base speed modifiers.
+            moveStrafe *= cc.survivalFlySneakingSpeed / 100D;
+            moveForward *= cc.survivalFlySneakingSpeed / 100D;
+        }
+
+        // From LocalPlayer.java.aiStep() https://gyazo.com/ddb223067a736d30ca5bb64bad42233e
+        if ((data.isUsingItem || player.isBlocking()) && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+            tags.add("usingitem");
+            moveStrafe *= Magic.USING_ITEM_MULTIPLIER;
+            moveForward *= Magic.USING_ITEM_MULTIPLIER;
+            // Account for NCP base speed modifiers.
+            moveStrafe *= cc.survivalFlyBlockingSpeed / 100D;
+            moveForward *= cc.survivalFlyBlockingSpeed / 100D;
+        } 
+        return new double[]{moveStrafe, moveForward};
     }
 
 

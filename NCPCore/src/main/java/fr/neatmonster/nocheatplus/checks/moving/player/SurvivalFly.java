@@ -78,7 +78,6 @@ public class SurvivalFly extends Check {
     private final boolean ServerIsAtLeast1_13 = ServerVersion.compareMinecraftVersion("1.13") >= 0;
     /** Flag to indicate whether the buffer should be used for this move (only work inside setAllowedhDist). */
     private boolean bufferUse;
-    // TODO: Friction by block to walk on (horizontal only, possibly to be in BlockProperties rather).
     /** To join some tags with moving check violations. */
     private final ArrayList<String> tags = new ArrayList<String>(15);
     private final ArrayList<String> justUsedWorkarounds = new ArrayList<String>();
@@ -89,7 +88,6 @@ public class SurvivalFly extends Check {
     // TODO: handle
     private final AuxMoving aux = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(AuxMoving.class);
     private IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
-    //private final Plugin plugin = Bukkit.getPluginManager().getPlugin("NoCheatPlus");
 
     /**
      * Some note for mcbe compatibility:

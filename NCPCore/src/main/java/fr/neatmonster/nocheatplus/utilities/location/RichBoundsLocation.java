@@ -1202,18 +1202,17 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Test if the player may back off from edge
-     * @param xMargin
-     *            the x margin
+     * Test if ground is present below the player within the given distance
+     * @param xDistance
+     *            the x margin, given by the current xDistance
      * @param yMargin
-     *            Extra margin added below and above.
-     * @param zMargin
-     *            the z margin
+     *            the y margin, given by the below amount.
+     * @param zDistance
+     *            the z margin, given by the current zDistance.
      * @return true, if is on ground
      */
-    public boolean isOnEdgeGround(final double xMargin, final double yMargin, final double zMargin) {
-        final boolean onGround = BlockProperties.isOnGround(blockCache, xMargin, yMargin, zMargin, xMargin, yMargin, zMargin, 0L);
-        return onGround;
+    public boolean isGroundCoveredByCurrentDistance(final double xDistance, final double yMargin, final double zDistance) {
+        return BlockProperties.isOnGround(blockCache, xDistance, yMargin, zDistance, maxX, maxY, maxZ, 0L); // Don't really care about the top of the box. We' are interested to see if there's ground beneath the player within the given hDistance.
     }
 
     /**

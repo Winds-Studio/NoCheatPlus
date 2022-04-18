@@ -496,7 +496,7 @@ public class BlockProperties {
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
-        /** Client, rather... */
+        /** Values from client code. */
         final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
         final double DEFAULT_FRICTION = 0.6D;
@@ -2125,19 +2125,17 @@ public class BlockProperties {
         boolean isValidTool = isValidTool(blockId, blockProps, toolProps, efficiency);
         boolean isRightTool = isRightToolMaterial(blockId, blockProps, toolProps, isValidTool);
         long duration;
-
+        
+        // Appropriate tool
         if (isValidTool) {
-            // appropriate tool
             duration = blockProps.breakingTimes[toolProps.materialBase.index];
 
             if (efficiency > 0) {
                 duration = (long) (duration / blockProps.efficiencyMod);
             }
         }
-        else {
-            // Inappropriate tool.
-            duration = blockProps.breakingTimes[0];
-        }
+        // Inappropriate tool.
+        else duration = blockProps.breakingTimes[0];        
 
         // Specialties:
         if (toolProps.toolType == ToolType.SHEARS) {
@@ -3864,25 +3862,31 @@ public class BlockProperties {
         }
         else if ((flags & BlockFlags.F_HEIGHT_8SIM_DEC) != 0) {
             bminY = 0;
-            if ((flags & BlockFlags.F_LAVA) !=0) {
-            	if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_LAVA) !=0) {
+            if ((flags & BlockFlags.F_LAVA) != 0) {
+            	if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_LAVA) != 0) {
             		bmaxY = 1;
-            	} else {
+            	} 
+                else {
             		final int data = node.getData(access, x, y, z);
                 	if (data >= 8) {
                 		bmaxY = LIQUID_HEIGHT_LOWERED;
-                	} else bmaxY = (8 - data/9f);
+                	} 
+                    else bmaxY = (8 - data/9f);
             	}
-            } else if ((flags & BlockFlags.F_WATER) != 0) {
-            	if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_WATER) !=0) {
+            } 
+            else if ((flags & BlockFlags.F_WATER) != 0) {
+            	if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_WATER) != 0) {
             		bmaxY = 1;
-            	} else {
+            	} 
+                else {
             		final int data = node.getData(access, x, y, z);
                 	if ((data & 8) == 8) {
                 		bmaxY = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
-                	} else bmaxY = (8 - data/9f);
+                	} 
+                    else bmaxY = (8 - data/9f);
             	}
-            } else bmaxY = LIQUID_HEIGHT_LOWERED;
+            } 
+            else bmaxY = LIQUID_HEIGHT_LOWERED;
         }
         else if ((flags & BlockFlags.F_HEIGHT8_1) != 0) {
             bminY = 0.0;

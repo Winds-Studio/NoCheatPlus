@@ -34,6 +34,20 @@ public class Magic {
     // CraftBukkit/Minecraft constants.
     public static final double DEFAULT_WALKSPEED = 0.2;
     public static final double DEFAULT_FLYSPEED = 0.1;
+    public static final double HORIZONTAL_INERTIA = 0.91;
+    public static final double BUNNYHOP_ACCEL_BOOST = 0.2;
+    public static final int BUNNYHOP_MAX_DELAY = 10;
+    public static final double CLIMBABLE_MAX_HORIZONTAL_SPEED = 0.15000000596046448;
+    public static final double AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02;
+    public static final double HORIZONTAL_SWIMMING_INERTIA = 0.9;
+    public static final double WATER_HORIZONTAL_INERTIA = 0.8;
+    public static final double DOLPHIN_GRACE_INERTIA = 0.96;
+    public static final double STRIDER_OFF_GROUND_PENALTY_MULTIPLIER = 0.5;
+    public static final double SNEAK_MULTIPLIER = 0.3;
+    public static final double USING_ITEM_MULTIPLIER = 0.2;
+    public static final double SNEAK_STEP_DISTANCE = 0.05;
+    public static final double LAVA_HORIZONTAL_INERTIA = 0.5;
+
 
     // Gravity.
     public static final double GRAVITY_MAX = 0.0834;

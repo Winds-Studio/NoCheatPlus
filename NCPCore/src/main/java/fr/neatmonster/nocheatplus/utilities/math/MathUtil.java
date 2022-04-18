@@ -17,7 +17,7 @@ package fr.neatmonster.nocheatplus.utilities.math;
 /**
  * Auxiliary static methods for dealing with math operations. 
  */
-public class MathHelper {
+public class MathUtil {
    
    /**
     * Clamp double between a maximum and minimum value.
@@ -47,5 +47,23 @@ public class MathHelper {
     */
    public static int clampInt(int inputValue, int minParameter, int maxParameter) {
        return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
+   }
+
+   /**
+    * Test if the input value in range between a minimum and maximum threshold
+    * @param inputValue The value to clamp.
+    * @param minThreshold
+    * @param maxThreshold
+    * @param exclusive If thresholds should not be considered.
+    */
+    public static boolean isInRange(double inputValue, double maxThreshold, double minThreshold, boolean exclusive) {
+        if (exclusive) {
+           return inputValue > minThreshold && inputValue < maxThreshold;
+        }
+        return inputValue >= minThreshold && inputValue <= maxThreshold;
+   }
+
+   public static double distance(double xDistance, double zDistance) {
+        return Math.sqrt(xDistance * xDistance + zDistance * zDistance);
    }
 }
