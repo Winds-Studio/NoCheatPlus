@@ -261,11 +261,8 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         addModel(Material.BREWING_STAND, MODEL_BREWING_STAND);
 
         // 1/16 inset at full height.
-        for (Material mat : new Material[] {
-            Material.CACTUS,
-            Material.DRAGON_EGG}) {
-            addModel(mat, MODEL_INSET16_1_HEIGHT100);
-        }
+        addModel(Material.DRAGON_EGG, MODEL_INSET16_1_HEIGHT100);
+        addModel(Material.CACTUS, MODEL_HONEY_BLOCK);
 
         // 1/8 height.
         for (Material mat : new Material[] {

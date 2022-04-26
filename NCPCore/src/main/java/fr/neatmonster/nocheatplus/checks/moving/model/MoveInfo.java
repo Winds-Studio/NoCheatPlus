@@ -16,9 +16,11 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
+import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
@@ -62,6 +64,9 @@ public abstract class MoveInfo <REL extends RichEntityLocation, E extends Entity
      */
     public final void set(final E entity, final Location from, final Location to, final double yOnGround){
         final BlockCache cache = wrapCache.getBlockCache();
+        if (entity instanceof Player) {
+            cache.setBedrockCache(DataManager.getPlayerData((Player)entity).isBedrockPlayer());
+        } 
         cache.setAccess(from.getWorld());
         this.from.setBlockCache(cache);
         set(this.from, from, entity, yOnGround);

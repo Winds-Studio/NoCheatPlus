@@ -94,7 +94,7 @@ public class InspectCommand extends BaseCommand {
         // TODO: Later through ViaVersion it might be useful to also add the client version.
         builder.append(TAG + c1 + "Status information for player: " + c3 + player.getName());
         
-        builder.append("\n "+ c1 + "" + c2 + "•" + c1 + cI + (mData.bedrockPlayer ? " Is a Bedrock player" : " Is a Java player") + c1 + ".");
+        builder.append("\n "+ c1 + "" + c2 + "•" + c1 + cI + (pData.isBedrockPlayer() ? " Is a Bedrock player" : " Is a Java player") + c1 + ".");
 
         if (player.isOp()){
             builder.append("\n "+ c1 + "" + c2 + "•"  + c1 + cI + " Is OP" + c1 + ".");

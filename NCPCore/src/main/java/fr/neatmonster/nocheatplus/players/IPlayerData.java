@@ -304,6 +304,20 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      *            set to true to turn off notifications.
      */
     public void setNotifyOff(final boolean notifyOff);
+    
+    /**
+     * Check if player join via geysermc
+     * 
+     * @return
+     */
+    public boolean isBedrockPlayer();
+
+    /**
+     * Set the state player connect through geysermc
+     * 
+     * @param bedrockPlayer
+     */
+    public void setBedrockPlayer(final boolean bedrockPlayer);
 
     /**
      * Let the inventory be updated (run in TickTask).

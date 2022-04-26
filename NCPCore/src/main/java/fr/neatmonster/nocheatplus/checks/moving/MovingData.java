@@ -116,8 +116,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public long timeVehicletoss = 0;
     /** Used as a workaround for boats leaving ice while still having velocity from ice */
     public int boatIceVelocityTicks = 0;
-    /** If is Bedrock Player. This is set if CompatNoCheatPlus is present. */
-    public boolean bedrockPlayer = false;
     /** Temporary snow fix flag */
     // TODO: remove.
     public boolean snowFix = false;
@@ -500,7 +498,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         trace.reset();
         playerMoves.invalidate();
         vehicleMoves.invalidate();
-        bedrockPlayer = false;
     }
 
 

@@ -198,6 +198,8 @@ public abstract class BlockCache {
     /** The min block y. */
     protected int minBlockY = 0;
 
+    private boolean isBedrockCache = false;
+
     private final BlockCacheNode airNode = new BlockCacheNode(Material.AIR);
     // TODO: setBlockCacheConfig -> set static nodes (rather only by id).
 
@@ -296,6 +298,7 @@ public abstract class BlockCache {
      */
     public void cleanup() {
         nodeMap.clear();
+        isBedrockCache = false;
     }
 
     /**
@@ -496,4 +499,11 @@ public abstract class BlockCache {
         return minBlockY;
     }
 
+    public boolean isBedrockCache() {
+        return isBedrockCache;
+    }
+
+    public void setBedrockCache(boolean isBedrockCache) {
+        this.isBedrockCache = isBedrockCache;
+    }
 }

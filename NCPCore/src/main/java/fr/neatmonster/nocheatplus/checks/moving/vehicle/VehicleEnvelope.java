@@ -254,7 +254,7 @@ public class VehicleEnvelope extends Check {
 
         if ((thisMove.from.onGround && !thisMove.from.inWater) 
             || thisMove.to.onGround && !thisMove.to.inWater) {
-            return multiplier * 0.3;
+            return multiplier * 0.4;
         }
 
         if (thisMove.from.inWater || thisMove.to.inWater) {
@@ -636,9 +636,14 @@ public class VehicleEnvelope extends Check {
 
         if (data.sfJumpPhase > (checkDetails.canJump ? MagicVehicle.maxJumpPhaseAscend : 1)
             && thisMove.yDistance > Math.max(minDescend, -checkDetails.gravityTargetSpeed)) {
+            
+            boolean noViolation = ColliesHoneyBlock(from) 
+                    || (vehicle instanceof LivingEntity && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier((LivingEntity)vehicle)))
+                    || !vehicle.hasGravity();
+            // TODO: What is this? Vehicle slide on honey block?
+            if (ColliesHoneyBlock(from)) data.sfJumpPhase = 5;
 
-            if (collidesWithHoneyBlock(from)) data.sfJumpPhase = 5; 
-            else if (!(vehicle instanceof LivingEntity && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier((LivingEntity)vehicle)))) {
+            if (!noViolation) {
                 tags.add("slow_fall_vdist");
                 violation = true;
             }

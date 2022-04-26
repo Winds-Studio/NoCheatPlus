@@ -168,6 +168,8 @@ public class PlayerData implements IPlayerData {
     // TODO: a per entry typed variant (key - value relation)?
     private final InstanceMapLOW dataCache = new InstanceMapLOW(lock, 24);
 
+    /** If is Bedrock Player. This is set if CompatNoCheatPlus is present. */
+    private boolean bedrockPlayer = false;
     private boolean requestUpdateInventory = false;
     private boolean requestPlayerSetBack = false;
 
@@ -260,7 +262,6 @@ public class PlayerData implements IPlayerData {
                 || requestPlayerSetBack || requestUpdateInventory;
     }
 
-    @SuppressWarnings("deprecation")
     private void frequentTasks(final int tick, final long timeLast, final Player player) {
         if (player != null) { // Common criteria ...
             if (player.isOnline()) {
@@ -457,6 +458,7 @@ public class PlayerData implements IPlayerData {
         }
         // (Somewhat reversed order of invalidation.)
         invalidateOffline();
+        bedrockPlayer = false;
     }
 
     /**
@@ -837,6 +839,26 @@ public class PlayerData implements IPlayerData {
     @Override
     public void setNotifyOff(final boolean notifyOff) {
         setTag(TAG_NOTIFY_OFF, notifyOff);
+    }
+    
+    /**
+     * Set the state player connect through geysermc
+     * 
+     * @param bedrockPlayer
+     */
+    @Override
+    public void setBedrockPlayer(final boolean bedrockPlayer) {
+        this.bedrockPlayer = bedrockPlayer;
+    }
+    
+    /**
+     * Check if player join via geysermc
+     * 
+     * @return
+     */
+    @Override
+    public boolean isBedrockPlayer() {
+        return bedrockPlayer;
     }
 
     @Override
