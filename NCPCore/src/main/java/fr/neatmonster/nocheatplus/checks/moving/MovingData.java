@@ -28,9 +28,7 @@ import fr.neatmonster.nocheatplus.checks.access.ACheckData;
 import fr.neatmonster.nocheatplus.checks.moving.location.setback.DefaultSetBackStorage;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.TraceEntryPool;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
 import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
-import fr.neatmonster.nocheatplus.checks.moving.model.LocationData;
 import fr.neatmonster.nocheatplus.checks.moving.model.MoveConsistency;
 import fr.neatmonster.nocheatplus.checks.moving.model.MoveTrace;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
@@ -86,17 +84,11 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     /** Tick counter for how long a player has been in water 0= out of water, 10= fully in water. */
     public int liqtick = 0;
-    /** ID for players leaving a liquid in order to patch waterwalk exploits: 0= no checking, 1= enforce speed restriction until ground is touched or the player sinks back in water/lava. */
-    public int surfaceId = 0;
     /** Tick counter used to workaround certain transitions with repeated or high motion (e.g.: gliding->normal, riptiding->normal). */
     // TODO: Rename -> motionTransitionTick/(...)
     public int keepfrictiontick = 0;
     /** Countdown for ending a bunnyfly phase(= phase after bunnyhop). 10(max) represents a bunnyhop, 9-1 represent the tick at which this bunnfly phase currently is. */
     public int bunnyhopDelay;
-    /** bunnyHopDelay phase before applying a LostGround case (set in SurvivalFly.bunnyHop()) */ 
-    public int lastbunnyhopDelay = 0;
-    /** Ticks after landing on ground (InAir->Ground). Mainly used in SurvivalFly. */
-    public int momentumTick = 0;
     /** Count set back (re-) setting. */
     private int playerMoveCount = 0;
     /** setBackResetCount (incremented) at the time of (re-) setting the ordinary set back. */
@@ -129,36 +121,40 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Temporary snow fix flag */
     // TODO: remove.
     public boolean snowFix = false;
-    /** Whether or not this horizontal movement is leading downstream. */
-    public boolean isdownstream = false;
     /** Count how long a player has been inside a bubble stream */
     public int insideBubbleStreamCount = 0;
     /** Last used block change id (BlockChangeTracker). */
     public final BlockChangeReference blockChangeRef = new BlockChangeReference();
     
-    // *----------Friction (hor/ver)----------*
-    /** Rough friction factor estimate, 0.0 is the reset value (maximum with lift-off/burst speed is used). */
+    // *----------Speed/Friction factors (hor/ver)----------*
+    /** NMS horizontal friction factor */
     public double lastFrictionHorizontal = 0.0;
-    /** Rough friction factor estimate, 0.0 is the reset value (maximum with lift-off/burst speed is used). */
-    public double lastFrictionVertical = 0.0;
+    /** NMS horizontal speed factor for adhesive-like blocks (webs, berries, powder snow) */
+    public double lastStuckInBlockHorizontal = 0.0;  
+    /** NMS horizontal speed by block (honey and soulsand) */
+    public double lastBlockSpeedHorizontal = 0.0;
     /** Used during processing, no resetting necessary.*/
     public double nextFrictionHorizontal = 0.0;
+    /** Used during processing, no resetting necessary.*/
+    public double nextStuckInBlockHorizontal = 0.0; 
+    /** Used during processing, no resetting necessary.*/
+    public double nextBlockSpeedHorizontal = 0.0;
+    /** Rough friction factor estimate, 0.0 is the reset value (maximum with lift-off/burst speed is used). */
+    public double lastFrictionVertical = 0.0;
     /** Used during processing, no resetting necessary.*/
     public double nextFrictionVertical = 0.0;
     
     // *----------No slowdown related data----------*
     /** Whether the player is using an item */
     public boolean isUsingItem = false;
-    /** TODO: Whether the player use the item on left hand */
+    /** Whether the player use the item on left hand */
     public boolean offHandUse = false;
-    /** TODO: Pre check conditions */
+    /** Pre check condition */
     public boolean mightUseItem = false;
     /** TODO: */
     public long releaseItemTime = 0;
     /** Detection flag */
     public boolean isHackingRI = false;
-    /** Keep track of hopping while using items */
-    public int noSlowHop = 0;
 
     // *----------Move / Vehicle move tracking----------*
     /** Keep track of currently processed (if) and past moves for player moving. Stored moves can be altered by modifying the int. */
@@ -167,7 +163,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         public PlayerMoveData call() throws Exception {
             return new PlayerMoveData();
         }
-    }, 16); //+ currentmove = 17. For keeping track of moves influenced by ice friction and such, perhaps it's too much... The 6 extra past moves are for bunnyhop on ice with jump boost.
+    }, 16); 
     /** Keep track of currently processed (if) and past moves for vehicle moving. Stored moves can be altered by modifying the int. */
     // TODO: There may be need to store such data with vehicles, or detect tandem abuse in a different way.
     public final MoveTrace <VehicleMoveData> vehicleMoves = new MoveTrace<VehicleMoveData>(new Callable<VehicleMoveData>() {
@@ -265,8 +261,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public boolean sfVLInAir = false;
     /** Vertical accounting: gravity enforcer (for a minimum amount) */
     public final ActionAccumulator vDistAcc = new ActionAccumulator(3, 3); // 3 buckets with max capacity of 3 events
-    /** Horizontal accounting: tracker of actual speed / allowed base speed */
-    public final ActionAccumulator hDistAcc = new ActionAccumulator(1, 100); // 1 bucket capable of holding a maximum of 100 events.
     /** Workarounds (AirWorkarounds,LiquidWorkarounds). */
     public final WorkaroundSet ws;
     /** Bed-flying flag */
@@ -331,10 +325,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * Tick counters to be adjusted after having checked horizontal speed in Sf.
      */
     public void setHorDataExPost() {
-        // Decrease bhop tick after checking
-        if (momentumTick > 0) {
-            momentumTick-- ;
-        }
 
         // Count down for the soul speed enchant motion
         if (keepfrictiontick > 0) {
@@ -379,7 +369,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         setBack = null;
         sfZeroVdistRepeat = 0;
         clearAccounting();
-        clearHAccounting();
         clearNoFallData();
         removeAllPlayerSpeedModifiers();
         lostSprintCount = 0;
@@ -389,10 +378,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
         vehicleConsistency = MoveConsistency.INCONSISTENT;
-        lastFrictionHorizontal = lastFrictionVertical = 0.0;
+        lastFrictionHorizontal = lastBlockSpeedHorizontal = lastStuckInBlockHorizontal = lastFrictionVertical = 0.0;
         verticalBounce = null;
         blockChangeRef.valid = false;
-        momentumTick = 0;
         liqtick = 0;
         insideBubbleStreamCount = 0;
     }
@@ -406,7 +394,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * 
      * @param setBack
      */
-    public void onSetBack(final PlayerLocation setBack) {
+    public void onSetBack(final PlayerLocation setBack, final Location loc, final MovingConfig cc, final Player player) {
         // Reset positions (a teleport should follow, though).
         this.morePacketsSetback = null;
         clearAccounting(); // Might be more safe to do this.
@@ -417,7 +405,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // Keep jump amplifier
         // Keep bunny-hop delay. Harsher on bunnyhop cheats.
         // keep jump phase.
-        // Keep hAcc ?
         lostSprintCount = 0;
         sfHoverTicks = -1; // 0 ?
         sfDirty = false;
@@ -427,13 +414,14 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         insideBubbleStreamCount = 0;
         removeAllPlayerSpeedModifiers();
         vehicleConsistency = MoveConsistency.INCONSISTENT; // Not entirely sure here.
-        lastFrictionHorizontal = lastFrictionVertical = 0.0;
+        lastFrictionHorizontal = lastBlockSpeedHorizontal = lastStuckInBlockHorizontal = lastFrictionVertical = 0.0;
         verticalBounce = null;
         timeSinceSetBack = 0;
         lastSetBackHash = setBack == null ? 0 : setBack.hashCode();
         // Reset to setBack.
         resetPlayerPositions(setBack);
-        adjustMediumProperties(setBack);
+        adjustLiftOffEnvelope(setBack);
+        adjustMediumProperties(loc, cc, player, playerMoves.getCurrentMove());
         // Only setSetBack if no set back location is there.
         if (setBack == null) {
             setSetBack(setBack);
@@ -449,7 +437,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         playerMoves.invalidate();
         vehicleMoves.invalidate();
         clearAccounting();
-        clearHAccounting();
         sfJumpPhase = 0;
         sfZeroVdistRepeat = 0;
         verticalBounce = null;
@@ -460,103 +447,47 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
 
     /**
-     * Set data.nextFriction according to media.
-     * @param thisMove
+     * Adjust medium properties and factos according to media.
+     * @param loc
+     * @param cc
+     * @param player
      */
-    public void setNextFriction(final PlayerMoveData thisMove) {
-
-        // NOTE: Other methods might still override nextFriction to 1.0 due to burst/lift-off envelope.
-        // TODO: Other media / medium transitions / friction by block.
-        final LocationData from = thisMove.from;
-        final LocationData to = thisMove.to;
-
-        if (from.inWeb || to.inWeb) {
-            nextFrictionHorizontal = nextFrictionVertical = 0.0;
-        }
-        else if (from.inPowderSnow || to.inPowderSnow) {
-            nextFrictionHorizontal = nextFrictionVertical = 0.0;
-        }
-        // No from#onClimbable check to fix vines fps casue by medium counts, probably wrong place! 
-        else if (to.onClimbable) {
-            // TODO: Not sure about horizontal (!).
-            nextFrictionHorizontal = nextFrictionVertical = 0.0;
-        }
-        else if (to.onHoneyBlock || to.onHoneyBlock) {
-            nextFrictionHorizontal = nextFrictionVertical = 0.0;
-        }
-        else if (from.inBerryBush || to.inBerryBush) {
-            nextFrictionHorizontal = 0.0;
-            nextFrictionVertical = Magic.FRICTION_MEDIUM_BERRY_BUSH;
-        }
-        else if (from.inLiquid) {
-            // TODO: Exact conditions ?!
-            if (from.inLava) {
-                nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_LAVA;
-            }
-            else {
-                nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_WATER;
-            }
-        }
-        else if (Magic.touchedIce(thisMove)) {
-            nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_AIR;
-        }
-        // TODO: consider setting minimum friction last (air), do add ground friction.
-        else if (!from.onGround && !to.onGround) {
-            nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_AIR;
-        }
-        else {
-            nextFrictionHorizontal = 0.0;
-            nextFrictionVertical = Magic.FRICTION_MEDIUM_AIR;
-        }
+    public void adjustMediumProperties(final Location loc, final MovingConfig cc, final Player player, final PlayerMoveData thisMove) {
+        nextFrictionHorizontal = BlockProperties.getBlockFrictionFactor(player, loc, cc.yOnGround);
+        nextStuckInBlockHorizontal = BlockProperties.getStuckInBlockSpeedFactor(player, loc, cc.yOnGround);
+        nextBlockSpeedHorizontal = BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround);
+        nextFrictionVertical = BlockProperties.getVerticalFrictionFactorByBlock(thisMove);
     }
 
 
     /**
-     * Adjust properties that relate to the medium, called on set back and
+     * Adjust lift off envelope for the player, called on set back and
      * similar. <br>
-     * Currently: liftOffEnvelope, nextFriction.
-     * 
      * @param loc
      */
-    public void adjustMediumProperties(final PlayerLocation loc) {
+    public void adjustLiftOffEnvelope(final PlayerLocation loc) {
         // Ensure block flags have been collected.
         loc.collectBlockFlags();
         // Simplified.
         if (loc.isInWeb()) {
             liftOffEnvelope = LiftOffEnvelope.NO_JUMP;
-            nextFrictionHorizontal = nextFrictionVertical = 0.0;
         }
         else if (loc.isInBerryBush()) {
             liftOffEnvelope = LiftOffEnvelope.BERRY_JUMP;
-            nextFrictionHorizontal = 0.0;
-            nextFrictionVertical = Magic.FRICTION_MEDIUM_BERRY_BUSH;
         }
         else if (loc.isInPowderSnow()) {
             liftOffEnvelope = LiftOffEnvelope.POWDER_SNOW;
-            nextFrictionHorizontal = nextFrictionVertical = 0.0;
         }
         else if (loc.isOnHoneyBlock()) {
             liftOffEnvelope = LiftOffEnvelope.HALF_JUMP;
-            nextFrictionHorizontal = nextFrictionVertical = 0.0;
         }
         else if (loc.isInLiquid()) {
-            // TODO: Distinguish strong limit.
             liftOffEnvelope = LiftOffEnvelope.LIMIT_LIQUID;
-            if (loc.isInLava()) {
-                nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_LAVA;
-            } 
-            else {
-                nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_WATER;
-            }
         }
         else if (loc.isOnGround()) {
             liftOffEnvelope = LiftOffEnvelope.NORMAL;
-            nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_AIR;
         }
-        else {
-            liftOffEnvelope = LiftOffEnvelope.UNKNOWN;
-            nextFrictionHorizontal = nextFrictionVertical = Magic.FRICTION_MEDIUM_AIR;
-        }
+        else liftOffEnvelope = LiftOffEnvelope.UNKNOWN;
         insideMediumCount = 0;
     }
 
@@ -598,7 +529,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         sfLowJump = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
-        lastFrictionHorizontal = lastFrictionVertical = 0.0;
+        lastFrictionHorizontal = lastBlockSpeedHorizontal = lastStuckInBlockHorizontal = lastFrictionVertical = 0.0;
         verticalBounce = null;
         blockChangeRef.valid = false;
         // TODO: other buffers ?
@@ -632,13 +563,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         vDistAcc.clear();
     }
 
-
-    /**
-     * Clear hacc
-     */
-    public void clearHAccounting() {
-        hDistAcc.clear();
-    }
 
 
     /**

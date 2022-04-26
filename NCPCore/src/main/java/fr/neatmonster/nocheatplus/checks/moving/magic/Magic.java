@@ -39,6 +39,7 @@ public class Magic {
     public static final int BUNNYHOP_MAX_DELAY = 10;
     public static final double CLIMBABLE_MAX_HORIZONTAL_SPEED = 0.15000000596046448;
     public static final double AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02;
+    public static final double LIQUID_BASE_ACCELERATION = 0.02;
     public static final double HORIZONTAL_SWIMMING_INERTIA = 0.9;
     public static final double WATER_HORIZONTAL_INERTIA = 0.8;
     public static final double DOLPHIN_GRACE_INERTIA = 0.96;
@@ -47,6 +48,7 @@ public class Magic {
     public static final double USING_ITEM_MULTIPLIER = 0.2;
     public static final double SNEAK_STEP_DISTANCE = 0.05;
     public static final double LAVA_HORIZONTAL_INERTIA = 0.5;
+    public static final double MIN_MOVEMENT_DISTANCE = 0.003D;
 
 
     // Gravity.
@@ -66,34 +68,11 @@ public class Magic {
 
     // Horizontal speeds/modifiers. 
     public static final double WALK_SPEED           = 0.221D;
-    public static final double modWeb               = 0.09D / WALK_SPEED; // Actual would be 0.03. Takes into account lift-off acceleration directly.
-    public static final double modPowderSnow        = 0.1252 / WALK_SPEED; // Adjust 
-    public static final double modBlock             = 0.1277D / WALK_SPEED; // (OK)
-    public static final double modSneak             = 0.13D / WALK_SPEED; // Test
-    public static final double modSlime             = 0.0999D / WALK_SPEED; // (OK)
-    public static final double modBush              = 0.109D / WALK_SPEED; // Actual would be 0.101(...)
-    public static final double modSoulSand          = 0.16D / WALK_SPEED; // (OK)
-    public static final double modClimbable         = 0.17D / WALK_SPEED; // (OK)
-    public static final double modLanding           = 0.25194D / WALK_SPEED; //(OK)
-    public static final double modHopTick           = 0.25415D / WALK_SPEED; // (OK)
-    public static final double modSprint            = 0.27D / WALK_SPEED; // (OK)
-    public static final double modSlope             = 0.3069D / WALK_SPEED; // (OK)
-    public static final double[] modSurface         = new double [] {0.23426D / WALK_SPEED, 0.29835D / WALK_SPEED};
-    public static final double modCollision         = 0.3006D / WALK_SPEED; // Test
-    public static final double modSoulSpeed         = 0.3094D / WALK_SPEED; // Test
-    public static final double modIce               = 0.5525D / WALK_SPEED; // (OK)
-    public static final double modDolphinsGrace     = 0.9945D / WALK_SPEED; // Adjust
-    // Observed around 2021/11: 0.115 for whatever reason now flags even with legacy clients. It wasn't a problem before but it is now. Very fun game indeed.
-    // (OK)
     public static final double[] modSwim            = new double[] {
             // Horizontal AND vertical with body fully in water
-            0.115D / WALK_SPEED,  
-            // Horizontal swimming only, 1.13 (Do not multiply with thisMove.walkSpeed)
-            0.044D / WALK_SPEED,  
+            0.115D / WALK_SPEED,   
             // Vertical swimming only, 1.13 
-            0.3D / WALK_SPEED, 
-            // Horizontal with body out of water (surface level)
-            0.146D / WALK_SPEED,}; 
+            0.3D / WALK_SPEED,}; 
     public static final double modDownStream        = 0.19D / (WALK_SPEED * modSwim[0]);
     public static final double[] modDepthStrider    = new double[] {
             1.0,
@@ -162,6 +141,16 @@ public class Magic {
     public static final double EXTREME_MOVE_DIST_HORIZONTAL = 22.0;
     /** Minimal xz-margin for chunk load. */
     public static final double CHUNK_LOAD_MARGIN_MIN = 3.0;
+    
+    /**
+     * 
+     * @param thisMove
+     *            Not strictly the latest move in MovingData.
+     * @return
+     */
+    public static boolean touchedIce(final PlayerMoveData thisMove) {
+        return thisMove.from.onIce || thisMove.from.onBlueIce || thisMove.to.onIce || thisMove.to.onBlueIce;
+    } 
 
     /**
      * The absolute per-tick base speed for swimming vertically.
@@ -309,47 +298,6 @@ public class Magic {
                 ;
     }
 
-    /**
-     * Test, using the past move tracking, if the player has been on ice.
-     * Uses all available past moves.
-     * 
-     * @param data
-     * @return
-     */
-    public static boolean wasOnIceRecently(final MovingData data) {
-        int limit = data.playerMoves.getNumberOfPastMoves();
-        for (int i = 0; i < limit; i++) {
-            final PlayerMoveData pastMove = data.playerMoves.getPastMove(i);
-            if (!pastMove.toIsValid) {
-                return false;
-            }
-            else if (touchedIce(pastMove)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Test, using the past move tracking, if the player has been on a bouncy block.
-     * Uses all available past moves.
-     * 
-     * @param data
-     * @return
-     */
-    public static boolean wasOnBouncyBlockRecently(final MovingData data) {
-        int limit = data.playerMoves.getNumberOfPastMoves();
-        for (int i = 0; i < limit; i++) {
-            final PlayerMoveData pastMove = data.playerMoves.getPastMove(i);
-            if (!pastMove.toIsValid) {
-                return false;
-            }
-            else if (touchedBouncyBlock(pastMove)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     public static boolean recentlyInWaterfall(final MovingData data, int limit) {
         limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
@@ -365,79 +313,7 @@ public class Magic {
         return false;
     }
 
-    /**
-     * Check if recent past moves have had head obstructed.
-     * 
-     * @param data
-     * @return
-     */
-    public static boolean headWasObstructedRecently(final MovingData data, int limit) {
-        limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
-        // Current move has head free
-        for (int i = 0; i < limit && !data.playerMoves.getCurrentMove().headObstructed; i++) {
-            final PlayerMoveData move = data.playerMoves.getPastMove(i);
-            if (!move.toIsValid) {
-                return false;
-            }
-            else if (move.headObstructed) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 
-     * @param thisMove
-     *            Not strictly the latest move in MovingData.
-     * @return
-     */
-    public static boolean touchedBouncyBlock(final PlayerMoveData thisMove) {
-        return thisMove.from.onBouncyBlock || thisMove.to.onBouncyBlock;
-    }
-    
-    /**
-     * 
-     * @param thisMove
-     *            Not strictly the latest move in MovingData.
-     * @return
-     */
-    public static boolean touchedIce(final PlayerMoveData thisMove) {
-        return thisMove.from.onIce || thisMove.from.onBlueIce || thisMove.to.onIce || thisMove.to.onBlueIce;
-    } 
-
-    /**
-     * 
-     * @param thisMove
-     *            Not strictly the latest move in MovingData.
-     * @return
-     */
-    public static boolean touchedBlueIce(final PlayerMoveData thisMove) {
-        return thisMove.from.onBlueIce || thisMove.from.onBlueIce;
-    } 
-
-    /**
-     * 
-     * @param thisMove
-     *            Not strictly the latest move in MovingData.
-     * @return
-     */
-    public static boolean touchedSlipperyBlock(final PlayerMoveData thisMove) {
-        return touchedIce(thisMove) || touchedBouncyBlock(thisMove);
-    } 
-    
-    /**
-     * 
-     * @param thisMove
-     *            Not strictly the latest move in MovingData.
-     * @return
-     */
-    public static boolean touchedSoulSand(final PlayerMoveData thisMove) {
-        return thisMove.from.inSoulSand || thisMove.to.inSoulSand;
-    }
-
-    /**
-     * Fully in-air move.
+    /* Fully in-air move.
      * 
      * @param thisMove
      *            Not strictly the latest move in MovingData.

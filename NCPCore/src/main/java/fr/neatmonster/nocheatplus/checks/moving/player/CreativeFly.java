@@ -386,12 +386,12 @@ public class CreativeFly extends Check {
         double limitH = model.getHorizontalModSpeed() / 100.0 * ModelFlying.HORIZONTAL_SPEED * fSpeed;
         
         // Do apply dolphinsgrace modifier
-        if (from.isInWater() || to.isInWater()) {
-            if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
-                limitH *= Magic.modDolphinsGrace;
-                tags.add("hdolphinsgrace");
-            }
-        }
+        // if (from.isInWater() || to.isInWater()) {
+        //     if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
+        //         limitH *= Magic.modDolphinsGrace;
+        //         tags.add("hdolphinsgrace");
+        //     }
+        // }
 
         // Moving on stairs with creativefly
         if (Bridge1_9.hasElytra() && from.isAboveStairs() && to.isAboveStairs()) {
@@ -496,7 +496,6 @@ public class CreativeFly extends Check {
                                  final ModelFlying model, final MovingData data, final MovingConfig cc, final boolean debug) {
 
         final boolean ripglide = Bridge1_13.isRiptiding(from.getPlayer()) && Bridge1_9.isGlidingWithElytra(from.getPlayer());
-        final long now = System.currentTimeMillis();
         // Set the vertical limit.
         double limitV = model.getVerticalAscendModSpeed() / 100.0 * ModelFlying.VERTICAL_ASCEND_SPEED; 
         double resultV = 0.0;
@@ -628,7 +627,6 @@ public class CreativeFly extends Check {
          * Fly out water with low envelope
          * Head obstructed ?
          */
-        final long now = System.currentTimeMillis();
         double resultV = 0.0;
         double resultH = 0.0;
         if (!cc.elytraStrict || !Bridge1_9.isGlidingWithElytra(player) || player.isFlying()) return new double[] {0.0, 0.0};
@@ -671,7 +669,7 @@ public class CreativeFly extends Check {
             if (radPitch < 0.0F) {
                 // For compatibility
                 if (to.getPitch() == -90f
-                    && isNear(yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
+                    && MathUtil.equalsOrCloseEnough(yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
                     allowedElytraHDistance += 0.01;
                     if (debug) debug(player, "Add the distance to allowed on look up (hDist/Allowed): " + hDistance +"/"+ allowedElytraHDistance);
                 }
@@ -757,13 +755,13 @@ public class CreativeFly extends Check {
                 }
 
                 if (yDistance > 0.0) {
-                    if (allowedElytraYDistance < yDistance && !isNear(allowedElytraYDistance, yDistance, 0.001)) {
+                    if (allowedElytraYDistance < yDistance && !MathUtil.equalsOrCloseEnough(allowedElytraYDistance, yDistance, 0.001)) {
                         tags.add("e_vasc");
                         resultV = yDistance;
                     }
                 } 
                 else if (yDistance < 0.0) {
-                    if (allowedElytraYDistance > yDistance && !isNear(allowedElytraYDistance, yDistance, Magic.GRAVITY_MAX)) {
+                    if (allowedElytraYDistance > yDistance && !MathUtil.equalsOrCloseEnough(allowedElytraYDistance, yDistance, Magic.GRAVITY_MAX)) {
                         tags.add("e_vdesc");
                         resultV = Math.abs(yDistance);
                     }
@@ -805,16 +803,17 @@ public class CreativeFly extends Check {
         } 
         // Gliding in water
         // TODO: Add vertical check
+        //TODO: Can you actually glide in water? Might as well force stop checking with CreativeFly
         else if(from.isInLiquid()) {
 
             if (Bridge1_13.isRiptiding(player)) return new double[] {0.0, 0.0};
             allowedElytraHDistance = thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
             final int level = BridgeEnchant.getDepthStriderLevel(player);
             
-            if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
-                allowedElytraHDistance *= Magic.modDolphinsGrace;
-                if (level > 0) allowedElytraHDistance *= 1.0 + 0.1 * level;
-            }
+            // if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
+            //     allowedElytraHDistance *= Magic.modDolphinsGrace;
+            //     if (level > 0) allowedElytraHDistance *= 1.0 + 0.1 * level;
+            // }
 
             if (level > 0) {
                 allowedElytraHDistance *= Magic.modDepthStrider[level];
@@ -855,7 +854,7 @@ public class CreativeFly extends Check {
         }
 
         thisMove.hAllowedDistance = allowedElytraHDistance;
-        thisMove.yAllowedDistance = isNear(allowedElytraYDistance, yDistance, 0.001) ? yDistance : allowedElytraYDistance;
+        thisMove.yAllowedDistance = MathUtil.equalsOrCloseEnough(allowedElytraYDistance, yDistance, 0.001) ? yDistance : allowedElytraYDistance;
         return new double[] {resultV, resultH};
     }
 
@@ -885,10 +884,6 @@ public class CreativeFly extends Check {
         return baseV;
     }
     
-    private static boolean isNear(double a, double b, double c) {
-        if (c < 0.0) return false;
-        return Math.abs(a-b) <= c;
-    }
     
     /**
      * 
@@ -1198,7 +1193,7 @@ public class CreativeFly extends Check {
         if (radPitch < 0.0F) {
             // For compatibility
             if (thisMove.to.getPitch() == -90f
-                && isNear(thisMove.yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
+                && MathUtil.equalsOrCloseEnough(thisMove.yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
                 allowedElytraHDistance += 0.01;
             }
             else if (xzlength > 0.0) {

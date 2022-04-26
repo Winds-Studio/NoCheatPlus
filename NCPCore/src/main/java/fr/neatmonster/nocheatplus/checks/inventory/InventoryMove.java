@@ -85,7 +85,7 @@ public class InventoryMove extends Check {
         final double minHDistance = thisMove.hAllowedDistanceBase / Math.max(1.1, cc.invMoveHdistDivisor); // Just in case admins input a too low value.
         final boolean creative = player.getGameMode() == GameMode.CREATIVE && ((type == SlotType.QUICKBAR) || cc.invMoveDisableCreative);
         final boolean isMerchant = (player.getOpenInventory().getTopInventory().getType() == InventoryType.MERCHANT); 
-        final boolean movingOnSurface = (thisMove.from.inLiquid && !thisMove.to.inLiquid || mData.surfaceId == 1) && mData.liftOffEnvelope.name().startsWith("LIMIT");
+        final boolean movingOnSurface = (thisMove.from.inLiquid && !thisMove.to.inLiquid) && mData.liftOffEnvelope.name().startsWith("LIMIT");
 
         // Debug first.
         if (pData.isDebugActive(CheckType.INVENTORY_INVENTORYMOVE)) {

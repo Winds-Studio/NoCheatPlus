@@ -15,7 +15,7 @@
 package fr.neatmonster.nocheatplus.utilities.math;
 
 /**
- * Auxiliary static methods for dealing with math operations. 
+ * Auxiliary static methods for dealing with math. 
  */
 public class MathUtil {
    
@@ -24,9 +24,10 @@ public class MathUtil {
     * @param inputValue The value to clamp.
     * @param minParameter
     * @param maxParameter
+    * @return the clamped value
     */
    public static double clampDouble(double inputValue, double minParameter, double maxParameter) {
-       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
+      return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 
    /**
@@ -34,9 +35,10 @@ public class MathUtil {
     * @param inputValue The value to clamp.
     * @param minParameter
     * @param maxParameter
+    * @return the clamped value
     */
    public static float clampFloat(float inputValue, float minParameter, float maxParameter) {
-       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
+      return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 
    /**
@@ -44,26 +46,46 @@ public class MathUtil {
     * @param inputValue The value to clamp.
     * @param minParameter
     * @param maxParameter
+    * @return the clamped value
     */
    public static int clampInt(int inputValue, int minParameter, int maxParameter) {
-       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
+      return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 
    /**
-    * Test if the input value in range between a minimum and maximum threshold
-    * @param inputValue The value to clamp.
+    * Test if the input value is in range between a minimum and maximum threshold
+    * @param inputValue The value
     * @param minThreshold
     * @param maxThreshold
     * @param exclusive If thresholds should not be considered.
+    * @return True if the value is between the thresholds, false otherwise
     */
-    public static boolean isInRange(double inputValue, double maxThreshold, double minThreshold, boolean exclusive) {
-        if (exclusive) {
-           return inputValue > minThreshold && inputValue < maxThreshold;
-        }
-        return inputValue >= minThreshold && inputValue <= maxThreshold;
+   public static boolean isInRange(double inputValue, double maxThreshold, double minThreshold, boolean exclusive) {
+      if (exclusive) {
+         return inputValue > minThreshold && inputValue < maxThreshold;
+      }
+      return inputValue >= minThreshold && inputValue <= maxThreshold;
    }
-
-   public static double distance(double xDistance, double zDistance) {
-        return Math.sqrt(xDistance * xDistance + zDistance * zDistance);
+    
+    /**
+     * Test if the difference equals or is smaller than the comparison value (absolute(!))
+     * @param a The minuend
+     * @param b The subtrahend
+     * @param c Absolute value to compare the difference with
+     * @return True if the difference is smaller or equals C, false otherwise
+     */
+   public static boolean equalsOrCloseEnough(double a, double b, double c) {
+      if (c < 0.0) return false;
+      return Math.abs(a-b) <= c;
+   }
+   
+    /**
+     * Convenience method to calculate horizontal distance
+     * @param xDistance
+     * @param zDistance
+     * @return the distance
+     */
+   public static double dist(double xDistance, double zDistance) {
+      return Math.sqrt(xDistance * xDistance + zDistance * zDistance);
    }
 }

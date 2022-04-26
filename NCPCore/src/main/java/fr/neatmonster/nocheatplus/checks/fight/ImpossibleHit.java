@@ -58,7 +58,6 @@ public class ImpossibleHit extends Check {
 
         boolean cancel = false;
         boolean violation = false;
-        final long currentEventTime = System.currentTimeMillis();
         List<String> tags = new LinkedList<String>();
         final MovingData mData = pData.getGenericInstance(MovingData.class);
         final BlockInteractData biData = pData.getGenericInstance(BlockInteractData.class);

@@ -114,7 +114,8 @@ public class AuxMoving implements IRegisterAsGenericInstance {
         final PlayerMoveInfo moveInfo = usePlayerMoveInfo();
         moveInfo.set(player, loc, null, cc.yOnGround);
         data.resetPlayerPositions(moveInfo.from);
-        data.adjustMediumProperties(moveInfo.from);
+        data.adjustLiftOffEnvelope(moveInfo.from);
+        data.adjustMediumProperties(loc, cc, player, data.playerMoves.getCurrentMove());
         returnPlayerMoveInfo(moveInfo);
     }
 

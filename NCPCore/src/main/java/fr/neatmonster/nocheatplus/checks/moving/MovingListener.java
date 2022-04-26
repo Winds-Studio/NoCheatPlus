@@ -90,7 +90,6 @@ import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.BlockChangeEntry;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
-import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -179,8 +178,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     private final Counters counters = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class);
 
     private final int idMoveEvent = counters.registerKey("event.player.move");
-
-    private final boolean is1_14 = ServerVersion.compareMinecraftVersion("1.14") >= 0;
 
     @SuppressWarnings("unchecked")
     public MovingListener() {
@@ -484,7 +481,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // On the server-side, this translates in a duplicate move which we need to ignore (i.e.: players can have 0 distance in air, MorePackets will trigger due to the extra packet if the button is pressed for long enough etc...)
             // You would think that this would AT LEAST fix the issue, but it doesn't. However it surely does complicate things on our side.
             // Thanks Mojang as always.
-            // TODO: Micro moves can be detected as duplicate !
             // NOTE: on ground status does not seem to change
         }
         else {
@@ -628,8 +624,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
         Location newTo = null;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        final double xDistance = to.getX() - from.getX();
-        final double zDistance = to.getZ() - from.getZ();
         final String playerName = player.getName(); // TODO: Could switch to UUID here (needs more changes).
         final long time = System.currentTimeMillis();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
@@ -2087,10 +2081,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         moveInfo.set(player, teleported, null, cc.yOnGround);
         if (cc.loadChunksOnTeleport) {
-            MovingUtil.ensureChunksLoaded(player, teleported, 
-                    "teleport", data, cc, pData);
+            MovingUtil.ensureChunksLoaded(player, teleported, "teleport", data, cc, pData);
         }
-        data.onSetBack(moveInfo.from);
+        data.onSetBack(moveInfo.from, teleported, cc, player);
         aux.returnPlayerMoveInfo(moveInfo);
         // Reset stuff.
         Combined.resetYawRate(player, teleported.getYaw(), System.currentTimeMillis(), true, pData); // TODO: Not sure.

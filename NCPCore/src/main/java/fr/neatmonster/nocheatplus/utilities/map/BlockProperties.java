@@ -42,6 +42,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
+import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -483,6 +485,38 @@ public class BlockProperties {
         public String toString() {
             return "BlockBreakKey(blockType=" + blockType + "toolType=" + toolType + "materialBase=" + materialBase + " efficiency=" + efficiency + ")";
         }
+    }
+
+    /**
+     * NMS friction library for vertical motion
+     * @param player
+     * @param location
+     * @param yOnGround
+     */
+    public static final double getVerticalFrictionFactorByBlock(final PlayerMoveData thisMove) {
+      
+        double friction = 0.0;
+        if (thisMove.from.inBerryBush || thisMove.to.inBerryBush) {
+            friction = 0.75D;
+        }
+        else if (thisMove.from.inPowderSnow || thisMove.to.inPowderSnow) {
+            friction = 1.5D;
+        }
+        else if (thisMove.from.inLiquid) {
+            // TODO: Exact conditions ?!
+            if (thisMove.from.inLava) {
+                friction = Magic.FRICTION_MEDIUM_LAVA;
+            }
+            else friction = Magic.FRICTION_MEDIUM_WATER;
+        }
+        else if (thisMove.to.onClimbable) {
+            friction = 0.0;
+        }
+        else if (thisMove.from.inWeb || thisMove.to.inWeb) {
+            friction = 0.0;
+        }
+        else friction = Magic.FRICTION_MEDIUM_AIR;
+        return friction;
     }
 
     /**

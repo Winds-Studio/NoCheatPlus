@@ -41,6 +41,7 @@ public class AirWorkarounds {
     // OBSERVED: Review all "landing-on-ground-allows-a-shoter-move" workarounds. They can be exploited for 1-block step cheats.
     // TODO: Review stairs workarounds due to the new shape rework
     // TODO: Review venvHacks,at least cobwebs. (Still needed?)
+    // TODO: Aim to remove all oddLiquid cases, replacing them with actual MC equations/formulas.
     /**
      * REMOVED AND TESTED: 
      *  
@@ -114,7 +115,7 @@ public class AirWorkarounds {
                 // NOTE: Implicitly removed condition: hdist < 0.125
                 || yDistance == 0.0 && data.sfZeroVdistRepeat == 1 
                 && (data.isVelocityJumpPhase() || data.hasSetBack() && to.getY() - data.getSetBackY() < 1.35 && to.getY() - data.getSetBackY() > 0.0)
-                && Magic.wasOnBouncyBlockRecently(data)
+                && BlockProperties.isSlime(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() - 1.35), from.getBlockZ()))
                 && data.ws.use(WRPT.W_M_SF_SLIME_JP_2X0)
                 ;
     }
@@ -348,12 +349,12 @@ public class AirWorkarounds {
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_5)
                         // 1: Slope with slimes (also near ground without velocityJumpPhase, rather lowjump but not always).
                         || lastMove.yDistance < -Magic.GRAVITY_MAX && yDistChange < - Magic.GRAVITY_ODD / 2.0 && yDistChange > -Magic.GRAVITY_MIN
-                        && Magic.wasOnBouncyBlockRecently(data) 
+                        && BlockProperties.isSlime(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() - 1.0), from.getBlockZ()))
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_6)
                         // 1: Near ground (slime block).
                         || lastMove.yDistance == 0.0 && yDistance < -Magic.GRAVITY_ODD / 2.5 
                         && yDistance > -Magic.GRAVITY_MIN && to.isOnGround(Magic.GRAVITY_MIN) 
-                        && Magic.wasOnBouncyBlockRecently(data) 
+                        && BlockProperties.isSlime(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() - 0.9), from.getBlockZ())) 
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_7)
                         // 1: Start to fall after touching ground somehow (possibly too slowly).
                         || (lastMove.touchedGround || lastMove.to.resetCond) && lastMove.yDistance <= Magic.GRAVITY_MIN 
@@ -740,9 +741,7 @@ public class AirWorkarounds {
                                             double totalVDistViolation, final double yDistance, final boolean fromOnGround,
                                             final Collection<String> tags, final PlayerLocation to, final PlayerLocation from) {
         
-        final PlayerMoveData pastMove2 = data.playerMoves.getSecondPastMove();
-        final PlayerMoveData pastMove3 = data.playerMoves.getThirdPastMove();
-        final PlayerMoveData pastMove6 = data.playerMoves.getPastMove(5);
+      
         final double SetBackYDistance = to.getY() - data.getSetBackY();
 
         return 

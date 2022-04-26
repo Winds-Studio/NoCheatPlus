@@ -136,17 +136,22 @@ public class NoSlow extends BaseAdapter {
     }
 
     private static void onItemInteract(final PlayerInteractEvent e){
-        // TODO: Add trident (Check for rain and verify if the player is exposed to it at all, might not be worth doing it...)
-        if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         // Reset
         data.offHandUse = false;
-        if (!data.mightUseItem) return;
+        if (!data.mightUseItem) {
+            return;
+        }
         data.mightUseItem = false;
 
-        if (e.useItemInHand().equals(Event.Result.DENY)) return;
+        if (e.useItemInHand().equals(Event.Result.DENY)) {
+            return;
+        }
 
         if (p.getGameMode() == GameMode.CREATIVE) {
             data.isUsingItem = false;
@@ -156,7 +161,9 @@ public class NoSlow extends BaseAdapter {
         if (e.hasItem()) {
             final ItemStack item = e.getItem();
             final Material m = item.getType();
-            if (Bridge1_9.hasElytra() && p.hasCooldown(m)) return;
+            if (Bridge1_9.hasElytra() && p.hasCooldown(m)) {
+                return;
+            }
 
             if (InventoryUtil.isConsumable(item)) {
                 // pre1.9 splash potion
