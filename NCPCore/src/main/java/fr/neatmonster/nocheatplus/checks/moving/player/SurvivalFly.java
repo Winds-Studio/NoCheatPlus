@@ -134,6 +134,7 @@ public class SurvivalFly extends Check {
         final boolean HasHorizontalDistance;
         final boolean fromOnGround = thisMove.from.onGround;
         final boolean toOnGround = thisMove.to.onGround || useBlockChangeTracker && toOnGroundPastStates(from, to, thisMove, tick, data, cc);  // TODO: Work in the past ground stuff differently (thisMove, touchedGround?, from/to ...)
+        /** To a reset-condition location (ground, lost ground, block change tracker, or inside medium) */
         final boolean resetTo = toOnGround || to.isResetCond();
 
         if (debug) {
@@ -212,6 +213,7 @@ public class SurvivalFly extends Check {
         ////////////////////////////////////
         // TODO: This isn't correct, needs redesign.
         // TODO: Quick addition. Reconsider entry points etc.
+        /** From a reset-condition location (ground, lost ground, block change tracker, or inside medium) */
         final boolean resetFrom;
         if (fromOnGround || from.isResetCond()) {
             resetFrom = true;
@@ -228,10 +230,10 @@ public class SurvivalFly extends Check {
             }
             else resetFrom = false;
         }
-        // TODO: More refined conditions possible ?
-        // TODO: Consider if (!resetTo) ?
-        // Check lost-ground workarounds.
-        else resetFrom = LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);
+        // Check lost-ground workarounds if the player didn't touch ground at all.
+        else if (!resetTo) {
+            resetFrom = LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);
+        }
 
         if (thisMove.touchedGround) {
             // Lost ground workaround has just been applied, check resetting of the dirty flag.
@@ -411,7 +413,7 @@ public class SurvivalFly extends Check {
         final double result = (Math.max(hDistanceAboveLimit, 0D) + Math.max(vDistanceAboveLimit, 0D)) * 100D;
         if (result > 0D) {
 
-            final Location vLoc = handleViolation(now, Double.isInfinite(result) ? 30.0 : result, player, from, to, data, cc);
+            final Location vLoc = handleViolation(now, result, player, from, to, data, cc);
             if (inAir) {
                 data.sfVLInAir = true;
             }
@@ -815,9 +817,9 @@ public class SurvivalFly extends Check {
                                     final boolean sprinting, boolean checkPermissions, final int tick, final boolean useBlockChangeTracker) {
 
         /** Predicted speed (x) */
-        double xDistance = 0.0;
+        double xDistance = lastMove.to.getX() - lastMove.from.getX();
         /** Predicted speed (z) */ 
-        double zDistance = 0.0;
+        double zDistance = lastMove.to.getZ() - lastMove.from.getZ();
         /** Relative horizontal distance VL*/
         boolean hDistRelVL = false;
         double hAllowedDistance = 0.0;
@@ -2031,7 +2033,6 @@ public class SurvivalFly extends Check {
                                     final MovingData data, final MovingConfig cc){
 
         // Increment violation level.
-        if (Double.isInfinite(data.survivalFlyVL)) data.survivalFlyVL = 0;
         data.survivalFlyVL += result;
         final ViolationData vd = new ViolationData(this, player, data.survivalFlyVL, result, cc.survivalFlyActions);
         if (vd.needsParameters()) {
@@ -2066,7 +2067,6 @@ public class SurvivalFly extends Check {
      * @param data
      */
     public final void handleHoverViolation(final Player player, final PlayerLocation loc, final MovingConfig cc, final MovingData data) {
-        if (Double.isInfinite(data.survivalFlyVL)) data.survivalFlyVL = 0;
         data.survivalFlyVL += cc.sfHoverViolation;
 
         // TODO: Extra options for set back / kick, like vl?

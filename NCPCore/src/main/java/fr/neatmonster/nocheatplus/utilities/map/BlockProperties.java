@@ -3661,8 +3661,8 @@ public class BlockProperties {
                     if (bd instanceof Waterlogged && ((Waterlogged)bd).isWaterlogged()) {
                          // Clearly outside of bounds. (liquid)
                         if (minX > 1.0 + x || maxX < 0.0 + x
-                         || minY > LIQUID_HEIGHT_LOWERED + y || maxY < 0.0 + y
-                         || minZ > 1.0 + z || maxZ < 0.0 + z) {
+                            || minY > LIQUID_HEIGHT_LOWERED + y || maxY < 0.0 + y
+                            || minZ > 1.0 + z || maxZ < 0.0 + z) {
                             continue;
                         }
                         // Hitting the max-edges (if allowed).
