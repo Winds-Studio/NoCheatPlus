@@ -132,16 +132,16 @@ public class SurvivalFly extends Check {
         final boolean isSamePos = from.isSamePos(to);
         final double xDistance, yDistance, zDistance, hDistance;
         final boolean HasHorizontalDistance;
+        /** Regular and past fromOnGround */
         final boolean fromOnGround = thisMove.from.onGround || useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick);
-        // A more flexible method for isOnGround that includes ALL cases.
-        // ex.: isOnGround(boolean checkStandardOnGround, boolean checkLostGround, boolean checkBlockChangeTracker)
-        // Problem: How do we pass the useBlockChangeTracker boolean?
+        // TODO: A more flexible method for isOnGround that includes ALL cases. See todo in discord
+        /** Regular and past toOnGround */
         final boolean toOnGround = thisMove.to.onGround || useBlockChangeTracker && to.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick);  // TODO: Work in the past ground stuff differently (thisMove, touchedGround?, from/to ...)
-        /** To a reset-condition location (ground, lost ground, block change tracker, or inside medium) */
+        /** To a reset-condition location (basically everything that isn't in air) */
         final boolean resetTo = toOnGround || to.isResetCond();
         // TODO: This isn't correct, needs redesign.
         // TODO: Quick addition. Reconsider entry points etc.
-        /** From a reset-condition location (ground, lost ground, block change tracker, or inside medium) */
+        /** From a reset-condition location, lostground is accounted for here. */
         final boolean resetFrom = fromOnGround || from.isResetCond() 
                                 || isSamePos && lastMove.toIsValid && LostGround.lostGroundStill(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, tags)
                                 || !resetTo && LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);       
@@ -781,12 +781,15 @@ public class SurvivalFly extends Check {
         double hDistanceAboveLimit = 0.0;
         /** Always set to true unless the player is in bunnyfly phase */
         boolean allowHop = true;
+        /** Always set to false, unless the double bunnyhop case applies */
+        boolean doubleHop = false;
         final double minJumpGain = data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier);
         final boolean headObstructed = thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed;
         final PlayerMoveData pastMove2 = data.playerMoves.getSecondPastMove();
         final PlayerMoveData pastMove3 = data.playerMoves.getThirdPastMove();
         final PlayerMoveData pastMove4 = data.playerMoves.getPastMove(3);
         final double jumpGainMargin = 0.005;
+        final boolean fromPastOnGround = useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick);
         boolean sneaking = player.isSneaking() && reallySneaking.contains(player.getName());
         /** Strafe/forward/backwards movement factors */
         double[] dirFactor = MovingUtil.getMovementDirectionFactors(player, pData, left, right, forward, backwards, sneaking, checkPermissions, data);
@@ -835,7 +838,15 @@ public class SurvivalFly extends Check {
                     tags.add("headbangbunny");
                     allowHop = true;
                 }
-               //TODO: Uhm... Double bunny I guess?
+                // Double horizontal speed increase detection (bunnyhop->bunnyhop).
+                // Introduced with commit: https://github.com/NoCheatPlus/NoCheatPlus/commit/0d52467fc2ea97351f684f0873ad13da250fd003
+                else if (data.bunnyhopDelay == 9 && !headObstructed
+                        && lastMove.yDistance >= -Magic.GRAVITY_MAX / 2.0 && lastMove.yDistance <= 0.0 
+                        && yDistance >= LiftOffEnvelope.NORMAL.getMaxJumpGain(0.0) - 0.02
+                        && lastMove.touchedGround) {
+                    tags.add("doublebunny");
+                    allowHop = doubleHop = true;
+                }
             }
         }
 
@@ -882,7 +893,9 @@ public class SurvivalFly extends Check {
                                 // 1: Ordinary/obvious lift-off.
                                 data.sfJumpPhase == 0 && thisMove.from.onGround 
                                 // 1: For lenience: the player somehow touched the ground with this (lostground) or last move.
-                                || data.sfJumpPhase <= 1 && ((thisMove.touchedGroundWorkaround || fromPastOnGround) && !lastMove.bunnyHop) 
+                                || data.sfJumpPhase <= 1 && ((thisMove.touchedGroundWorkaround || fromPastOnGround) && !lastMove.bunnyHop)
+                                // 1: Double bunny 
+                                || doubleHop
                             )) {
                             // Adds 0.2 towards the player's current facing
                             float facing = (float) (from.getYaw() * 0.017453292);
@@ -993,6 +1006,8 @@ public class SurvivalFly extends Check {
             data.isHackingRI = false;
             bufferUse = false;
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
+            // Feed the Improbable.
+            Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
             tags.add("noslowpacket");
         }
 
@@ -1035,6 +1050,8 @@ public class SurvivalFly extends Check {
                 && !Bridge1_13.isSwimming(player)) {
                 hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
                 bufferUse = false;
+                // Feed the Improbable.
+                Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
                 tags.add("liquidwalk");
             }
         }
@@ -1068,11 +1085,13 @@ public class SurvivalFly extends Check {
                     && thisMove.setBackYDistance < data.liftOffEnvelope.getMinJumpHeight(data.jumpAmplifier)) {
                     
                     // If the player has been on ground for 1 event and setback distance didn't decrease properly, flag. (Assume everything else gets caught by vDistRel and vDistSB)
-                    if (!lastMove.from.onGround && lastMove.to.onGround && thisMove.to.onGround) { // from.onGround is ignored on purpose.
+                    if (!lastMove.from.onGround && lastMove.to.onGround && toOnGround) { // from.onGround is ignored on purpose.
                         if (data.getOrUseVerticalVelocity(thisMove.yDistance) == null) {
                             // TODO: Redesign setback handling: allow queuing setbacks and use past setback locations, instead of invaliding hDistance.
                             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
                             bufferUse = false;
+                            // Feed the Improbable.
+                            Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
                             tags.add("lowvdistsb");
                         }
                     }
@@ -1121,12 +1140,13 @@ public class SurvivalFly extends Check {
         ///////////////////////////////////////////////////////////////////////////////////
         // Less headache: Always allow falling. 
         if (lastMove.toIsValid && Magic.fallingEnvelope(yDistance, lastMove.yDistance, data.lastFrictionVertical, 0.0)) {
-            vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_MIN;
+            vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_MIN; // Minecraft base gravity is actually 0.08, why did asofold decide to use minimum and where does the magic value come from?
             strictVdistRel = true;
         }
-        else if (resetFrom || thisMove.touchedGroundWorkaround) {
-
-            // TODO: More concise conditions? Some workaround may allow more.
+        // Moving from ground (ordinary, BCT or lost ground) or moving from a medium
+        else if (resetFrom || thisMove.touchedGroundWorkaround) { // Isn't touchedGroundWorkaround already included in resetFrom!?
+            
+            // Moving onto ground without considering lost-ground cases but considering block-change activity
             if (toOnGround) {
 
                 // Hack for boats (coarse: allows minecarts too): allow staying on the entity
@@ -1134,15 +1154,19 @@ public class SurvivalFly extends Check {
                     && to.isOnGroundDueToStandingOnAnEntity()) {
                     vAllowedDistance = yDistance;
                 }
+                // This move is fully on ground (from->to) due to a lost ground case or due to block-change activity
+                // ^ Ordinary ground-to-ground movements are handled by the groundstep wildcard; vDistAir doesn't run at all in that case.
                 else {
                     vAllowedDistance = Math.max(cc.sfStepHeight, maxJumpGain + jumpGainMargin);
                     thisMove.allowstep = true;
                     thisMove.allowjump = true;
                 }
             }
+            // The player didn't move onto ground (ordinary returned false, and no past toOnGround states can be found). Ordinary jump
             else {
 
                 // Code duplication with the absolute limit below.
+                // Allow jumping motion
                 if (yDistance < 0.0 || yDistance > cc.sfStepHeight || !tags.contains("lostground_couldstep")) {
                     vAllowedDistance = maxJumpGain + jumpGainMargin;
                     thisMove.allowjump = true;
@@ -1152,6 +1176,7 @@ public class SurvivalFly extends Check {
             }
             strictVdistRel = false;
         }
+        // Not in the falling envelope and not moving from ground; this is a full in-air move.
         else if (lastMove.toIsValid) {
 
             if (lastMove.yDistance >= -Math.max(Magic.GRAVITY_MAX / 2.0, 1.3 * Math.abs(yDistance)) 
@@ -1170,7 +1195,7 @@ public class SurvivalFly extends Check {
             }
             else {
                 // Friction.
-                vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_ODD; // Upper bound.
+                vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_ODD; // Upper bound.// Minecraft base gravity is actually 0.08, why did asofold decide to use minimum and where does the magic value come from?
                 strictVdistRel = true;
             }
         }
