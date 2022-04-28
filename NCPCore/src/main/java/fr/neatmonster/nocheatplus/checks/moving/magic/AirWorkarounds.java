@@ -67,6 +67,29 @@ public class AirWorkarounds {
      *  // 1: (Could be reset condition?)
      *  || lastMove.yDistance > 0.4 * Magic.GRAVITY_ODD && lastMove.yDistance < Magic.GRAVITY_MIN && yDistance == 0.0
      *  && data.ws.use(WRPT.W_M_SF_ODDLIQUID_10)
+     *  
+     *  // REASON: This is what the block change tracker is for, why isn't it working here?
+     *  // 0: 1.13+ specific: breaking a block below too fast.
+     *  // TODO: Confine more.
+     *  || Bridge1_13.hasIsSwimming() 
+     *   && (
+     *       data.sfJumpPhase == 7 && yDistance < -0.02 && yDistance > -0.2
+     *       || data.sfJumpPhase == 3 
+     *       && lastMove.yDistance < -0.139 && yDistance > -0.1 && yDistance < 0.005
+     *       || yDistance < -0.288 && yDistance > -0.32 
+     *       && lastMove.yDistance > -0.1 && lastMove.yDistance < 0.005
+     *       )
+     *   && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_4)
+     *  
+     *  // REASON: This is what the block change tracker is for, why isn't it working here?
+     *  // 1.13+ specific: breaking a block below too fast.
+                // TODO: Confine by ground conditions
+                || Bridge1_13.hasIsSwimming() // && lastMove.touchedGround
+                && (
+                    data.sfJumpPhase == 3 && lastMove.yDistance < -0.139 && yDistance > -0.1 && yDistance < 0.005
+                   || yDistance < -0.288 && yDistance > -0.32 && lastMove.yDistance > -0.1 && lastMove.yDistance < 0.005
+                ) 
+                && data.ws.use(WRPT.W_M_SF_FASTFALL_6)
      * 
      */
 
@@ -565,14 +588,6 @@ public class AirWorkarounds {
                 || yDistance <= 0.0 && yDistance > -Magic.GRAVITY_MAX - Magic.GRAVITY_SPAN 
                 && (thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed && lastMove.yDistance >= 0.0)
                 && data.ws.use(WRPT.W_M_SF_FASTFALL_5)
-                // 1.13+ specific: breaking a block below too fast.
-                // TODO: Confine by ground conditions
-                || Bridge1_13.hasIsSwimming() // && lastMove.touchedGround
-                && (
-                    data.sfJumpPhase == 3 && lastMove.yDistance < -0.139 && yDistance > -0.1 && yDistance < 0.005
-                   || yDistance < -0.288 && yDistance > -0.32 && lastMove.yDistance > -0.1 && lastMove.yDistance < 0.005
-                ) 
-                && data.ws.use(WRPT.W_M_SF_FASTFALL_6)
         ;
     }
 
@@ -707,17 +722,6 @@ public class AirWorkarounds {
                 // 0: On (noob) tower up, the second move has a higher distance than expected, because the first had been starting slightly above the top.
                 || yDistDiffEx < Magic.Y_ON_GROUND_DEFAULT && Magic.noobJumpsOffTower(yDistance, maxJumpGain, thisMove, lastMove, data)
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_3)
-                // 0: 1.13+ specific: breaking a block below too fast.
-                // TODO: Confine more.
-                || Bridge1_13.hasIsSwimming() 
-                && (
-                    data.sfJumpPhase == 7 && yDistance < -0.02 && yDistance > -0.2
-                    || data.sfJumpPhase == 3 
-                    && lastMove.yDistance < -0.139 && yDistance > -0.1 && yDistance < 0.005
-                    || yDistance < -0.288 && yDistance > -0.32 
-                    && lastMove.yDistance > -0.1 && lastMove.yDistance < 0.005
-                )
-                && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_4)
         ;
     }
     

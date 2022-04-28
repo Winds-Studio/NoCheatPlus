@@ -84,16 +84,6 @@ public class LostGround {
                 }
             }
         }
-        else if (yDistance < -0.7) {
-
-            // Clearly descending.
-            // TODO: Might want to remove this one.
-            if (lastMove.toIsValid && hDistance <= 0.5) {
-                if (lostGroundFastDescend(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, tags)) {
-                    return true;
-                }
-            }
-        }
 
         // Block change tracker (kept extra for now).
         if (blockChangeTracker != null && lostGroundPastState(player, from, to, data, cc, blockChangeTracker, tags)) {
@@ -168,6 +158,7 @@ public class LostGround {
                         && (to.getBlockFlags() & BlockFlags.F_HEIGHT150) != 0) {
                         
                         // Missing the trapdoor by 0.003
+                        //  No need to add another horizontal margin because the box already reaches the block, just not vertically.
                         if (to.isOnGround(0.003, 0.0, 0.0)) {
                             // Setbacksafe: matter of taste.
                             // With false, in case of a cheating attempt, the player will be setbacked on the ground instead of the trapdoor.
@@ -466,39 +457,6 @@ public class LostGround {
         }
 
         // Nothing found.
-        return false;
-    }
-
-    /**
-     * Check if a ground-touch has been lost due to event-sending-frequency or
-     * other reasons.<br>
-     * This is for fast descending only (yDistance < -0.5). Needs last move
-     * data.
-     * 
-     * @param player
-     * @param from
-     * @param to
-     * @param hDistance
-     * @param yDistance
-     * @param sprinting
-     * @param data
-     * @param cc
-     * @return
-     */
-    private static boolean lostGroundFastDescend(final Player player, final PlayerLocation from, final PlayerLocation to, final double hDistance, final double yDistance, final boolean sprinting, final PlayerMoveData lastMove, final MovingData data, final MovingConfig cc, final Collection<String> tags) {
-        // TODO: re-organize for faster exclusions (hDistance, yDistance).
-        // TODO: more strict conditions 
-        // Lost ground while falling onto/over edges of blocks.
-        if (yDistance > lastMove.yDistance && !to.isOnGround()) {
-            // TODO: yDistance <= 0 might be better.
-            // TODO: stairs ?
-            // TODO: Can it be safe to only check to with raised margin ? [in fact should be checked from higher yMin down]
-            // TODO: Interpolation method (from to)?
-            if (from.isOnGround(0.5, 0.2, 0) || to.isOnGround(0.5, Math.min(0.3, 0.01 + hDistance), Math.min(0.1, 0.01 + -yDistance))) {
-                // (Usually yDistance should be -0.078)
-                return applyLostGround(player, from, true, data.playerMoves.getCurrentMove(), data, "fastedge", tags);
-            }
-        }
         return false;
     }
 

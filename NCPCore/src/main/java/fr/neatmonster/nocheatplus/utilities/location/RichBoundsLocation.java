@@ -868,7 +868,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             // TODO: Use a box here too ?
             // TODO: check if player is really sneaking (refactor from survivalfly to static access in Combined ?)!
             if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_ICE) == 0) {
-                onIce = isOnIceLegacy() ? true : false;
+                onIce = false;
             } 
             else {
                 // MC applies ice properties only with at least half the box on the block
@@ -878,20 +878,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             }
         }
         return onIce;
-    }
-
-    /**
-     * Checks if the player is on ice (special case for 1.8)
-     * 
-     * @return true, if the player is on ice
-     */
-    public boolean isOnIceLegacy() {
-        if (Bridge1_9.hasElytra()) return false;
-        else {
-            final Material blockBelowChest = getTypeIdBelow();
-            final Material blockBelowPlayer = getTypeId(blockX, Location.locToBlock(minY - yOnGround), blockZ);
-            return BlockProperties.isIce(blockBelowChest) && BlockProperties.isChest(blockBelowPlayer) && isOnGround();
-       }
     }
 
     /**
@@ -934,7 +920,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check the location is aboveeg soul sand.
+     * Check the location is above soul sand.
      *
      * @return true, if is on soul sand
      */

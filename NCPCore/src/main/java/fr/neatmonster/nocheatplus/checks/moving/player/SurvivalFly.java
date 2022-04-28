@@ -132,10 +132,19 @@ public class SurvivalFly extends Check {
         final boolean isSamePos = from.isSamePos(to);
         final double xDistance, yDistance, zDistance, hDistance;
         final boolean HasHorizontalDistance;
-        final boolean fromOnGround = thisMove.from.onGround;
-        final boolean toOnGround = thisMove.to.onGround || useBlockChangeTracker && toOnGroundPastStates(from, to, thisMove, tick, data, cc);  // TODO: Work in the past ground stuff differently (thisMove, touchedGround?, from/to ...)
+        final boolean fromOnGround = thisMove.from.onGround || useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick);
+        // A more flexible method for isOnGround that includes ALL cases.
+        // ex.: isOnGround(boolean checkStandardOnGround, boolean checkLostGround, boolean checkBlockChangeTracker)
+        // Problem: How do we pass the useBlockChangeTracker boolean?
+        final boolean toOnGround = thisMove.to.onGround || useBlockChangeTracker && to.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick);  // TODO: Work in the past ground stuff differently (thisMove, touchedGround?, from/to ...)
         /** To a reset-condition location (ground, lost ground, block change tracker, or inside medium) */
         final boolean resetTo = toOnGround || to.isResetCond();
+        // TODO: This isn't correct, needs redesign.
+        // TODO: Quick addition. Reconsider entry points etc.
+        /** From a reset-condition location (ground, lost ground, block change tracker, or inside medium) */
+        final boolean resetFrom = fromOnGround || from.isResetCond() 
+                                || isSamePos && lastMove.toIsValid && LostGround.lostGroundStill(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, tags)
+                                || !resetTo && LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);       
 
         if (debug) {
             justUsedWorkarounds.clear();
@@ -205,54 +214,6 @@ public class SurvivalFly extends Check {
         final Location loc = player.getLocation(useLoc);
         data.adjustMediumProperties(loc, cc, player, thisMove);
         useLoc.setWorld(null);
-
-
-
-        ////////////////////////////////////
-        // Mixed checks (lost ground)    ///
-        ////////////////////////////////////
-        // TODO: This isn't correct, needs redesign.
-        // TODO: Quick addition. Reconsider entry points etc.
-        /** From a reset-condition location (ground, lost ground, block change tracker, or inside medium) */
-        final boolean resetFrom;
-        if (fromOnGround || from.isResetCond()) {
-            resetFrom = true;
-        }
-        else if (isSamePos) {
-
-            if (useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick)) {
-                resetFrom = true;
-                tags.add("pastground_from");
-            }
-            else if (lastMove.toIsValid) {
-                // Note that to is not on ground either.
-                resetFrom = LostGround.lostGroundStill(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, tags);
-            }
-            else resetFrom = false;
-        }
-        // Check lost-ground workarounds if the player didn't touch ground at all.
-        else if (!resetTo) {
-            resetFrom = LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);
-        }
-
-        if (thisMove.touchedGround) {
-            // Lost ground workaround has just been applied, check resetting of the dirty flag.
-            // TODO: Always/never reset with any ground touched?
-            if (!thisMove.from.onGround && !thisMove.to.onGround) {
-                data.resetVelocityJumpPhase(tags);
-            }
-            // Ground somehow appeared out of thin air (block place).
-            else if (multiMoveCount == 0 && thisMove.from.onGround && Magic.inAir(lastMove)
-                    && TrigUtil.isSamePosAndLook(thisMove.from, lastMove.to)) {
-                data.setSetBack(from);
-                // Schedule a no low jump flag because the setback update will then cause a low-jump with the subsequent descending phase
-                data.sfNoLowJump = true;
-                if (debug) {
-                    debug(player, "Ground appeared due to a block-place: schedule sfNoLowJump and adjust set-back location.");
-                }
-            }
-        }
-
         // Alter some data before checking anything
         setHorVerDataExAnte(thisMove, from, to, data, yDistance, pData, player, cc, xDistance, zDistance); 
 
@@ -269,12 +230,12 @@ public class SurvivalFly extends Check {
         if (HasHorizontalDistance) {
 
             // Set the allowed distance and determine the distance above limit
-            double hResult[] = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, sprinting, true, tick, useBlockChangeTracker);
-            hAllowedDistance = hResult[0];
-            hDistanceAboveLimit = hResult[1];
+            double[] estimationRes = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, sprinting, true, tick, useBlockChangeTracker, fromOnGround, toOnGround);
+            hAllowedDistance = estimationRes[0];
+            hDistanceAboveLimit = estimationRes[1];
             // The player went beyond the allowed limit, execute the after failure checks.
             if (hDistanceAboveLimit > 0.0) {
-                final double[] failureResult = hDistAfterFailure(player, from, to, hAllowedDistance, hDistanceAboveLimit, sprinting, thisMove, lastMove, data, cc, pData, tick, useBlockChangeTracker);
+                final double[] failureResult = hDistAfterFailure(player, from, to, hAllowedDistance, hDistanceAboveLimit, sprinting, thisMove, lastMove, data, cc, pData, tick, useBlockChangeTracker, fromOnGround, toOnGround);
                 hAllowedDistance = failureResult[0];
                 hDistanceAboveLimit = failureResult[1];
                 hFreedom = failureResult[2];
@@ -657,32 +618,7 @@ public class SurvivalFly extends Check {
         else data.wasInBed = false;
         return cancel;
     }
-    
 
-   /**
-    * Check for toOnGround past states
-    * 
-    * @param from
-    * @param to
-    * @param thisMove
-    * @param tick
-    * @param data
-    * @param cc
-    * @return
-    */
-    private boolean toOnGroundPastStates(final PlayerLocation from, final PlayerLocation to, 
-                                         final PlayerMoveData thisMove, int tick, 
-                                         final MovingData data, final MovingConfig cc) {
-        
-        // TODO: Heuristics / more / which? (too short move, typical step up moves, typical levels, ...)
-        if (to.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick)) {
-            tags.add("pastground_to");
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
 
 
     /**
@@ -698,6 +634,24 @@ public class SurvivalFly extends Check {
      */
     private void setHorVerDataExAnte(final PlayerMoveData thisMove, final PlayerLocation from, final PlayerLocation to, final MovingData data, final double yDistance,
                                      final IPlayerData pData, final Player player, final MovingConfig cc, final double xDistance, final double zDistance) {
+
+        if (thisMove.touchedGround) {
+            // Lost ground workaround has just been applied, check resetting of the dirty flag.
+            // TODO: Always/never reset with any ground touched?
+            if (!thisMove.from.onGround && !thisMove.to.onGround) {
+                data.resetVelocityJumpPhase(tags);
+            }
+            // Ground somehow appeared out of thin air (block place).
+            else if (multiMoveCount == 0 && thisMove.from.onGround && Magic.inAir(lastMove)
+                    && TrigUtil.isSamePosAndLook(thisMove.from, lastMove.to)) {
+                data.setSetBack(from);
+                // Schedule a no low jump flag because the setback update will then cause a low-jump with the subsequent descending phase
+                data.sfNoLowJump = true;
+                if (debug) {
+                    debug(player, "Ground appeared due to a block-place: schedule sfNoLowJump and adjust set-back location.");
+                }
+            }
+        }
         
         // Renew the "dirty"-flag (in-air phase affected by velocity).
         // (Reset is done after checks run.) 
@@ -814,7 +768,8 @@ public class SurvivalFly extends Check {
      */
     private final double[] hDistRel(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, final Player player, 
                                     final MovingData data, final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingConfig cc,
-                                    final boolean sprinting, boolean checkPermissions, final int tick, final boolean useBlockChangeTracker) {
+                                    final boolean sprinting, boolean checkPermissions, final int tick, final boolean useBlockChangeTracker,
+                                    final boolean fromOnGround, final boolean toOnGround) {
 
         /** Predicted speed (x) */
         double xDistance = lastMove.to.getX() - lastMove.from.getX();
@@ -836,9 +791,7 @@ public class SurvivalFly extends Check {
         /** Strafe/forward/backwards movement factors */
         double[] dirFactor = MovingUtil.getMovementDirectionFactors(player, pData, left, right, forward, backwards, sneaking, checkPermissions, data);
         /** Takes into account lost ground cases and past on ground states due to block activity */
-        final boolean onGround = thisMove.touchedGround || (useBlockChangeTracker && (toOnGroundPastStates(from, to, thisMove, tick, data, cc) || from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick)));
-        /** Past on ground location. Checked last, assuming regular isOnGround has returned false and no lost ground case applies. */
-        final boolean fromPastOnGround = useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick);
+        final boolean onGround = fromOnGround || toOnGround || thisMove.touchedGroundWorkaround;
         /** The movement_speed attribute of the player. Includes all effects except sprinting (!) */
         double playerSpeedAttribute = attributeAccess.getHandle().getMovementSpeed(player); // TODO: IMPLEMENT (!)
         /** The sprinting multiplier */
@@ -853,7 +806,7 @@ public class SurvivalFly extends Check {
             allowHop = false;
 
             // Do prolong bunnyfly if the player is yet to touch the ground
-            if (data.bunnyhopDelay == 1 && !thisMove.to.onGround && !to.isResetCond()) {
+            if (data.bunnyhopDelay == 1 && toOnGround && !to.isResetCond()) {
                 data.bunnyhopDelay++;
                 tags.add("bunnyfly(keep)");
             }
@@ -863,7 +816,7 @@ public class SurvivalFly extends Check {
             if (!allowHop && !data.sfLowJump) {
             	// 0: With slopes
                 // Introduced with commit: https://github.com/Updated-NoCheatPlus/NoCheatPlus/commit/2ee891a427a047010f7358a7b246dd740398fa12
-                if (data.bunnyhopDelay <= 6 && (thisMove.from.onGround || thisMove.touchedGroundWorkaround || fromPastOnGround)) {
+                if (data.bunnyhopDelay <= 6 && (fromOnGround || thisMove.touchedGroundWorkaround)) {
                     tags.add("ediblebunny");
                     allowHop = true;  
                 }
@@ -1518,7 +1471,8 @@ public class SurvivalFly extends Check {
                                        final PlayerLocation from, final PlayerLocation to, 
                                        double hAllowedDistance, double hDistanceAboveLimit, final boolean sprinting, 
                                        final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
-                                       final MovingData data, final MovingConfig cc, final IPlayerData pData, final int tick, boolean useBlockChangeTracker) {
+                                       final MovingData data, final MovingConfig cc, final IPlayerData pData, final int tick, 
+                                       boolean useBlockChangeTracker, final boolean fromOnGround, final boolean toOnGround) {
 
 
         // 1: Attempt to reset item on NoSlow Violation, if set so in the configuration.
@@ -1568,9 +1522,9 @@ public class SurvivalFly extends Check {
                 data.isUsingItem = false;
             }
             if (!data.isUsingItem) {
-                double[] hResult = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, sprinting, false, tick, useBlockChangeTracker);
-                hAllowedDistance = hResult[0];
-                hDistanceAboveLimit = hResult[1];
+                double[] estimationRes = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, sprinting, false, tick, useBlockChangeTracker, fromOnGround, toOnGround);
+                hAllowedDistance = estimationRes[0];
+                hDistanceAboveLimit = estimationRes[1];
             }
         }
 

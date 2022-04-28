@@ -379,7 +379,7 @@ public class MovingUtil {
      * @param forward
      * @param backwards
      * @param sneaking
-     * @param checkPermissions If permissions should be checked before doing applying sneaking or blocking speed (performance)
+     * @param checkPermissions If permissions should be checked before applying sneaking or blocking speed (performance)
      * @param data
      * @param tags
      * @param cc
