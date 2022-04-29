@@ -140,11 +140,7 @@ public class SurvivalFly extends Check {
         /** To a reset-condition location (basically everything that isn't in air) */
         final boolean resetTo = toOnGround || to.isResetCond();
         // TODO: This isn't correct, needs redesign.
-        // TODO: Quick addition. Reconsider entry points etc.
-        /** From a reset-condition location, lostground is accounted for here. */
-        final boolean resetFrom = fromOnGround || from.isResetCond() 
-                                || isSamePos && lastMove.toIsValid && LostGround.lostGroundStill(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, tags)
-                                || !resetTo && LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);       
+        // TODO: Quick addition. Reconsider entry points etc.      
 
         if (debug) {
             justUsedWorkarounds.clear();
@@ -211,11 +207,15 @@ public class SurvivalFly extends Check {
         }
         else sprinting = false;
         
+        /** From a reset-condition location, lostground is accounted for here. */
+        final boolean resetFrom = fromOnGround || from.isResetCond() 
+                                || isSamePos && lastMove.toIsValid && LostGround.lostGroundStill(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, tags)
+                                || !resetTo && LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags); 
         final Location loc = player.getLocation(useLoc);
         data.adjustMediumProperties(loc, cc, player, thisMove);
         useLoc.setWorld(null);
         // Alter some data before checking anything
-        setHorVerDataExAnte(thisMove, from, to, data, yDistance, pData, player, cc, xDistance, zDistance); 
+        setHorVerDataExAnte(thisMove, from, to, data, yDistance, pData, player, cc, xDistance, zDistance, lastMove, multiMoveCount, debug); 
 
 
 
@@ -633,7 +633,8 @@ public class SurvivalFly extends Check {
      * @param cc
      */
     private void setHorVerDataExAnte(final PlayerMoveData thisMove, final PlayerLocation from, final PlayerLocation to, final MovingData data, final double yDistance,
-                                     final IPlayerData pData, final Player player, final MovingConfig cc, final double xDistance, final double zDistance) {
+                                     final IPlayerData pData, final Player player, final MovingConfig cc, final double xDistance, final double zDistance,
+                                     final PlayerMoveData lastMove, int multiMoveCount, boolean debug) {
 
         if (thisMove.touchedGround) {
             // Lost ground workaround has just been applied, check resetting of the dirty flag.
@@ -842,7 +843,7 @@ public class SurvivalFly extends Check {
                 // Introduced with commit: https://github.com/NoCheatPlus/NoCheatPlus/commit/0d52467fc2ea97351f684f0873ad13da250fd003
                 else if (data.bunnyhopDelay == 9 && !headObstructed
                         && lastMove.yDistance >= -Magic.GRAVITY_MAX / 2.0 && lastMove.yDistance <= 0.0 
-                        && yDistance >= LiftOffEnvelope.NORMAL.getMaxJumpGain(0.0) - 0.02
+                        && thisMove.yDistance >= LiftOffEnvelope.NORMAL.getMaxJumpGain(0.0) - 0.02
                         && lastMove.touchedGround) {
                     tags.add("doublebunny");
                     allowHop = doubleHop = true;

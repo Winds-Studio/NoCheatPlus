@@ -985,7 +985,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             } 
             else {
                 // Only count in actually being in the honeyblock, players can jump normally on the very edge.
-                onHoneyBlock = isOnGround() && (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
+                onHoneyBlock = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
             }
         }
         return onHoneyBlock;

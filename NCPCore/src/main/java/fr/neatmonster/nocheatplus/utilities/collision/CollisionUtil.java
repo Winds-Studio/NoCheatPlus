@@ -23,7 +23,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.math.VanillaMath;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 /**
@@ -480,13 +482,55 @@ public class CollisionUtil {
         return pos < minPos ? Math.abs(pos - minPos) : (pos > maxPos ? Math.abs(pos - maxPos) : 0.0);
     }
 	
-	public static boolean isCollidingWithEntities(final Player p, final boolean onlylivingenitites) {
-        if (onlylivingenitites) {
-            List<Entity> entities = p.getNearbyEntities(0.15, 0.2, 0.15);
+    /**
+     * Test if the player is colliding with entities.
+     * @param player
+     * @param onlyLiving if dead entities should be left out
+     * @return true if the player is colliding with entities.
+     */
+	public static boolean isCollidingWithEntities(final Player p, final boolean onlyLiving) {
+        if (onlyLiving) {
+            List<Entity> entities = p.getNearbyEntities(0.15, 0.2, 0.15); // TODO: Custom margins? Actually, better if we use client-code margins.
             entities.removeIf(e -> !(e instanceof LivingEntity));
             return !entities.isEmpty();
         }
         return !p.getNearbyEntities(0.15, 0.15, 0.15).isEmpty();
     }
-
+ 
+    /**
+     * Apply pushing speed to the player only
+     * From Entity.java.push()
+     * @param player
+     * @param from
+     * @param entity
+     * @return 
+     */
+    public static double[] getEntityPushSpeed(final Player player, final PlayerLocation from) {
+        if (!player.isInsideVehicle() && !player.isSleeping() && isCollidingWithEntities(player, true)) {
+            // Likely a better way to do this...
+            for (Entity entity : player.getNearbyEntities(0.15, 0.2, 0.15)) {
+                final Location eLoc = entity.getLocation(useLoc);
+                double xDistToEntity = eLoc.getX() - from.getX();
+                double zDistToEntity = eLoc.getZ() - from.getZ();
+                double var6 = VanillaMath.absMax(xDistToEntity, zDistToEntity);
+                if (var6 >= 0.009999999776482582D) {
+                    var6 = Math.sqrt(var6);
+                    xDistToEntity /= var6;
+                    zDistToEntity /= var6;
+                    double var8 = Math.min(1.0, 1.0D / var6);
+                    xDistToEntity *= var8;
+                    zDistToEntity *= var8;
+                    xDistToEntity *= 0.05000000074505806D;
+                    zDistToEntity *= 0.05000000074505806D;
+                    // Cleanup
+                    useLoc.setWorld(null);
+                    return new double[]{-xDistToEntity, -zDistToEntity};
+                }
+                // Cleanup
+                useLoc.setWorld(null);
+                return new double[]{0.0, 0.0};
+            }
+        }
+        return new double[]{0.0, 0.0};
+    }
 }

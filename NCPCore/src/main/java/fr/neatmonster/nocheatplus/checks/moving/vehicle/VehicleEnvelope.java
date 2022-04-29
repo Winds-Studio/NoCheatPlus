@@ -637,11 +637,11 @@ public class VehicleEnvelope extends Check {
         if (data.sfJumpPhase > (checkDetails.canJump ? MagicVehicle.maxJumpPhaseAscend : 1)
             && thisMove.yDistance > Math.max(minDescend, -checkDetails.gravityTargetSpeed)) {
             
-            boolean noViolation = ColliesHoneyBlock(from) 
+            boolean noViolation = collidesWithHoneyBlock(from) 
                     || (vehicle instanceof LivingEntity && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier((LivingEntity)vehicle)))
                     || !vehicle.hasGravity();
             // TODO: What is this? Vehicle slide on honey block?
-            if (ColliesHoneyBlock(from)) data.sfJumpPhase = 5;
+            if (collidesWithHoneyBlock(from)) data.sfJumpPhase = 5;
 
             if (!noViolation) {
                 tags.add("slow_fall_vdist");

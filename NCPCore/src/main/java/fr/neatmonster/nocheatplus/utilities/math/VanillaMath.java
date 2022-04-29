@@ -18,10 +18,6 @@ package fr.neatmonster.nocheatplus.utilities.math;
  * Math utilities from NMS/client
  */
 public class VanillaMath {
-   
-    private static final int SIN_MASK = 4095;
-
-    private static final int SIN_COUNT = 4096;
 
     public static final float PI = (float)Math.PI;
 
@@ -58,5 +54,17 @@ public class VanillaMath {
 
     public static float cos(float var0) {
       return SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
+    }
+
+    public static double absMax(double var0, double var2) {
+        if (var0 < 0.0D) {
+           var0 = -var0;
+        }
+
+        if (var2 < 0.0D) {
+           var2 = -var2;
+        }
+
+        return var0 > var2 ? var0 : var2;
     }
 }

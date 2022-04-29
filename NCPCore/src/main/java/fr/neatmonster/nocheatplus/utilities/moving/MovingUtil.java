@@ -40,12 +40,14 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.debug.IDebugPlayer;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.location.RichBoundsLocation;
@@ -225,14 +227,21 @@ public class MovingUtil {
                                                     final PlayerLocation to, final boolean sneaking, double xDistance, double zDistance, final boolean onGround,
                                                     final Collection<String> tags, boolean checkPermissions, final double width) {
 
-        // TODO: Stairs speed (how the fuck do they work with the auto-jump being able to boost speed?)
-        // TODO: Collision with entities (Add a leniency or accurately calculate it?)
-            
+        // TODO: Stairs speed (how the fuck do they work with the auto-jump being able to boost speed?)  
+        // TODO: FLuid pushing (!)          
         /** A player is considered as sneaking if they are touching the ground */
         boolean sneakingGround = onGround && sneaking;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        
+        final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.19") >= 0;
 
+		// Apply pushing speed
+        if (CollisionUtil.isCollidingWithEntities(player, false) && ServerIsAtLeast1_9) {
+            tags.add("hpush");
+            double[] pushSpeed = CollisionUtil.getEntityPushSpeed(player, from);
+            xDistance += pushSpeed[0];
+            zDistance += pushSpeed[1];
+        }
+        
         // Blocks that the player can get into all work the same:
         // The game uses a "makeStuckInBlock" method where speed is first slowed down then reset every tick.
         // See PowderSnowBlock.java as reference or WebBlock.java (1.18.2)
@@ -242,7 +251,6 @@ public class MovingUtil {
             isInWeb = true;
         }
         
-        // Assume berry bushes to work like webs
         boolean isInBerryBush = false;
         if (from.isInBerryBush() || to.isInBerryBush()) {
             tags.add("hbush");
@@ -299,8 +307,8 @@ public class MovingUtil {
             }
         }
 
-
         // If sneaking, the game moves the player by steps to check if they reach an edge.
+        // See method "maybeBackOffFromEdge" in Player.java
         if (sneakingGround && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
             double step = Magic.SNEAK_STEP_DISTANCE; 
             
@@ -347,7 +355,8 @@ public class MovingUtil {
         // TODO: Collisions cannot be ignored since they can modify the player speed.
         // However such could be quite a tedious job to do as we'd need to replicate the exact
         // collision system...
-
+        
+        // From BlockSlime.java
         if (from.isOnSlimeBlock() || to.isOnSlimeBlock()) {
             if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking) {
                 double mult = 0.4D + Math.abs(thisMove.yDistance) * 0.2D;
@@ -358,6 +367,7 @@ public class MovingUtil {
         }
         
         // Soulspeed is included in playerSpeedAttribute (!)
+        // From Blocks.java
         if (from.isInSoulSand() || to.isInSoulSand()) {
             xDistance *= data.lastBlockSpeedHorizontal; 
             zDistance *= data.lastBlockSpeedHorizontal; 
@@ -393,6 +403,7 @@ public class MovingUtil {
         double moveForward = forward ? 1.0 : backwards ? -1.0 : 0.0;
         moveStrafe *= Magic.FRICTION_MEDIUM_AIR;
         moveForward *= Magic.FRICTION_MEDIUM_AIR;
+        // From KeyboardInput.java
         if (sneaking && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
             tags.add("sneaking");
             moveStrafe *= Magic.SNEAK_MULTIPLIER;
@@ -401,7 +412,8 @@ public class MovingUtil {
             moveStrafe *= cc.survivalFlySneakingSpeed / 100D;
             moveForward *= cc.survivalFlySneakingSpeed / 100D;
         }
-
+        
+        // From LocalPlayer.java.aiStep()
         if ((data.isUsingItem || player.isBlocking()) && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
             tags.add("usingitem");
             moveStrafe *= Magic.USING_ITEM_MULTIPLIER;
