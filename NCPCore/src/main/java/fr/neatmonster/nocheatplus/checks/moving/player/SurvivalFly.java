@@ -839,7 +839,7 @@ public class SurvivalFly extends Check {
                     tags.add("headbangbunny");
                     allowHop = true;
                 }
-                // Double horizontal speed increase detection (bunnyhop->bunnyhop).
+                // 0: Double horizontal speed increase detection (bunnyhop->bunnyhop).
                 // Introduced with commit: https://github.com/NoCheatPlus/NoCheatPlus/commit/0d52467fc2ea97351f684f0873ad13da250fd003
                 else if (data.bunnyhopDelay == 9 && !headObstructed
                         && lastMove.yDistance >= -Magic.GRAVITY_MAX / 2.0 && lastMove.yDistance <= 0.0 
@@ -863,16 +863,14 @@ public class SurvivalFly extends Check {
                 /** How much speed should be conserved on the next tick */
                 double inertia = onGround ? data.lastFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;       
                 /** Calculate acceleration after inertia is updated. */
-                // NOTE: MC 1.8 reports 0.16277136, 0.21600002D is from 1.18.2 from LivingEntity.getFrictionInfluencedSpeed() 
-                // Not sure which one we should use
                 // NOTE: MC 1.8 seems to be using *inertia* here (multiplied by 0.91), not block friction, unlike in 1.18
+                // from LivingEntity.getFrictionInfluencedSpeed() 
                 double acceleration = 0.21600002D / Math.pow(data.lastFrictionHorizontal, 3);
                 /** The MOVEMENT_SPEED attribute factor: base value 0.1 can be found in Abilities.java (walkingspeed); affected by effects and sprinting, which is included here. */
                 double movementSpeedFactor;
 
                 // Ground  
                 if (onGround) {
-                    tags.add("groundspeed");
                     movementSpeedFactor = playerSpeedAttribute * acceleration; 
                      
                     // Bunnyhop (aka: sprint-jump) detection.
@@ -911,20 +909,21 @@ public class SurvivalFly extends Check {
                 }
                 // Air 
                 else {
-                    tags.add("airspeed");
                     movementSpeedFactor = Magic.AIR_MOVEMENT_SPEED_ATTRIBUTE; 
                 }
                 
                 // Count in sprinting.
                 if (sprinting) {
                     movementSpeedFactor *= sprintingAttrMod;
+                    // Count in NCP base sprinting speed modifier
+                    movementSpeedFactor *= cc.survivalFlySprintingSpeed / 100D;
                 }
                 
                 // Calculate and apply the new speed
                 MovingUtil.updateHorizontalSpeed(dirFactor[0], dirFactor[1], movementSpeedFactor, xDistance, zDistance, from);
                 if (from.isOnClimbable() || to.isOnClimbable()) {
-                    xDistance = MathUtil.clampDouble(xDistance, -Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED, Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED);
-                    zDistance = MathUtil.clampDouble(zDistance, -Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED, Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED);
+                    xDistance = MathUtil.clamp(xDistance, -Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED, Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED);
+                    zDistance = MathUtil.clamp(zDistance, -Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED, Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED);
                 }
                 MovingUtil.applyModifiersToUpdatedSpeed(player, pData, from, data, to, sneaking, xDistance, zDistance, onGround, tags, checkPermissions, mcAccess.getHandle().getWidth(player)); // (Client code here moves the player)
                 // Apply friction to simulate drag
@@ -936,7 +935,6 @@ public class SurvivalFly extends Check {
             }
             // Handle lava movement
             else {
-                tags.add("lavaspeed");
                 // Calculate and apply the new speed
                 MovingUtil.updateHorizontalSpeed(dirFactor[0], dirFactor[1], Magic.LIQUID_BASE_ACCELERATION, xDistance, zDistance, from); 
                 MovingUtil.applyModifiersToUpdatedSpeed(player, pData, from, data, to, sneaking, xDistance, zDistance, onGround, tags, checkPermissions, mcAccess.getHandle().getWidth(player));
@@ -950,18 +948,20 @@ public class SurvivalFly extends Check {
         }
         // Handle water movement
         else {
-            tags.add("waterspeed");
             // Apparently the game uses isSprinting to tell if the player is swimming and simply reduces friction.
             double waterInertia = (Bridge1_13.isSwimming(player) || sprinting) ? Magic.HORIZONTAL_SWIMMING_INERTIA : Magic.WATER_HORIZONTAL_INERTIA;
             double acceleration = Magic.LIQUID_BASE_ACCELERATION;
             final double StriderLevel = BridgeEnchant.getDepthStriderLevel(player) * (!onGround ? Magic.STRIDER_OFF_GROUND_PENALTY_MULTIPLIER : 1.0); // NCP already caps Strider to 3
             
+            // Account for depth strider
             if (StriderLevel > 0.0) {
                 waterInertia += (0.54600006D - waterInertia) * StriderLevel / 3.0;
                 acceleration += (playerSpeedAttribute * 1.0 - acceleration) * StriderLevel / 3.0; 
             }
             
-            // Should note that this is the only reference about dolphin's grace in the code that I could find.
+            // Account for dolphin's grace
+            // (This overrides swimming friction)
+            // Should note that this is the only reference about dolphin's grace in the code that I could find. 
             if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
                 waterInertia = Magic.DOLPHIN_GRACE_INERTIA; 
             }
@@ -1183,7 +1183,8 @@ public class SurvivalFly extends Check {
             if (lastMove.yDistance >= -Math.max(Magic.GRAVITY_MAX / 2.0, 1.3 * Math.abs(yDistance)) 
                 && lastMove.yDistance <= 0.0 
                 && (lastMove.touchedGround || lastMove.to.extraPropertiesValid && lastMove.to.resetCond)) {
-
+                
+                // Moving from air and onto: ground/medium/past ground
                 if (resetTo) {
                     vAllowedDistance = cc.sfStepHeight;
                     thisMove.allowstep = true;

@@ -39,6 +39,7 @@ public class VanillaMath {
 
    /**
     * A table of sin values computed from 0 (inclusive) to 2*pi (exclusive), with steps of 2*PI / 65536.
+    * From Mth.java (1.18.2)
     */
     private static float[] SIN = new float[65536];
 
@@ -56,6 +57,14 @@ public class VanillaMath {
       return SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
     }
 
+    public static boolean equal(float var0, float var1) {
+       return Math.abs(var1 - var0) < 1.0E-5F;
+    }
+
+    public static boolean equal(double var0, double var2) {
+       return Math.abs(var2 - var0) < 9.999999747378752E-6D;
+    }
+ 
     public static double absMax(double var0, double var2) {
         if (var0 < 0.0D) {
            var0 = -var0;
@@ -64,7 +73,6 @@ public class VanillaMath {
         if (var2 < 0.0D) {
            var2 = -var2;
         }
-
         return var0 > var2 ? var0 : var2;
     }
 }

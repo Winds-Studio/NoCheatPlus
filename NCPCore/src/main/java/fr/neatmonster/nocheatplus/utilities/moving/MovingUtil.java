@@ -197,7 +197,12 @@ public class MovingUtil {
         float yaw = (float) from.getYaw();
         
         if (distance >= 1.0E-4) {
-            distance = movementSpeedFactor / Math.max(1.0, Math.sqrt(distance));
+            
+            distance = Math.sqrt(distance);
+            if (distance < 1.0) {
+                distance = 1.0;
+            }
+            distance = movementSpeedFactor / distance;
             strafe = strafe * distance;
             forward = forward * distance;
             float sinYaw = VanillaMath.sin(yaw * (float)Math.PI / (float)180.0); 
@@ -235,11 +240,31 @@ public class MovingUtil {
         final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.19") >= 0;
 
 		// Apply pushing speed
-        if (CollisionUtil.isCollidingWithEntities(player, false) && ServerIsAtLeast1_9) {
-            tags.add("hpush");
-            double[] pushSpeed = CollisionUtil.getEntityPushSpeed(player, from);
-            xDistance += pushSpeed[0];
-            zDistance += pushSpeed[1];
+        if (ServerIsAtLeast1_9 && !player.isInsideVehicle() && !player.isSleeping() 
+            && CollisionUtil.isCollidingWithEntities(player, true)) {
+
+            // Likely a better way to do this...
+            for (Entity entity : player.getNearbyEntities(0.15, 0.2, 0.15)) {
+                final Location eLoc = entity.getLocation(useLoc);
+                double xDistToEntity = eLoc.getX() - from.getX();
+                double zDistToEntity = eLoc.getZ() - from.getZ();
+                double absDist = VanillaMath.absMax(xDistToEntity, zDistToEntity);
+                if (absDist >= 0.009999999776482582D) {
+                    absDist = Math.sqrt(absDist);
+                    xDistToEntity /= absDist;
+                    zDistToEntity /= absDist;
+                    double var8 = Math.min(1.0, 1.0D / absDist);
+                    xDistToEntity *= var8;
+                    zDistToEntity *= var8;
+                    xDistToEntity *= 0.05000000074505806D;
+                    zDistToEntity *= 0.05000000074505806D;
+                    // Cleanup
+                    useLoc.setWorld(null);
+                    // Add the distance
+                    xDistance += xDistToEntity;
+                    zDistance += zDistToEntity;
+                }
+            }
         }
         
         // Blocks that the player can get into all work the same:
@@ -358,7 +383,7 @@ public class MovingUtil {
         
         // From BlockSlime.java
         if (from.isOnSlimeBlock() || to.isOnSlimeBlock()) {
-            if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking) {
+            if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking && onGround) {
                 double mult = 0.4D + Math.abs(thisMove.yDistance) * 0.2D;
                 xDistance *= mult;
                 zDistance *= mult;

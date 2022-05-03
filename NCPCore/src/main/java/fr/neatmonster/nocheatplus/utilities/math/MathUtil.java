@@ -26,7 +26,7 @@ public class MathUtil {
     * @param maxParameter
     * @return the clamped value
     */
-   public static double clampDouble(double inputValue, double minParameter, double maxParameter) {
+   public static double clamp(double inputValue, double minParameter, double maxParameter) {
       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 
@@ -37,7 +37,7 @@ public class MathUtil {
     * @param maxParameter
     * @return the clamped value
     */
-   public static float clampFloat(float inputValue, float minParameter, float maxParameter) {
+   public static float clamp(float inputValue, float minParameter, float maxParameter) {
       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 
@@ -48,23 +48,19 @@ public class MathUtil {
     * @param maxParameter
     * @return the clamped value
     */
-   public static int clampInt(int inputValue, int minParameter, int maxParameter) {
+   public static int clamp(int inputValue, int minParameter, int maxParameter) {
       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
    }
 
    /**
-    * Test if the input value is in range between a minimum and maximum threshold
+    * Test if the input value is in range between a minimum and maximum threshold (esclusive)
     * @param inputValue The value
     * @param minThreshold
     * @param maxThreshold
-    * @param exclusive If thresholds should not be considered.
     * @return True if the value is between the thresholds, false otherwise
     */
-   public static boolean isInRange(double inputValue, double maxThreshold, double minThreshold, boolean exclusive) {
-      if (exclusive) {
-         return inputValue > minThreshold && inputValue < maxThreshold;
-      }
-      return inputValue >= minThreshold && inputValue <= maxThreshold;
+   public static boolean inRange(double inputValue, double maxThreshold, double minThreshold) {
+      return inputValue > minThreshold && inputValue < maxThreshold;
    }
     
     /**
@@ -74,12 +70,12 @@ public class MathUtil {
      * @param c Absolute value to compare the difference with
      * @return True if the difference is smaller or equals C, false otherwise
      */
-   public static boolean equalsOrCloseEnough(double a, double b, double c) {
+   public static boolean equal(double a, double b, double c) {
       if (c < 0.0) return false;
       return Math.abs(a-b) <= c;
    }
    
-    /**
+   /**
      * Convenience method to calculate horizontal distance
      * @param xDistance
      * @param zDistance
@@ -87,5 +83,9 @@ public class MathUtil {
      */
    public static double dist(double xDistance, double zDistance) {
       return Math.sqrt(xDistance * xDistance + zDistance * zDistance);
+   }
+   
+   public static double square(double var0) {
+      return var0 * var0;
    }
 }

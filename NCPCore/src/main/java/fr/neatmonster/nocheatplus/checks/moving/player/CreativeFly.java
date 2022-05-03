@@ -670,7 +670,7 @@ public class CreativeFly extends Check {
             if (radPitch < 0.0F) {
                 // For compatibility
                 if (to.getPitch() == -90f
-                    && MathUtil.equalsOrCloseEnough(yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
+                    && MathUtil.equal(yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
                     allowedElytraHDistance += 0.01;
                     if (debug) debug(player, "Add the distance to allowed on look up (hDist/Allowed): " + hDistance +"/"+ allowedElytraHDistance);
                 }
@@ -697,7 +697,7 @@ public class CreativeFly extends Check {
                 // TODO: More strict vertical check
                 thisMove.yAllowedDistance = allowedElytraYDistance = yDistance;
                 if (Math.round(data.fireworksBoostTickNeedCheck / 4) > data.fireworksBoostDuration
-                    && hDistance < Math.sqrt(x*x + z*z)) {
+                    && hDistance < MathUtil.dist(x, z)) {
                     thisMove.hAllowedDistance = Math.sqrt(x*x + z*z);
                     if (debug) debug(player, "Set hAllowedDistance for this firework boost phase (hDist/Allowed): " + thisMove.hDistance + "/" + thisMove.hAllowedDistance);
                     return new double[] {0.0, 0.0};
@@ -756,13 +756,13 @@ public class CreativeFly extends Check {
                 }
 
                 if (yDistance > 0.0) {
-                    if (allowedElytraYDistance < yDistance && !MathUtil.equalsOrCloseEnough(allowedElytraYDistance, yDistance, 0.001)) {
+                    if (allowedElytraYDistance < yDistance && !MathUtil.equal(allowedElytraYDistance, yDistance, 0.001)) {
                         tags.add("e_vasc");
                         resultV = yDistance;
                     }
                 } 
                 else if (yDistance < 0.0) {
-                    if (allowedElytraYDistance > yDistance && !MathUtil.equalsOrCloseEnough(allowedElytraYDistance, yDistance, Magic.GRAVITY_MAX)) {
+                    if (allowedElytraYDistance > yDistance && !MathUtil.equal(allowedElytraYDistance, yDistance, Magic.GRAVITY_MAX)) {
                         tags.add("e_vdesc");
                         resultV = Math.abs(yDistance);
                     }
@@ -855,7 +855,7 @@ public class CreativeFly extends Check {
         }
 
         thisMove.hAllowedDistance = allowedElytraHDistance;
-        thisMove.yAllowedDistance = MathUtil.equalsOrCloseEnough(allowedElytraYDistance, yDistance, 0.001) ? yDistance : allowedElytraYDistance;
+        thisMove.yAllowedDistance = MathUtil.equal(allowedElytraYDistance, yDistance, 0.001) ? yDistance : allowedElytraYDistance;
         return new double[] {resultV, resultH};
     }
 

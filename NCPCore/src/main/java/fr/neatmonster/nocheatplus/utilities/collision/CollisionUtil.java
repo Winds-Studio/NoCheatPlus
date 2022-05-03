@@ -496,41 +496,4 @@ public class CollisionUtil {
         }
         return !p.getNearbyEntities(0.15, 0.15, 0.15).isEmpty();
     }
- 
-    /**
-     * Apply pushing speed to the player only
-     * From Entity.java.push()
-     * @param player
-     * @param from
-     * @param entity
-     * @return 
-     */
-    public static double[] getEntityPushSpeed(final Player player, final PlayerLocation from) {
-        if (!player.isInsideVehicle() && !player.isSleeping() && isCollidingWithEntities(player, true)) {
-            // Likely a better way to do this...
-            for (Entity entity : player.getNearbyEntities(0.15, 0.2, 0.15)) {
-                final Location eLoc = entity.getLocation(useLoc);
-                double xDistToEntity = eLoc.getX() - from.getX();
-                double zDistToEntity = eLoc.getZ() - from.getZ();
-                double var6 = VanillaMath.absMax(xDistToEntity, zDistToEntity);
-                if (var6 >= 0.009999999776482582D) {
-                    var6 = Math.sqrt(var6);
-                    xDistToEntity /= var6;
-                    zDistToEntity /= var6;
-                    double var8 = Math.min(1.0, 1.0D / var6);
-                    xDistToEntity *= var8;
-                    zDistToEntity *= var8;
-                    xDistToEntity *= 0.05000000074505806D;
-                    zDistToEntity *= 0.05000000074505806D;
-                    // Cleanup
-                    useLoc.setWorld(null);
-                    return new double[]{-xDistToEntity, -zDistToEntity};
-                }
-                // Cleanup
-                useLoc.setWorld(null);
-                return new double[]{0.0, 0.0};
-            }
-        }
-        return new double[]{0.0, 0.0};
-    }
 }
