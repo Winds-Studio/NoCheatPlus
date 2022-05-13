@@ -127,9 +127,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     // *----------Speed/Friction factors (hor/ver)----------*
     /** NMS horizontal friction factor */
     public double lastFrictionHorizontal = 0.0;
-    /** NMS horizontal speed factor for adhesive-like blocks (webs, berries, powder snow) */
+    /** NMS horizontal speed factor for stuck-in blocks (webs, berries, powder snow) */
     public double lastStuckInBlockHorizontal = 0.0;  
-    /** NMS horizontal speed by block (honey and soulsand) */
+    /** NMS horizontal speed factor by block (honey and soulsand) */
     public double lastBlockSpeedHorizontal = 0.0;
     /** Used during processing, no resetting necessary.*/
     public double nextFrictionHorizontal = 0.0;
@@ -445,7 +445,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
 
     /**
-     * Adjust medium properties and factos according to media.
+     * Adjust medium properties according to media.
      * @param loc
      * @param cc
      * @param player

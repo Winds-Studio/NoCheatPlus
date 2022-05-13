@@ -340,8 +340,6 @@ public class AirWorkarounds {
         //        yDistance >= -GRAVITY_MAX - GRAVITY_SPAN 
         //        && (yDistChange < -GRAVITY_MIN && Math.abs(yDistChange) <= 2.0 * GRAVITY_MAX + GRAVITY_SPAN
         //        || from.isHeadObstructed(from.getyOnGround()) || data.fromWasReset && from.isHeadObstructed())
-        final int blockdata = from.getData(from.getBlockX(), from.getBlockY(), from.getBlockZ());
-        final boolean LiquidEnvelope = (data.liftOffEnvelope == LiftOffEnvelope.LIMIT_LIQUID || data.liftOffEnvelope == LiftOffEnvelope.LIMIT_NEAR_GROUND || data.liftOffEnvelope == LiftOffEnvelope.LIMIT_SURFACE);
         return 
                 // 0: Any envelope (supposedly normal) near 0 yDistance.
                 yDistance > -2.0 * Magic.GRAVITY_MAX - Magic.GRAVITY_MIN && yDistance < 2.0 * Magic.GRAVITY_MAX + Magic.GRAVITY_MIN

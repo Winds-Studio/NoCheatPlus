@@ -46,13 +46,11 @@ public interface IAttributeAccess {
     public double getSprintAttributeMultiplier(Player player);
     
     /**
-     * The player speed obtained through the movement_sped attribute.
-     * TODO: Actually implement.
+     * Retrieve the player's movement speed. Sprinting is left out (!).
      * 
      * @param player
      * @return The player speed. If not possible to
      *         determine, it should be Double.MAX_VALUE.
      */
-	public double getMovementSpeed(Player player);
-
+    public double getMovementSpeed(Player player);
 }

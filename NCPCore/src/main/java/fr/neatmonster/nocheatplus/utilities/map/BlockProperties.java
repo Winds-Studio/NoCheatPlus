@@ -88,7 +88,6 @@ public class BlockProperties {
      * The Enum ToolType.
      *
      * @author asofold
-     * @deprecated Will be replaced by a generic way to define tools.
      */
     public static enum ToolType {
         /** The none. */
@@ -111,7 +110,6 @@ public class BlockProperties {
      * The Enum MaterialBase.
      *
      * @author asofold
-     * @deprecated Will be replaced by a generic way to define tools.
      */
     public static enum MaterialBase {
         /** The none. */
@@ -180,8 +178,6 @@ public class BlockProperties {
 
     /**
      * Properties of a tool.
-     * 
-     * @deprecated Will be replaced by a generic way to define tools.
      */
     public static class ToolProps {
         
@@ -226,8 +222,6 @@ public class BlockProperties {
 
     /**
      * Properties of a block.
-     * 
-     * @deprecated Will be replaced by a generic way to define tools.
      */
     public static class BlockProps{
 
@@ -488,7 +482,7 @@ public class BlockProperties {
     }
 
     /**
-     * NMS friction library for vertical motion
+     * NMS friction factors library for vertical motion
      * @param player
      * @param location
      * @param yOnGround
@@ -513,7 +507,7 @@ public class BlockProperties {
             friction = 0.0;
         }
         else if (thisMove.from.inWeb || thisMove.to.inWeb) {
-            friction = 0.0;
+            friction = 0.05000000074505806D;
         }
         else friction = Magic.FRICTION_MEDIUM_AIR;
         return friction;
@@ -531,7 +525,7 @@ public class BlockProperties {
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
         /** Values from client code. */
-        final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 5000001D : 1.0D;
+        final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
         final double DEFAULT_FRICTION = 0.6D;
         double friction = DEFAULT_FRICTION;
@@ -561,11 +555,19 @@ public class BlockProperties {
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
         double speedFactor = 1.0D;
+        if (pLoc.isInWater() || pLoc.isInBubbleStream()) {
+            // Early return: See Entity.java.getBlockSpeedFactor()
+            // We don't care about the block's speed if in water or in bubble column (What about lava Mojang?)
+            blockCache.cleanup();
+            pLoc.cleanup();
+            return speedFactor;
+        }
         if (pLoc.isOnHoneyBlock()) {
             speedFactor = 0.4D;
         }
         if (pLoc.isAboveSoulSand()) {
-            // Soul speed nullifies the slow down. Also will apply even if not inside the block.
+            // Soul speed nullifies the slow down.
+            // (The boost is already included in the player's attribute speed)
             if (BridgeEnchant.hasSoulSpeed(player)) {
                 speedFactor = 1.0D;
             } 
@@ -582,7 +584,7 @@ public class BlockProperties {
     }
 
     /**
-     * Get the NMS stuck-in-block speed factor for horizontal speed.
+     * Get the NMS stuck-in-block factor for horizontal speed.
      * @param player
      * @param location
      * @param yOnGround
@@ -1274,7 +1276,7 @@ public class BlockProperties {
             // Compatibility.
             //Material.LADDER, 
             // Workarounds.
-            //				Material.COCOA,
+            //              Material.COCOA,
             if (mat != null) BlockFlags.setFlag(mat, BlockFlags.F_IGN_PASSABLE);
         }
 
@@ -1700,15 +1702,19 @@ public class BlockProperties {
         // Terracotta (hard_clay).
         props = new BlockProps(BlockProperties.woodPickaxe, 1.25f, BlockProperties.secToMs(6.25, 0.95, 0.5, 0.35, 0.25, 0.2, 0.15));
         for (final Material mat : MaterialUtil.TERRACOTTA_BLOCKS) {
-            BlockProperties.setBlockProps(mat, props);
-            BlockFlags.setFlagsAs(mat, Material.STONE);
+            if (mat != null) {
+               BlockProperties.setBlockProps(mat, props);
+               BlockFlags.setFlagsAs(mat, Material.STONE);
+            }
         }
 
         // Glazed Terracotta
         props = new BlockProps(BlockProperties.woodPickaxe, 1.4f, BlockProperties.secToMs(7.0, 1.05, 0.55, 0.35, 0.3, 0.2, 0.15));
         for (final Material mat : MaterialUtil.GLAZED_TERRACOTTA_BLOCKS) {
-            BlockProperties.setBlockProps(mat, props);
-            BlockFlags.setFlagsAs(mat, BridgeMaterial.TERRACOTTA);
+            if (mat != null) {
+                BlockProperties.setBlockProps(mat, props);
+                BlockFlags.setFlagsAs(mat, BridgeMaterial.TERRACOTTA);
+            }
         }
 
         // Carpets.
@@ -3659,10 +3665,13 @@ public class BlockProperties {
                 for (int y = iMaxY; y >= iMinY; y--) {
                     BlockData bd = world.getBlockAt(x,y,z).getBlockData();
                     if (bd instanceof Waterlogged && ((Waterlogged)bd).isWaterlogged()) {
-                         // Clearly outside of bounds. (liquid)
-                        if (minX > 1.0 + x || maxX < 0.0 + x
-                            || minY > LIQUID_HEIGHT_LOWERED + y || maxY < 0.0 + y
-                            || minZ > 1.0 + z || maxZ < 0.0 + z) {
+                        // Clearly outside of bounds. (liquid)
+                        if (minX > 1.0 + x 
+                            || maxX < 0.0 + x
+                            || minY > LIQUID_HEIGHT_LOWERED + y 
+                            || maxY < 0.0 + y
+                            || minZ > 1.0 + z 
+                            || maxZ < 0.0 + z) {
                             continue;
                         }
                         // Hitting the max-edges (if allowed).
@@ -3897,28 +3906,28 @@ public class BlockProperties {
         else if ((flags & BlockFlags.F_HEIGHT_8SIM_DEC) != 0) {
             bminY = 0;
             if ((flags & BlockFlags.F_LAVA) != 0) {
-            	if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_LAVA) != 0) {
-            		bmaxY = 1;
-            	} 
+                if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_LAVA) != 0) {
+                    bmaxY = 1;
+                } 
                 else {
-            		final int data = node.getData(access, x, y, z);
-                	if (data >= 8) {
-                		bmaxY = LIQUID_HEIGHT_LOWERED;
-                	} 
+                    final int data = node.getData(access, x, y, z);
+                    if (data >= 8) {
+                        bmaxY = LIQUID_HEIGHT_LOWERED;
+                    } 
                     else bmaxY = (8 - data/9f);
-            	}
+                }
             } 
             else if ((flags & BlockFlags.F_WATER) != 0) {
-            	if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_WATER) != 0) {
-            		bmaxY = 1;
-            	} 
+                if (nodeAbove != null && (BlockFlags.getBlockFlags(nodeAbove.getType()) & BlockFlags.F_WATER) != 0) {
+                    bmaxY = 1;
+                } 
                 else {
-            		final int data = node.getData(access, x, y, z);
-                	if ((data & 8) == 8) {
-                		bmaxY = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
-                	} 
+                    final int data = node.getData(access, x, y, z);
+                    if ((data & 8) == 8) {
+                        bmaxY = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
+                    } 
                     else bmaxY = (8 - data/9f);
-            	}
+                }
             } 
             else bmaxY = LIQUID_HEIGHT_LOWERED;
         }

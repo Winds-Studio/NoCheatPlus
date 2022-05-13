@@ -32,7 +32,7 @@ public class Magic {
     // Might move some methods to another class (EnvironmentUtils (?))
     
     // CraftBukkit/Minecraft constants.
-    public static final double DEFAULT_WALKSPEED = 0.2;
+    public static final double CB_DEFAULT_WALKSPEED = 0.2;
     public static final double DEFAULT_FLYSPEED = 0.1;
     public static final double HORIZONTAL_INERTIA = 0.91;
     public static final double BUNNYHOP_ACCEL_BOOST = 0.2;
@@ -48,22 +48,25 @@ public class Magic {
     public static final double USING_ITEM_MULTIPLIER = 0.2;
     public static final double SNEAK_STEP_DISTANCE = 0.05;
     public static final double LAVA_HORIZONTAL_INERTIA = 0.5;
-    public static final double MIN_MOVEMENT_DISTANCE = 0.003D;
+    public static final double MIN_MOVEMENT_DISTANCE = 0.003;
+    public static final double BASE_ACCELERATION = 0.21600002;
+    public static final double LEGACY_BASE_ACCELERATION = 0.16277136;
 
 
     // Gravity.
     public static final double GRAVITY_MAX = 0.0834;
+    public static final double GRAVITY_DEFAULT = 0.08;
     public static final double GRAVITY_MIN = 0.0624; 
     public static final double GRAVITY_ODD = 0.05;
     /** Assumed minimal average decrease per move, suitable for regarding 3 moves. */
     public static final float GRAVITY_VACC = (float) (GRAVITY_MIN * 0.6); // 0.03744
     public static final double GRAVITY_SPAN = GRAVITY_MAX - GRAVITY_MIN; // 0.021
+    public static final double SLOWFALL_GRAVITY = 0.01;
 
     // Friction factor by medium (move inside of).
     public static final double FRICTION_MEDIUM_AIR = 0.98;
     public static final double FRICTION_MEDIUM_WATER = 0.98;
     public static final double FRICTION_MEDIUM_LAVA = 0.535;
-    public static final double FRICTION_MEDIUM_BERRY_BUSH = 0.98;
     public static final double FRICTION_MEDIUM_ELYTRA_AIR = 0.9800002;
 
     // Horizontal speeds/modifiers. 
@@ -248,11 +251,11 @@ public class Magic {
     }
     
     /**
-     * Check for past lift off states via the past move tracking.
+     * Simplistic check for past lift off states done via the past move tracking.
      * Does not check if players may be able to lift off at all (i.e: in liquid)
      * @return
      */
-    public static boolean getPastLiftOffAvailable(int limit, final MovingData data) {
+    public static boolean isValidLiftOffAvailable(int limit, final MovingData data) {
         limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
         for (int i = 0; i < limit; i++) {
             final PlayerMoveData pastMove = data.playerMoves.getPastMove(i);

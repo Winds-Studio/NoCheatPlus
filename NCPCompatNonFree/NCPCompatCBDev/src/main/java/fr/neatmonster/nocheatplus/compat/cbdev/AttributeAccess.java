@@ -43,6 +43,11 @@ public class AttributeAccess implements IAttributeAccess {
             return val / AttribUtil.getMultiplier(mod.c(), mod.d());
         }
     }
+    
+    @Override
+    public double getMovementSpeed(final Player player) {
+    	return 0.1 * getSpeedAttributeMultiplier(player);
+    }
 
     @Override
     public double getSprintAttributeMultiplier(Player player) {

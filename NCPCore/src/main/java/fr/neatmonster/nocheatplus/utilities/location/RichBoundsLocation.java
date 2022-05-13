@@ -643,7 +643,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /**
      * Checks if the player is above stairs.
      * 
-     * @return true, if the player above on stairs
+     * @return true, if the player above stairs
      */
     public boolean isAboveStairs() {
         if (aboveStairs == null) {
@@ -1063,7 +1063,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                         // TODO: BlockHeight is needed for fences, use right away (above)?
                         if (!BlockProperties.isPassableWorkaround(blockCache, blockX, bY, blockZ, minX - blockX, minY - yOnGround - bY, minZ - blockZ, useNode, maxX - minX, yOnGround, maxZ - minZ,  1.0)
                             || (flags & BlockFlags.F_GROUND_HEIGHT) != 0 &&  BlockProperties.getGroundMinHeight(blockCache, blockX, bY, blockZ, useNode, flags) <= y - bY) {
-                           //  NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "*** onground SHORTCUT");
+                            //  NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "*** onground SHORTCUT");
                             onGround = true;
                         }
                     }
@@ -1195,10 +1195,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      *            the y margin, given by the below amount.
      * @param zDistance
      *            the z margin, given by the current zDistance.
-     * @return true, if is on ground
+     * @return true, if ground is found within the given margins
      */
     public boolean isGroundCoveredByCurrentDistance(final double xDistance, final double yMargin, final double zDistance) {
-        return BlockProperties.isOnGround(blockCache, xDistance, yMargin, zDistance, maxX, maxY, maxZ, 0L); // Don't really care about the top of the box. We' are interested to see if there's ground beneath the player within the given hDistance.
+        return BlockProperties.isOnGround(blockCache, xDistance, yMargin, zDistance, maxX, maxY, maxZ, 0L); // Don't care about the top of the box. We' are interested to see if there's ground beneath the player within the given hDistance.
     }
 
     /**
@@ -1444,8 +1444,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return Returns true, iff an entry was found.
      */
     public boolean matchBlockChangeMatchResultingFlags(final BlockChangeTracker blockChangeTracker, 
-            final BlockChangeReference ref, final Direction direction, final double coverDistance, 
-            final long matchFlags) {
+                                                       final BlockChangeReference ref, final Direction direction, final double coverDistance, 
+                                                       final long matchFlags) {
         /*
          * TODO: Not sure with code duplication. Is it better to run
          * BlockChangeTracker.getBlockChangeMatchFlags for the other method too?

@@ -32,7 +32,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
 /**
  * Check if the placing is legitimate in terms of surrounding materials.
- * @author mc_dev
+ * @author asofold
  *
  */
 public class Against extends Check {
@@ -64,10 +64,6 @@ public class Against extends Check {
                          final BlockPlaceData data, final BlockPlaceConfig cc, final IPlayerData pData) {
         
         boolean violation = false;
-        /*
-         * TODO: Make more precise (workarounds like BridgeMisc.LILY_PAD,
-         * general points, such as action?).
-         */
         final BlockInteractData bIData = pData.getGenericInstance(BlockInteractData.class); // TODO: pass as argument.
         final Material againstType = blockAgainst.getType();
         final Material matAgainst = bIData.getLastType();
@@ -116,5 +112,4 @@ public class Against extends Check {
             return false;
         }
     }
-
 }

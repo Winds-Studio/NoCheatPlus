@@ -47,8 +47,9 @@ public class Visible extends Check {
 
         @Override
         protected boolean check(final double x, final double y, final double z, 
-                final float yaw, final float pitch, 
-                final int blockX, final int blockY, final int blockZ) {
+                                final float yaw, final float pitch, 
+                                final int blockX, final int blockY, final int blockZ) {
+
             // Run ray-tracing again with updated pitch and yaw.
             useLoc.setPitch(pitch);
             useLoc.setYaw(yaw);
@@ -61,15 +62,12 @@ public class Visible extends Check {
                 }
                 return false;
             }
-            else {
-                return true;
-            }
-
+            return true;
         }
 
         public boolean checkFlyingQueue(double x, double y, double z, float oldYaw, float oldPitch, int blockX,
-                int blockY, int blockZ, FlyingQueueHandle flyingHandle, 
-                BlockFace face, List<String> tags, boolean debug, Player player) {
+                                        int blockY, int blockZ, FlyingQueueHandle flyingHandle, 
+                                        BlockFace face, List<String> tags, boolean debug, Player player) {
             this.face = face;
             this.tags = tags;
             this.debug = debug;
@@ -79,7 +77,7 @@ public class Visible extends Check {
 
         @Override
         public boolean checkFlyingQueue(double x, double y, double z, float oldYaw, float oldPitch, int blockX,
-                int blockY, int blockZ, FlyingQueueHandle flyingHandle) {
+                                        int blockY, int blockZ, FlyingQueueHandle flyingHandle) {
             throw new UnsupportedOperationException("Use the other method.");
         }
 
@@ -89,14 +87,11 @@ public class Visible extends Check {
             this.debug = false;
             this.tags = null;
         }
-
     }
 
     private final WrapBlockCache wrapBlockCache;
 
-    /**
-     * Strict set to false, due to false positives.
-     */
+    /** Strict set to false, due to false positives. */
     private final InteractRayTracing rayTracing = new InteractRayTracing(false);
 
     private final RayChecker checker = new RayChecker();
@@ -113,9 +108,9 @@ public class Visible extends Check {
     }
 
     public boolean check(final Player player, final Location loc, final double eyeHeight, final Block block, 
-            final BlockFace face, final Action action, final FlyingQueueHandle flyingHandle, 
-            final BlockInteractData data, final BlockInteractConfig cc,
-            final IPlayerData pData) {
+                         final BlockFace face, final Action action, final FlyingQueueHandle flyingHandle, 
+                         final BlockInteractData data, final BlockInteractConfig cc, final IPlayerData pData) {
+
         // TODO: This check might make parts of interact/blockbreak/... + direction (+?) obsolete.
         // TODO: Might confine what to check for (left/right-click, target blocks depending on item in hand, container blocks).
         boolean collides;
@@ -125,7 +120,6 @@ public class Visible extends Check {
         final double eyeX = loc.getX();
         final double eyeY = loc.getY() + eyeHeight;
         final double eyeZ = loc.getZ();
-
         final boolean debug = pData.isDebugActive(type);
 
         tags.clear();
@@ -169,11 +163,11 @@ public class Visible extends Check {
                 debug(player, "pitch=" + loc.getPitch() + ",yaw=" + loc.getYaw() + " tags=" + StringUtil.join(tags, "+"));
             }
         }
-
         return cancel;
     }
 
-    private boolean checkRayTracing(final double eyeX, final double eyeY, final double eyeZ, final double dirX, final double dirY, final double dirZ, final int blockX, final int blockY, final int blockZ, final BlockFace face, final List<String> tags, final boolean debug) {
+    private boolean checkRayTracing(final double eyeX, final double eyeY, final double eyeZ, final double dirX, final double dirY, final double dirZ, final int blockX, final int blockY, 
+                                    final int blockZ, final BlockFace face, final List<String> tags, final boolean debug) {
         // Block of eyes.
         final int eyeBlockX = Location.locToBlock(eyeX);
         final int eyeBlockY = Location.locToBlock(eyeY);
@@ -214,8 +208,8 @@ public class Visible extends Check {
 
         // Check if the the block is hit by the direction at all (timing interval).
         if (tMinX > tMaxY && tMinX > tMaxZ || 
-                tMinY > tMaxX && tMinY > tMaxZ || 
-                tMinZ > tMaxX && tMaxZ > tMaxY) {
+            tMinY > tMaxX && tMinY > tMaxZ || 
+            tMinZ > tMaxX && tMaxZ > tMaxY) {
             // TODO: Option to tolerate a minimal difference in t and use a corrected position then.
             tags.add("time_miss");
             //            Bukkit.getServer().broadcastMessage("visible: " + tMinX + "," + tMaxX + " | " + tMinY + "," + tMaxY + " | " + tMinZ + "," + tMaxZ);
@@ -287,9 +281,7 @@ public class Visible extends Check {
         if (Location.locToBlock(collideC) == ref) {
             return collideC;
         }
-        else {
-            return ref;
-        }
+        return ref;
     }
 
     /**
@@ -350,5 +342,4 @@ public class Visible extends Check {
             return Math.round(coord);
         }
     }
-
 }

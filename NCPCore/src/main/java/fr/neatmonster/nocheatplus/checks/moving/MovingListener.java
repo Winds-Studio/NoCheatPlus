@@ -470,9 +470,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             earlyReturn = handleTeleportedOnMove(player, event, data, cc, pData);
             token = "awaitsetback";
         }
-        else if (TrigUtil.isSamePos(from, to) && !data.lastMoveNoMove
-                // && ServerVersion.compareMinecraftVersion("1.17") >= 0
-                ) { 
+        else if (TrigUtil.isSamePos(from, to) && !data.lastMoveNoMove) { 
             //if (data.sfHoverTicks > 0) data.sfHoverTicks += hoverTicksStep;
             earlyReturn = data.lastMoveNoMove = true;
             token = "duplicate";
@@ -488,10 +486,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             token = null;
         }
 
-        // Reset duplicate move flag.
-        if (!TrigUtil.isSamePos(from, to)) {
-            data.lastMoveNoMove = false;
-        }
 
         if (earlyReturn) {
             if (debug) {
@@ -517,18 +511,19 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //////////////////////////////////////////////////////////////
         // Fire one or two moves here (Split move handling).        //
         //////////////////////////////////////////////////////////////
+        // The split move checking was first introduced due to a Bukkit/Spigot bug (reported by asofold and then fixed by the Spigot team)
+        // @See: https://hub.spigotmc.org/jira/browse/SPIGOT-1646
+        // Despite the fix, the mechanic was kept anyway likely because of the fact that a single PlayerMoveEvent can sometimes be the result of multiple packets.
         // (newTo should be null here)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         final Location loc = player.getLocation(moveInfo.useLoc);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         if (cc.loadChunksOnMove) MovingUtil.ensureChunksLoaded(player, from, to, lastMove, "move", cc, pData);
         
-        // Ordinary: Fire move from -> to
-        // This was reported and supposedely fixed by the Spigot team, however asofold decided to keep this active anyway. No reason is given from the commit.
-        // @See: https://github.com/NoCheatPlus/NoCheatPlus/commit/7d2c1ce1f8b40fac554cdef8040576d9f88503ef
-        // @See: https://hub.spigotmc.org/jira/browse/SPIGOT-1646
+        // Ordinary: fire from->to
         if (
                 // Handling split moves has been disabled.
+                // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
                 !cc.splitMoves ||
                 // The usual case: no micro move happened.
                 TrigUtil.isSamePos(from, loc)
@@ -543,8 +538,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         else {
             // (Special case: Location has not been updated last moving event.)
-            // Split into two moves.
-            // 1. Process from -> loc.
+            // Split here into two moves.
+            // 1: Process from -> loc.
             if (debug) debug(player, "Split move 1 (from -> loc):");
             moveInfo.set(player, from, loc, cc.yOnGround);
             if (!checkPlayerMove(player, from, loc, 1, moveInfo, debug, data, cc, pData, event) && processingEvents.containsKey(player.getName())) {
@@ -552,7 +547,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 // Between -> set data accordingly (compare: onPlayerMoveMonitor).
                 onMoveMonitorNotCancelled(player, from, loc, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
                 data.joinOrRespawn = false;
-                // 2. Process loc -> to.
+                // 2: Process loc -> to.
                 if (debug) debug(player, "Split move 2 (loc -> to):");
                 moveInfo.set(player, loc, to, cc.yOnGround);
                 checkPlayerMove(player, loc, to, 2, moveInfo, debug, data, cc, pData, event);
@@ -560,6 +555,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         // Cleanup.
         data.joinOrRespawn = false;
+        if (!TrigUtil.isSamePos(from, to)) {
+            data.lastMoveNoMove = false;
+        }
         aux.returnPlayerMoveInfo(moveInfo);
     }
 
@@ -1762,7 +1760,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final Player player = event.getEntity();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        //final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         data.clearMostMovingCheckData();
         data.setSetBack(player.getLocation(useLoc)); // TODO: Monitor this change (!).
         data.isUsingItem = false;

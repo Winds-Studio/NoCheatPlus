@@ -37,23 +37,23 @@ public class WrongBlock extends Check {
      * probably due to packet delaying issues for insta breaking.
      * @param player
      * @param block
-     * @param data 
      * @param cc 
+     * @param data 
+     * @param pData
      * @param isInstaBreak 
      * @return
      */
-    
     public boolean check(final Player player, final Block block, 
-            final BlockBreakConfig cc, final BlockBreakData data, final IPlayerData pData,
-            final AlmostBoolean isInstaBreak) {
+                         final BlockBreakConfig cc, final BlockBreakData data, final IPlayerData pData,
+                         final AlmostBoolean isInstaBreak) {
 
         boolean cancel = false;
-
         final boolean wrongTime = data.fastBreakfirstDamage < data.fastBreakBreakTime;
         final int dist = Math.min(4, data.clickedX == Integer.MAX_VALUE ? 100 : TrigUtil.manhattan(data.clickedX, data.clickedY, data.clickedZ, block));
         final boolean wrongBlock;
         final long now = System.currentTimeMillis();
         final boolean debug = pData.isDebugActive(type);
+
         // TODO: Remove isInstaBreak argument or use it.
         if (dist == 0) {
             if (wrongTime) {
@@ -72,14 +72,10 @@ public class WrongBlock extends Check {
                 }
                 wrongBlock = false;
             }
-            else {
-                wrongBlock = true;
-            }
+            else wrongBlock = true;
         }
-        else {
-            // Note that the maximally counted distance is set above.
-            wrongBlock = true;
-        }
+        // Note that the maximally counted distance is set above.
+        else wrongBlock = true;
 
         if (wrongBlock) {
             if ((debug) && pData.hasPermission(Permissions.ADMINISTRATION_DEBUG, player)) {
@@ -94,14 +90,13 @@ public class WrongBlock extends Check {
                 if (cc.wrongBlockImprobableWeight > 0.0f) {
                 	if (cc.wrongBlockImprobableFeedOnly) {
                 		Improbable.feed(player, cc.wrongBlockImprobableWeight, now);
-                	} else if (Improbable.check(player, cc.wrongBlockImprobableWeight, now, "blockbreak.wrongblock", pData)) {
+                	} 
+                    else if (Improbable.check(player, cc.wrongBlockImprobableWeight, now, "blockbreak.wrongblock", pData)) {
                 		cancel = true;
                 	}
                 }
             }
         }
-
         return cancel;
     }
-
 }

@@ -33,5 +33,9 @@ public class DummyAttributeAccess implements IAttributeAccess {
     public double getSprintAttributeMultiplier(Player player) {
         return Double.MAX_VALUE;
     }
-
+    
+    @Override
+    public double getMovementSpeed(final Player player) {
+    	return Double.MAX_VALUE;
+    }
 }

@@ -67,6 +67,11 @@ public class BukkitAttributeAccess implements IAttributeAccess {
     private double getMultiplier(final AttributeModifier mod) {
         return AttribUtil.getMultiplier(operationToInt(mod.getOperation()), mod.getAmount());
     }
+    
+    @Override
+    public double getMovementSpeed(final Player player) {
+    	return 0.1 * getSpeedAttributeMultiplier(player);
+    }
 
     @Override
     public double getSpeedAttributeMultiplier(final Player player) {

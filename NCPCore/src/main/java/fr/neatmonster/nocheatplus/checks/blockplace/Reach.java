@@ -26,7 +26,7 @@ import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
 /**
- * The Reach check will find out if a player interacts with something that's too far away.
+ * The Reach check will find out if a player places a block too far away.
  */
 public class Reach extends Check {
 
@@ -51,20 +51,16 @@ public class Reach extends Check {
      * 
      * @param player
      *            the player
-     * @param loc 
-     * @param cc 
-     * @param data2 
-     * @param location
-     *            the location
+     * @param eyeHeight 
+     * @param block 
+     * @param data
+     * @param cc
      * @return true, if successful
      */
-    public boolean check(final Player player, final double eyeHeight, final Block block, 
-            final BlockPlaceData data, final BlockPlaceConfig cc) {
+    public boolean check(final Player player, final double eyeHeight, final Block block, final BlockPlaceData data, final BlockPlaceConfig cc) {
 
         boolean cancel = false;
-
         final double distanceLimit = player.getGameMode() == GameMode.CREATIVE ? CREATIVE_DISTANCE : SURVIVAL_DISTANCE;
-
         // Distance is calculated from eye location to center of targeted block. If the player is further away from their
         // target than allowed, the difference will be assigned to "distance".
         final Location eyeLoc = player.getLocation(useLoc);
@@ -74,24 +70,21 @@ public class Reach extends Check {
         if (distance > 0) {
             // They failed, increment violation level.
             data.reachVL += distance;
-
             // Remember how much further than allowed they tried to reach for logging, if necessary.
             data.reachDistance = distance;
-
             // Execute whatever actions are associated with this check and the violation level and find out if we should
             // cancel the event.
             final ViolationData vd = new ViolationData(this, player, data.reachVL, distance, cc.reachActions);
             vd.setParameter(ParameterName.REACH_DISTANCE, String.valueOf(data.reachDistance));
             cancel = executeActions(vd).willCancel();
-        } else{
+        } 
+        else {
             // Player passed the check, reward them.
             data.reachVL *= 0.9D;
         }
 
         // Cleanup.
         useLoc.setWorld(null);
-
         return cancel;
     }
-
 }

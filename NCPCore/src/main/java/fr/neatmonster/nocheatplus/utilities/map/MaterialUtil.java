@@ -160,6 +160,9 @@ public class MaterialUtil {
     public static final Set<Material> ALL_CANDLES = Collections.unmodifiableSet(
             BridgeMaterial.getBySuffix("candle", AlmostBoolean.YES));
 
+    public static final Set<Material> LANTERNS = Collections.unmodifiableSet(
+            BridgeMaterial.getAllBlocks("lantern", "soul_lantern"));
+
     public static final Set<Material> ALL_CANDLE_CAKE = Collections.unmodifiableSet(
             BridgeMaterial.getBySuffix("candle_cake", AlmostBoolean.YES));
 

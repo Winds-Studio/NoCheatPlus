@@ -71,9 +71,7 @@ public enum LiftOffEnvelope {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
             return Math.max(0.0, maxJumpGain + 0.1 * jumpAmplifier);
         }
-        else {
-            return maxJumpGain;
-        }
+        return maxJumpGain;
     }
 
     /**
@@ -86,9 +84,7 @@ public enum LiftOffEnvelope {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
             return Math.max(0.0, maxJumpGain + 0.1 * jumpAmplifier * factor);
         }
-        else {
-            return maxJumpGain;
-        }
+        return maxJumpGain;
     }
 
     /**
@@ -101,9 +97,7 @@ public enum LiftOffEnvelope {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
             return Math.max(0.0, maxJumpGain + 0.2 * jumpAmplifier);
         }
-        else {
-            return maxJumpGain;
-        }
+        return maxJumpGain;
     }
 
     /**
@@ -115,9 +109,7 @@ public enum LiftOffEnvelope {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
             return Math.max(0.0, minJumpHeight + (0.5 * jumpAmplifier));
         }
-        else {
-            return minJumpHeight;
-        }
+        return minJumpHeight;
     }
     
     /**
@@ -142,10 +134,9 @@ public enum LiftOffEnvelope {
                 // Quadratic, with some amount of gravity counted in.
                 return 0.6 + (jumpAmplifier + 3.2) * (jumpAmplifier + 3.2) / 16.0 - (jumpAmplifier * (jumpAmplifier - 1.0) / 2.0) * (0.0625 / 2.0);
             }
-        } // TODO: < 0.0 ?
-        else {
-            return maxJumpHeight;
-        }
+        } 
+        // TODO: < 0.0 ?
+        return maxJumpHeight;
     }
     
     /**
@@ -158,10 +149,9 @@ public enum LiftOffEnvelope {
     public int getMaxJumpPhase(double jumpAmplifier) {
         if (jumpEffectApplies && jumpAmplifier > 0.0) {
             return (int) Math.round((0.5 + jumpAmplifier) * (double) maxJumpPhase);
-        } // TODO: < 0.0 ?
-        else {
-            return maxJumpPhase;
-        }
+        } 
+        // TODO: < 0.0 ?
+        return maxJumpPhase;
     }
    
     public boolean jumpEffectApplies() {

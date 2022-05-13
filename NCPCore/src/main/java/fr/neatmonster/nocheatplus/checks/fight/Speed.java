@@ -41,16 +41,17 @@ public class Speed extends Check {
      * @param player
      *            the player
      * @param now 
+     * @param data
+     * @param cc
+     * @param pData
      * @return true, if successful
      */
-    public boolean check(final Player player, final long now, 
-            final FightData data, final FightConfig cc, 
-            final IPlayerData pData) {
+    public boolean check(final Player player, final long now, final FightData data, final FightConfig cc, final IPlayerData pData) {
 
         final boolean lag = pData.getCurrentWorldData().shouldAdjustToLag(type);
         boolean cancel = false;
 
-        // Add to frequency.
+        // Add each attack to the bucket.
         data.speedBuckets.add(now, 1f);
 
         // Medium term (normalized to one second), account for server side lag.
@@ -71,26 +72,24 @@ public class Speed extends Check {
                 // Within range, add.
                 data.speedShortTermCount ++;
             }
-            else{
+            else {
                 // Too much lag, reset.
                 data.speedShortTermTick = tick;
                 data.speedShortTermCount = 1;
             }
         }
-        else{
+        else{ 
             data.speedShortTermTick = tick;
             data.speedShortTermCount = 1;
         }
 
         final float shortTerm = (float ) data.speedShortTermCount * 1000f / (50f * cc.speedShortTermTicks);
-
         final float max = Math.max(shortTerm, total);
 
         // Too many attacks?
         if (max > cc.speedLimit) {
             // If there was lag, don't count it towards violation level.
             data.speedVL += max - cc.speedLimit;
-
             // Execute whatever actions are associated with this check and the violation level and find out if we should
             // cancel the event.
             final ViolationData vd = new ViolationData(this, player, data.speedVL, max - cc.speedLimit, cc.speedActions);
@@ -98,8 +97,6 @@ public class Speed extends Check {
             cancel = executeActions(vd).willCancel();
         }
         else data.speedVL *= 0.96;
-
         return cancel;
     }
-
 }

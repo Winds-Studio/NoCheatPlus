@@ -44,12 +44,6 @@ public class PlayerMoveData extends MoveData {
     // Bounds set by checks.
 
     /**
-     * Allowed horizontal base distance (as if moving off the spot, excluding
-     * bunny/friction). Set in SurvivalFly.check.
-     */
-    public double hAllowedDistanceBase;
-
-    /**
      * Allowed horizontal distance (including frictions, workarounds like bunny
      * hopping). Set in SurvivalFly.check.
      */
@@ -97,7 +91,6 @@ public class PlayerMoveData extends MoveData {
         allowstep = false;
         allowjump = false;
         // Bounds set by checks.
-        hAllowedDistanceBase = 0.0;
         yAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
         // Meta stuff.

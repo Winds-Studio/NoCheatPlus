@@ -378,7 +378,7 @@ public class CreativeFly extends Check {
                 // (Ignore sprinting here).
                 final double attrMod = attributeAccess.getHandle().getSpeedAttributeMultiplier(player);
                 if (attrMod != Double.MAX_VALUE) fSpeed *= attrMod;
-                fSpeed *= data.walkSpeed / Magic.DEFAULT_WALKSPEED;
+                fSpeed *= data.walkSpeed / Magic.CB_DEFAULT_WALKSPEED;
             }
         }
         else fSpeed = 1.0;
@@ -1194,7 +1194,7 @@ public class CreativeFly extends Check {
         if (radPitch < 0.0F) {
             // For compatibility
             if (thisMove.to.getPitch() == -90f
-                && MathUtil.equalsOrCloseEnough(thisMove.yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
+                && MathUtil.equal(thisMove.yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
                 allowedElytraHDistance += 0.01;
             }
             else if (xzlength > 0.0) {

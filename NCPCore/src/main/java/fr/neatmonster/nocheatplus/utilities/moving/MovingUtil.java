@@ -54,8 +54,8 @@ import fr.neatmonster.nocheatplus.utilities.location.RichBoundsLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
-import fr.neatmonster.nocheatplus.utilities.math.VanillaMath;
 
 
 /**
@@ -205,8 +205,8 @@ public class MovingUtil {
             distance = movementSpeedFactor / distance;
             strafe = strafe * distance;
             forward = forward * distance;
-            float sinYaw = VanillaMath.sin(yaw * (float)Math.PI / (float)180.0); 
-            float cosYaw = VanillaMath.cos(yaw * (float)Math.PI / (float)180.0);
+            float sinYaw = TrigUtil.sin(yaw * (float)Math.PI / (float)180.0); 
+            float cosYaw = TrigUtil.cos(yaw * (float)Math.PI / (float)180.0);
             // Add the newly calculated speed
             xOldDistance += (double)(strafe * cosYaw - forward * sinYaw);
             zOldDistance += (double)(forward * cosYaw + strafe * sinYaw);
@@ -233,22 +233,25 @@ public class MovingUtil {
                                                     final Collection<String> tags, boolean checkPermissions, final double width) {
 
         // TODO: Stairs speed (how the fuck do they work with the auto-jump being able to boost speed?)  
-        // TODO: FLuid pushing (!)          
+        // TODO: Fluid pushing (!)
+        // TODO: Review the slide mechanic further
+        // TODO: Anything else?
+
         /** A player is considered as sneaking if they are touching the ground */
-        boolean sneakingGround = onGround && sneaking;
+        boolean sneakingOnGround = onGround && sneaking;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.19") >= 0;
-
-		// Apply pushing speed
-        if (ServerIsAtLeast1_9 && !player.isInsideVehicle() && !player.isSleeping() 
-            && CollisionUtil.isCollidingWithEntities(player, true)) {
+        
+        // Apply pushing speed
+        if (ServerIsAtLeast1_9 && CollisionUtil.isCollidingWithEntities(player, true)) {
 
             // Likely a better way to do this...
+            // (Does it need to be done for each entity actually?)
             for (Entity entity : player.getNearbyEntities(0.15, 0.2, 0.15)) {
                 final Location eLoc = entity.getLocation(useLoc);
                 double xDistToEntity = eLoc.getX() - from.getX();
                 double zDistToEntity = eLoc.getZ() - from.getZ();
-                double absDist = VanillaMath.absMax(xDistToEntity, zDistToEntity);
+                double absDist = MathUtil.absMax(xDistToEntity, zDistToEntity);
                 if (absDist >= 0.009999999776482582D) {
                     absDist = Math.sqrt(absDist);
                     xDistToEntity /= absDist;
@@ -327,14 +330,14 @@ public class MovingUtil {
             tags.add("hhoneyblock");
             xDistance *= data.lastBlockSpeedHorizontal;
             zDistance *= data.lastBlockSpeedHorizontal; 
-            if (MovingUtil.isSlidingDown(from, width, thisMove, player)) {
-                MovingUtil.doSlideMovement(thisMove, xDistance, zDistance);
+            if (isSlidingDown(from, width, thisMove, player)) {
+                doSlideMovement(thisMove, xDistance, zDistance);
             }
         }
 
-        // If sneaking, the game moves the player by steps to check if they reach an edge.
-        // See method "maybeBackOffFromEdge" in Player.java
-        if (sneakingGround && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+        // If sneaking, the game moves the player by steps to check if they reach an edge to back them off.
+        // From Player.java.maybeBackOffFromEdge()
+        if (sneakingOnGround && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
             double step = Magic.SNEAK_STEP_DISTANCE; 
             
             // Check for furthest ground under player in the X axis (from initial position)
@@ -426,8 +429,8 @@ public class MovingUtil {
 
         double moveStrafe = right ? -1.0 : left ? 1.0 : 0.0;
         double moveForward = forward ? 1.0 : backwards ? -1.0 : 0.0;
-        moveStrafe *= Magic.FRICTION_MEDIUM_AIR;
-        moveForward *= Magic.FRICTION_MEDIUM_AIR;
+        moveStrafe *= 0.98;
+        moveForward *= 0.98;
         // From KeyboardInput.java
         if (sneaking && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
             tags.add("sneaking");
@@ -457,7 +460,7 @@ public class MovingUtil {
      * @param to
      * @param data
      */
-    public static boolean isCollideWithHB(PlayerLocation from, PlayerLocation to, MovingData data) {
+    public static boolean honeyBlockSidewayCollision(PlayerLocation from, PlayerLocation to, MovingData data) {
 
         final boolean isFlagCollected = (to.getBlockFlags() & BlockFlags.F_STICKY) != 0;
         // Moving on side block, remove nofall data

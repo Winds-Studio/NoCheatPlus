@@ -36,12 +36,58 @@ public class TrigUtil {
     private static final Vector vec1 = new Vector();
     /** Used for internal calculations, no passing on, beware of nested calls. */
     private static final Vector vec2 = new Vector();
-    /** Multiply to get grad from rad. */
-    public static final double fRadToGrad = 360.0 / (2.0 * Math.PI);
     /** Some default precision value for the classic fight.direction check. */
     public static final double DIRECTION_PRECISION = 2.6;
     /** Precision for the fight.direction check within the LocationTrace loop. */
     public static final double DIRECTION_LOOP_PRECISION = 0.5;
+
+    public static final double PI2 = Math.PI * 2.0;
+
+    public static final double PId2 =  Math.PI / 2.0;
+
+    private static final double radFull =  Math.PI * 2.0;
+
+    private static final double degFull = 360.0;
+
+    private static final double radToIndex = 651.8986;
+
+    private static final double degToIndex = 11.377778;
+
+    public static final double deg2Rad = 0.017453292D;
+    /** Multiply to get grad from rad. */
+    public static final double fRadToGrad = degFull / PI2;
+
+    private static final float[] SIN_FAST = new float[4096]; // Uh, oh... Optifine might be a problem here.
+
+   /**
+    * NMS table of sin values computed from 0 (inclusive) to 2*pi (exclusive), with steps of 2*PI / 65536.
+    * From Mth.java (1.18.2)
+    */
+    private static float[] SIN = new float[65536];
+
+    static {
+        for (int i = 0; i < SIN.length; ++i) {
+            SIN[i] = (float) Math.sin((double) i * 3.141592653589793D * 2.0D / 65536.0D);
+        }
+    }
+    
+    /**
+     * Sin looked up in a table
+     * @param var0
+     * @return the sin
+     */
+    public static float sin(float var0) {
+      return SIN[(int)(var0 * 10430.378F) & '\uffff'];
+    }
+    
+    /**
+     * Cos looked up in the sin table with the appropriate offset
+     * @param var0
+     * @return the cos
+     */
+    public static float cos(float var0) {
+      return SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
+    }
 
     /**
      * 3D-distance of two locations. This is obsolete, since it has been fixed. To ignore world checks it might be "useful".

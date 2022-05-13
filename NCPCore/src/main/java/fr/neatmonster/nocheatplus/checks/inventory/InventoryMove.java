@@ -82,7 +82,7 @@ public class InventoryMove extends Check {
         final boolean fullLiquidMove = thisMove.from.inLiquid && thisMove.to.inLiquid;
         final long currentEvent = System.currentTimeMillis();
         final boolean isCollidingWithEntities = CollisionUtil.isCollidingWithEntities(player, true) && ServerVersion.compareMinecraftVersion("1.9") >= 0;
-        final double minHDistance = thisMove.hAllowedDistanceBase / Math.max(1.1, cc.invMoveHdistDivisor); // Just in case admins input a too low value.
+        final double minHDistance = thisMove.hAllowedDistance / Math.max(1.1, cc.invMoveHdistDivisor); // Just in case admins input a too low value.
         final boolean creative = player.getGameMode() == GameMode.CREATIVE && ((type == SlotType.QUICKBAR) || cc.invMoveDisableCreative);
         final boolean isMerchant = (player.getOpenInventory().getTopInventory().getType() == InventoryType.MERCHANT); 
         final boolean movingOnSurface = (thisMove.from.inLiquid && !thisMove.to.inLiquid) && mData.liftOffEnvelope.name().startsWith("LIMIT");
@@ -93,7 +93,7 @@ public class InventoryMove extends Check {
                 + "\nhDistance= " + StringUtil.fdec3.format(thisMove.hDistance)
                 + "\nhDistMin("+cc.invMoveHdistDivisor+")="  + StringUtil.fdec3.format(minHDistance) 
                 + "\nhAllowedDistance= " + StringUtil.fdec3.format(thisMove.hAllowedDistance)
-                + "\nhAllowedDistanceBase= " + StringUtil.fdec3.format(thisMove.hAllowedDistanceBase)
+                + "\nhAllowedDistanceBase= " + StringUtil.fdec3.format(thisMove.hAllowedDistance)
                 + "\ntouchedGround= " + thisMove.touchedGround + "(" + (thisMove.from.onGround ? "ground -> " : "---- -> ") + (thisMove.to.onGround ? "ground" : "----") +")"
                 + "\nmovingOnSurface=" + movingOnSurface + " fullLiquidMove= " + fullLiquidMove
             );
@@ -170,13 +170,13 @@ public class InventoryMove extends Check {
                 // Walking on ground 
                 if (thisMove.touchedGround && !fullLiquidMove
                     // No changes in speed during the 2 last movements
-                    && thisMove.hAllowedDistanceBase == lastMove.hAllowedDistance) {
+                    && thisMove.hAllowedDistance == lastMove.hAllowedDistance) {
                     violation = true; 
                 }
                 // Moving above liquid surface
                 else if (movingOnSurface && !thisMove.touchedGround
                         // No changes in speed during the 5 last movements
-                        && thisMove.hAllowedDistance == pastMove3.hAllowedDistanceBase
+                        && thisMove.hAllowedDistance == pastMove3.hAllowedDistance
                         // Ignore for now, too much friction
                         && Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))
                         // Liquid fight, skip
@@ -186,7 +186,7 @@ public class InventoryMove extends Check {
                 // Moving inside liquid
                 else if (fullLiquidMove 
                         // No changes in speed during the 5 last movements
-                        && thisMove.hAllowedDistance == pastMove3.hAllowedDistanceBase
+                        && thisMove.hAllowedDistance == pastMove3.hAllowedDistance
                         // Ignore for now, too much friction
                         && Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))
                         // Liquid fight, skip

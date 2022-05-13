@@ -269,7 +269,7 @@ public class InventoryUtil {
      *            May be null.
      * @return true, if is container
      */
-    public static boolean isContainterInventory(final InventoryType type) {
+    public static boolean isContainerInventory(final InventoryType type) {
         return type != null && (type == InventoryType.CHEST
                             || type == InventoryType.ENDER_CHEST
                             || type == InventoryType.DISPENSER

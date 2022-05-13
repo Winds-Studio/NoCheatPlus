@@ -151,6 +151,11 @@ public class ReflectAttributeAccess implements IAttributeAccess {
     public double getSpeedAttributeMultiplier(Player player) {
         return getSpeedAttributeMultiplier(player, true);
     }
+    
+    @Override
+    public double getMovementSpeed(Player player) {
+    	return 0.1 * getSpeedAttributeMultiplier(player, true);
+    }
 
     @Override
     public double getSprintAttributeMultiplier(Player player) {
