@@ -1367,7 +1367,13 @@ public class SurvivalFly extends Check {
                         if (
                             // Head obstruction obviously allows to lowjump
                             thisMove.headObstructed 
-                            || yDistance <= 0.0 && lastMove.headObstructed && lastMove.yDistance >= 0.0) {
+                            || yDistance <= 0.0 && lastMove.headObstructed && lastMove.yDistance >= 0.0
+                            // Skip if the player is jumping out of powder snow
+                            || Bridge1_17.hasLeatherBootsOn(player) 
+                            && data.liftOffEnvelope == LiftOffEnvelope.POWDER_SNOW && lastMove.from.inPowderSnow
+                            && lastMove.yDistance <= Magic.GRAVITY_MAX * 2.36 && lastMove.yDistance > 0.0
+                            && thisMove.yDistance < 0.0
+                            ) {
                             // Exempt.
                             tags.add("lowjump_skip");
                         }
