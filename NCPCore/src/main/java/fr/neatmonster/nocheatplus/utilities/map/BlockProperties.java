@@ -496,9 +496,9 @@ public class BlockProperties {
         else if (thisMove.from.inPowderSnow || thisMove.to.inPowderSnow) {
             friction = 1.5D;
         }
-        else if (thisMove.from.inLiquid) {
+        else if (thisMove.from.inLiquid || thisMove.to.inLiquid) {
             // TODO: Exact conditions ?!
-            if (thisMove.from.inLava) {
+            if (thisMove.from.inLava || thisMove.to.inLava) {
                 friction = Magic.FRICTION_MEDIUM_LAVA;
             }
             else friction = Magic.FRICTION_MEDIUM_WATER;

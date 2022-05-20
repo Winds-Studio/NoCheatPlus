@@ -25,10 +25,11 @@ public enum LiftOffEnvelope {
     NORMAL(0.42, 1.35, 1.15, 6, true),
     /** Weak or no limit moving off liquid near ground. */
     LIMIT_NEAR_GROUND(0.42, 1.35, 1.15, 6, false), // TODO: 0.385 / not jump on top of 1 high wall from water.
-    /** Simple calm water surface. */
+    /** Simple calm water surface, stronger limit */
     LIMIT_LIQUID(0.1, 0.27, 0.1, 3, false),
     /** Moving off water, having two in-air moves. Rather meant for 1.13+ clients but not necessarily */
     //LIMIT_SURFACE(0.1, 0.372, 0.1, 2, false),
+    // TODO: Remove later.
     LIMIT_SURFACE(0.1, 1.16, 0.1, 4, false),
     //    /** Flowing water / strong(-est) limit. */
     //    LIMIT_LIQUID_STRONG(...), // TODO
@@ -40,9 +41,7 @@ public enum LiftOffEnvelope {
     // NOTE: Jump height: 0.3 would trigger false positives. While 0.45 is too much
     HALF_JUMP(0.21, 0.4, 0.21, 4, true), 
     /** Nearly ordinary jumping gain (meant for berry bushes)*/
-    // TEST: Jumping height is random (but higher than the honeyblock), needs testing to be more strict.
     BERRY_JUMP(0.31, 0.5, 0.31, 0, true), 
-    // Powder snow is considered as reset condition so we don't care about the jump phase.
     /** Special liftoff handling for powder snow: jump height is equal to lift-off speed. */
     POWDER_SNOW(0.63, 0.63, 0.63, 0, true)
     ;

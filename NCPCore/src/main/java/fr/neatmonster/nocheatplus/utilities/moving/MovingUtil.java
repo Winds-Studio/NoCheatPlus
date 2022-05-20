@@ -189,8 +189,8 @@ public class MovingUtil {
      * @param zOldDistance zDistance to update
      * @param from
      * @return 
-     */
-    public static void updateHorizontalSpeed(double strafe, double forward, double movementSpeedFactor, double xOldDistance, double zOldDistance, final PlayerLocation from) {
+     */ 
+    public static void updateHorizontalSpeed(Player player, double strafe, double forward, double movementSpeedFactor, double xOldDistance, double zOldDistance, final PlayerLocation from) {
         // TODO: Add a method to know if the player is moving: RIGHT, LEFT, FORWARD, BACKWARDS (possibly with an enum class? i.e.: MovementDirection.LEFT, MovementDirection.RIGHT etc...) 
         // TODO: Also need to ensure that players cannot evade yaw checks by sending looking-direction packets or smoothing methods...
         double distance = strafe * strafe + forward * forward;

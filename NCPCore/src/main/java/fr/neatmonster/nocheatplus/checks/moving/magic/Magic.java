@@ -73,9 +73,13 @@ public class Magic {
     public static final double WALK_SPEED           = 0.221D;
     public static final double[] modSwim            = new double[] {
             // Horizontal AND vertical with body fully in water
-            0.115D / WALK_SPEED,   
+            0.115D / WALK_SPEED,  
+            // Horizontal swimming only, 1.13 (Do not multiply with thisMove.walkSpeed)
+            0.044D / WALK_SPEED,  
             // Vertical swimming only, 1.13 
-            0.3D / WALK_SPEED,}; 
+            0.3D / WALK_SPEED, 
+            // Horizontal with body out of water (surface level)
+            0.146D / WALK_SPEED,}; 
     public static final double modDownStream        = 0.19D / (WALK_SPEED * modSwim[0]);
     public static final double[] modDepthStrider    = new double[] {
             1.0,
