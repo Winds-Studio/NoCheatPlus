@@ -44,7 +44,6 @@ public class Scaffold extends Check {
     
    /*
     * Instanties a new Scaffold check
-    *
     */
     public Scaffold() {
         super(CheckType.BLOCKPLACE_SCAFFOLD);
@@ -66,7 +65,21 @@ public class Scaffold extends Check {
     public boolean check(final Player player, final BlockFace placedFace, final IPlayerData pData,
                          final BlockPlaceData data, final BlockPlaceConfig cc, final boolean isCancelled,
                          final double yDistance, final int jumpPhase) {
-        
+        // NOTE: Looks like there's a legit fast-scaffolding technique called 'god-bridge'
+        // Would be useful to compare the speed with a skilled player god-bridging VS scaffold cheats.
+        // TODO: ^ Need testing + debug log + someone who can actually replicate such... :)
+
+        // TODO: Not too sure about the usefulness of this check these days:
+        // Angle: like reported in the comment below, this is already covered by BlockInteract.Direction. Why not simply sharpen that one instead of bloating NCP with redundant code?
+        // Time: Possibly rethink it. Could be moved to FastPlace as a sub-check
+        //       ...Or just remove it. We already have a FastPlace check (which is ALSO
+        //       feeding Improbable with too fast block placements on longer time periods...)
+        // Sprint: Would be best to have our own sprinting handling, and catch the cheat with SurvivalFly instead.
+        //        (If the player sprints while placing a block: sprinting = false -> cause Sf to enforce walking speed -> the player will then trigger a speed violation)
+        // ToolSwitch: matter of taste... it may catch badly implemented scaffold cheats but not really much else. 
+        //             Also clashes with NCP's principle (having long-lasting checks based on deterministic protection, not detecting specific cheat implementations)  
+        // PitchRotation: this is the only one that I can see being kept. Combined with yawrate, they can nerf the cheat decently.
+        //                (At that point it should be moved as a subcheck into something else. Wrongturn? A new Combined.PitchRate check? Wouldn't make sense keeping it into the BlockPlace category)      
         boolean cancel = false;
 
         // Update sneakTime since the player may have unsneaked after the last move.
@@ -88,9 +101,9 @@ public class Scaffold extends Check {
         // Should ensure the player cannot quickly place blocks below themselves.
         if (cc.scaffoldTime && !isCancelled && Math.abs(player.getLocation().getPitch()) > 70
             && (data.currentTick - data.sneakTime) > 3 
-            && !player.hasPotionEffect(PotionEffectType.SPEED)
-            ) {
-
+            && !player.hasPotionEffect(PotionEffectType.SPEED)) {
+            
+            // TODO: Switch to ActionAccumulator based check.
             data.placeTick.add(data.currentTick);
             if (data.placeTick.size() > 2) {
                 long sum = 0;
@@ -182,14 +195,13 @@ public class Scaffold extends Check {
      * @param pData
      * @return
      */
-    public boolean violation(final String addTags, final int weight, final Player player,
+    private boolean violation(final String addTags, final int weight, final Player player,
                              final BlockPlaceData data, final IPlayerData pData) {
 
         ViolationData vd = new ViolationData(this, player, data.scaffoldVL, weight, pData.getGenericInstance(BlockPlaceConfig.class).scaffoldActions);
         tags.add(addTags);
         if (vd.needsParameters()) vd.setParameter(ParameterName.TAGS, StringUtil.join(tags, "+"));
         data.scaffoldVL += weight;
-
         return executeActions(vd).willCancel();
     }
 }
