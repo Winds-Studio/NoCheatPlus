@@ -73,7 +73,8 @@ public class NoFall extends Check {
 
     /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
     private final Location useLoc = new Location(null, 0, 0, 0);
-    private final Location useLoc2 = new Location(null, 0, 0, 0);
+    /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
+    private static final Location useLoc2 = new Location(null, 0, 0, 0);
     private final Random random = new Random();
 
     private final static boolean ServerIsAtLeast1_12 = ServerVersion.compareMinecraftVersion("1.12") >= 0;
@@ -115,8 +116,7 @@ public class NoFall extends Check {
         // Damage to be dealt.
         final float fallDist = (float) getApplicableFallHeight(player, y, previousSetBackY, data);
         double maxD = getDamage(fallDist);
-        maxD = calcDamagewithfeatherfalling(player, calcReducedDamageByBlock(player, data, maxD), 
-                                            mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
+        maxD = calcDamagewithfeatherfalling(player, calcReducedDamageByBlock(player, data, maxD), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
         fallOn(player, fallDist);
 
         if (maxD >= Magic.FALL_DAMAGE_MINIMUM) {
@@ -145,7 +145,8 @@ public class NoFall extends Check {
 
 
     /**
-     * Change state of some blocks when they fall on like Farmland
+     * Change the state of selected blocks when the player falls onto them, like Farmland
+     * (This is to workaround the issue described in the TODO above)
      * 
      * @param player
      * @param fallDist
@@ -164,15 +165,18 @@ public class NoFall extends Check {
                 player.setVelocity(new Vector(player.getVelocity().getX() * -1, 0.062501, player.getVelocity().getZ() * -1));
                 block.setType(Material.DIRT);
             }
+            useLoc2.setWorld(null);
             return;
         }
+
         if (Bridge1_13.hasIsSwimming() && block.getType() == Material.TURTLE_EGG && random.nextInt(3) == 0) {
             final TurtleEgg egg = (TurtleEgg) block.getBlockData();
             final BlockState newState = block.getState();
             if (canChangeBlock(player, block, newState, true, false, false)) {
                 if (egg.getEggs() - 1 > 0) {
                     egg.setEggs(egg.getEggs() - 1);
-                } else block.setType(Material.AIR);
+                } 
+                else block.setType(Material.AIR);
             }
         }
         useLoc2.setWorld(null);
@@ -191,21 +195,18 @@ public class NoFall extends Check {
      * @return if can change the block
      */
     private boolean canChangeBlock(final Player player, final Block block, final BlockState newState,
-            final boolean interact, final boolean entityChangeBlock, final boolean fade) {
+                                   final boolean interact, final boolean entityChangeBlock, final boolean fade) {
 
         if (interact) {
-            final PlayerInteractEvent interactevent = new PlayerInteractEvent(player, Action.PHYSICAL, null, block, BlockFace.SELF);
-            Bukkit.getPluginManager().callEvent(interactevent);
-            if (interactevent.isCancelled()) return false;
+            final PlayerInteractEvent interactEvent = new PlayerInteractEvent(player, Action.PHYSICAL, null, block, BlockFace.SELF);
+            Bukkit.getPluginManager().callEvent(interactEvent);
+            if (interactEvent.isCancelled()) return false;
         }
 
         if (entityChangeBlock) {
             if (!Bridge1_13.hasIsSwimming()) {
                 // 1.6.4-1.12.2 backward compatibility
-                Object o = ReflectionUtil.newInstance(
-                    ReflectionUtil.getConstructor(EntityChangeBlockEvent.class, Entity.class, Block.class, Material.class, byte.class),
-                    player, block, Material.DIRT, (byte)0
-                );
+                Object o = ReflectionUtil.newInstance(ReflectionUtil.getConstructor(EntityChangeBlockEvent.class, Entity.class, Block.class, Material.class, byte.class), player, block, Material.DIRT, (byte)0);
                 if (o instanceof EntityChangeBlockEvent) {
                     EntityChangeBlockEvent event = (EntityChangeBlockEvent)o;
                     Bukkit.getPluginManager().callEvent(event);
@@ -213,9 +214,9 @@ public class NoFall extends Check {
                 }
             } 
             else {
-                final EntityChangeBlockEvent blockevent = new EntityChangeBlockEvent(player, block, newState.getBlockData()); 
-                Bukkit.getPluginManager().callEvent(blockevent);
-                if (blockevent.isCancelled()) return false;
+                final EntityChangeBlockEvent blockChangeEvent = new EntityChangeBlockEvent(player, block, newState.getBlockData()); 
+                Bukkit.getPluginManager().callEvent(blockChangeEvent);
+                if (blockChangeEvent.isCancelled()) return false;
             }
         }
 
@@ -223,9 +224,9 @@ public class NoFall extends Check {
         if (fade && Bridge1_9.hasGetItemInOffHand()) {
             final BlockState newstate = block.getState();
             newstate.setType(Material.DIRT);
-            final BlockFadeEvent fadeevent = new BlockFadeEvent(block, newstate);
-            Bukkit.getPluginManager().callEvent(fadeevent);
-            if (fadeevent.isCancelled()) return false;
+            final BlockFadeEvent fadeEvent = new BlockFadeEvent(block, newstate);
+            Bukkit.getPluginManager().callEvent(fadeEvent);
+            if (fadeEvent.isCancelled()) return false;
         }
         return true;
     }
@@ -241,11 +242,14 @@ public class NoFall extends Check {
      */
     public static double calcDamagewithfeatherfalling(Player player, double damage, boolean active) {
 
-        if (active) return damage;
+        if (active) {
+            return damage;
+        }
+
         if (BridgeEnchant.hasFeatherFalling() && damage > 0.0) {
-            int levelench = BridgeEnchant.getFeatherFallingLevel(player);
-            if (levelench > 0) {
-                int tmp = levelench * 3;
+            int EnchLevel = BridgeEnchant.getFeatherFallingLevel(player);
+            if (EnchLevel > 0) {
+                int tmp = EnchLevel * 3;
                 if (tmp > 20) tmp = 20;
                 return damage * (1.0 - tmp / 25.0);
             }
@@ -255,28 +259,28 @@ public class NoFall extends Check {
     
 
     /**
-     * Reduce the fall damage if the player lands on a specific block
+     * Reduce fall damage if the player lands on a specific block
      * 
      * @param player
      * @param data
      * @param damage
      * @return reduced damage
      */
-    public static double calcReducedDamageByBlock(final Player player, final MovingData data,final double damage) {
+    public static double calcReducedDamageByBlock(final Player player, final MovingData data, final double damage) {
 
-        final PlayerMoveData validmove = data.playerMoves.getLatestValidMove();
-        if (validmove != null && validmove.toIsValid) {
+        final PlayerMoveData validMove = data.playerMoves.getLatestValidMove();
+        if (validMove != null && validMove.toIsValid) {
             // TODO: Need move data pTo, this location isn't updated
-            final Material blockmat = player.getWorld().getBlockAt(
-                    Location.locToBlock(validmove.to.getX()), Location.locToBlock(validmove.to.getY()), Location.locToBlock(validmove.to.getZ())
-                    ).getType();
-            if ((BlockFlags.getBlockFlags(blockmat) & BlockFlags.F_STICKY) != 0) {
+            final Material blockMat = player.getWorld().getBlockAt(Location.locToBlock(validMove.to.getX()), Location.locToBlock(validMove.to.getY()), Location.locToBlock(validMove.to.getZ())).getType();
+            if ((BlockFlags.getBlockFlags(blockMat) & BlockFlags.F_STICKY) != 0) {
                 return damage / 5D;
             }
-            if (ServerIsAtLeast1_12 && MaterialUtil.BEDS.contains(blockmat)) {
+            // Beds were made bouncy in 1.12. They will also partially nerf the damage.
+            if (ServerIsAtLeast1_12 && MaterialUtil.BEDS.contains(blockMat)) {
                 return damage / 2D;
             }
-            if (Bridge1_9.hasEndRod() && blockmat == Material.HAY_BLOCK) {
+            // Uh... This mechanic exists since 1.9
+            if (Bridge1_9.hasEndRod() && blockMat == Material.HAY_BLOCK) {
                 return damage / 5D;
             }
         }
@@ -296,7 +300,6 @@ public class NoFall extends Check {
      * @return
      */
     private static double getApplicableFallHeight(final Player player, final double y, final double previousSetBackY, final MovingData data) {
-
         //return getDamage(Math.max((float) (data.noFallMaxY - y), Math.max(data.noFallFallDistance, player.getFallDistance())));
         final double yDistance = Math.max(data.noFallMaxY - y, data.noFallFallDistance);
         if (yDistance > 0.0 && data.jumpAmplifier > 0.0 
@@ -313,10 +316,15 @@ public class NoFall extends Check {
         return yDistance;
     }
 
-
+    /**
+     * 
+     * @param player
+     * @param y
+     * @param data
+     * @return
+     */
     public static double getApplicableFallHeight(final Player player, final double y, final MovingData data) {
-        return getApplicableFallHeight(player, y, 
-                data.hasSetBack() ? data.getSetBackY() : Double.NEGATIVE_INFINITY, data);
+        return getApplicableFallHeight(player, y, data.hasSetBack() ? data.getSetBackY() : Double.NEGATIVE_INFINITY, data);
     }
 
 
@@ -331,11 +339,8 @@ public class NoFall extends Check {
      * @param data
      * @return
      */
-    public boolean willDealFallDamage(final Player player, final double y, 
-                                      final double previousSetBackY, final MovingData data) {
-
-        return getDamage((float) getApplicableFallHeight(player, y, previousSetBackY, data))
-                                 - Magic.FALL_DAMAGE_DIST >= Magic.FALL_DAMAGE_MINIMUM;
+    public boolean willDealFallDamage(final Player player, final double y, final double previousSetBackY, final MovingData data) {
+        return getDamage((float) getApplicableFallHeight(player, y, previousSetBackY, data)) - Magic.FALL_DAMAGE_DIST >= Magic.FALL_DAMAGE_MINIMUM;
     }
 
     /**
@@ -348,7 +353,6 @@ public class NoFall extends Check {
      */
     private void adjustFallDistance(final Player player, final double minY, final boolean reallyOnGround, 
                                     final MovingData data, final MovingConfig cc) {
-
         final float noFallFallDistance = Math.max(data.noFallFallDistance, (float) (data.noFallMaxY - minY));
         if (noFallFallDistance >= Magic.FALL_DAMAGE_DIST) {
             final float fallDistance = player.getFallDistance();
@@ -420,7 +424,6 @@ public class NoFall extends Check {
     public void check(final Player player, final PlayerLocation pFrom, final PlayerLocation pTo, 
                       final double previousSetBackY,
                       final MovingData data, final MovingConfig cc, final IPlayerData pData) {
-
         final boolean debug = pData.isDebugActive(type);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final LocationData from = thisMove.from;
@@ -439,7 +442,7 @@ public class NoFall extends Check {
         final boolean fromReset = from.resetCond;
         final boolean toReset = to.resetCond;
         final boolean fromOnGround, toOnGround;
-        
+    
         // Adapt yOnGround if necessary (sf uses another setting).
         if (yDiff < 0 && cc.yOnGround < cc.noFallyOnGround) {
             // In fact this is somewhat heuristic, but it seems to work well.
@@ -455,7 +458,6 @@ public class NoFall extends Check {
         }
 
         // TODO: early returns (...) 
-
         final double minY = Math.min(fromY, toY);
 
         if (fromReset) {
@@ -496,7 +498,6 @@ public class NoFall extends Check {
          * resetTo). This is after dealing damage, needs to be done differently.
          */
         data.noFallMaxY = Math.max(Math.max(fromY, toY), data.noFallMaxY);
-
         // TODO: fall distance might be behind (!)
         // TODO: should be the data.noFallMaxY be counted in ?
         final float mcFallDistance = player.getFallDistance(); // Note: it has to be fetched here.
@@ -506,7 +507,9 @@ public class NoFall extends Check {
         if (!toReset && !toOnGround && yDiff < 0) {
             data.noFallFallDistance -= yDiff;
         }
-        else if (cc.noFallAntiCriticals && (toReset || toOnGround || (fromReset || fromOnGround || thisMove.touchedGround) && yDiff >= 0)) {
+        else if (cc.noFallAntiCriticals 
+                && (toReset || toOnGround || (fromReset || fromOnGround || thisMove.touchedGround) && yDiff >= 0)) {
+
             final double max = Math.max(data.noFallFallDistance, mcFallDistance);
             if (max > 0.0 && max < 0.75) { // (Ensure this does not conflict with deal-damage set to false.) 
 
@@ -527,7 +530,6 @@ public class NoFall extends Check {
         if (debug) {
             debug(player, "NoFall: mc=" + mcFallDistance +" / nf=" + data.noFallFallDistance + (oldNFDist < data.noFallFallDistance ? " (+" + (data.noFallFallDistance - oldNFDist) + ")" : "") + " | ymax=" + data.noFallMaxY);
         }
-
     }
 
     /**
@@ -540,9 +542,10 @@ public class NoFall extends Check {
      *            Double.NEGATIVE_INFINITY.
      * @param data
      * @param cc
+     * @param pData
      */
     private void touchDown(final Player player, final double minY, final double previousSetBackY,
-            final MovingData data, final MovingConfig cc, IPlayerData pData) {
+                           final MovingData data, final MovingConfig cc, IPlayerData pData) {
         if (cc.noFallDealDamage) {
             handleOnGround(player, minY, previousSetBackY, true, data, cc, pData);
         }
@@ -555,7 +558,7 @@ public class NoFall extends Check {
      * Set yOnGround for from and to, if needed, should be obsolete.
      * @param from
      * @param to
-     * @param cc
+     * @param yOnGround
      */
     private void adjustYonGround(final PlayerLocation from, final PlayerLocation to, final double yOnGround) {
         if (!from.isOnGround()) {
@@ -569,22 +572,26 @@ public class NoFall extends Check {
     /**
      * Quit or kick: adjust fall distance if necessary.
      * @param player
+     * @param data
+     * @param pData
      */
-    public void onLeave(final Player player, final MovingData data, 
-            final IPlayerData pData) {
+    public void onLeave(final Player player, final MovingData data, final IPlayerData pData) {
         final float fallDistance = player.getFallDistance();
         // TODO: Might also detect too high mc fall dist.
         if (data.noFallFallDistance > fallDistance) {
+
             final double playerY = player.getLocation(useLoc).getY();
             useLoc.setWorld(null);
-            if (player.isFlying() || player.getGameMode() == GameMode.CREATIVE
-                    || player.getAllowFlight() 
-                    && pData.getGenericInstance(MovingConfig.class).noFallSkipAllowFlight) {
+            if (player.isFlying() 
+                || player.getGameMode() == GameMode.CREATIVE
+                || player.getAllowFlight() 
+                && pData.getGenericInstance(MovingConfig.class).noFallSkipAllowFlight) {
                 // Forestall potential issues with flying plugins.
                 player.setFallDistance(0f);
                 data.noFallFallDistance = 0f;
                 data.noFallMaxY = playerY;
-            } else {
+            } 
+            else {
                 // Might use tolerance, might log, might use method (compare: MovingListener.onEntityDamage).
                 // Might consider triggering violations here as well.
                 final float yDiff = (float) (data.noFallMaxY - playerY);
@@ -596,16 +603,16 @@ public class NoFall extends Check {
     }
 
     /**
-     * This is called if a player fails a check and gets set back, to avoid using that to avoid fall damage the player might be dealt damage here. 
+     * This is called if a player fails a check and gets set back, 
+     * to avoid using that to avoid fall damage the player might be dealt damage here. 
      * @param player
+     * @param y
      * @param data
+     * @param pData
      */
-    public void checkDamage(final Player player,  final double y, 
-            final MovingData data, final IPlayerData pData) {
+    public void checkDamage(final Player player, final double y, final MovingData data, final IPlayerData pData) {
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         // Deal damage.
-        handleOnGround(player, y, data.hasSetBack() ? data.getSetBackY() : Double.NEGATIVE_INFINITY, 
-                false, data, cc, pData);
+        handleOnGround(player, y, data.hasSetBack() ? data.getSetBackY() : Double.NEGATIVE_INFINITY, false, data, cc, pData);
     }
-
 }

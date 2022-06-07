@@ -80,7 +80,7 @@ public class LostGround {
             final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
             if (yDistance <= 0.0 && lastMove.toIsValid) {
                 // Lost ground while falling onto/over edges of blocks.
-                if (yDistance < 0 && hDistance <= 1.5 && lastMove.yDistance < 0.0 && yDistance > lastMove.yDistance && !to.isOnGround()) {
+                if (yDistance < 0.0 && hDistance <= 1.5 && lastMove.yDistance < 0.0 && yDistance > lastMove.yDistance && !to.isOnGround()) {
                     // TODO: yDistance <= 0 might be better.
                     if (from.isOnGround(0.5, 0.2, 0) || to.isOnGround(0.5, Math.min(0.2, 0.01 + hDistance), Math.min(0.1, 0.01 + -yDistance))) {
                         return applyLostGround(player, from, true, thisMove, data, "edgedesc", tags);
@@ -145,7 +145,6 @@ public class LostGround {
             final double setBackYMargin = data.liftOffEnvelope.getMaxJumpHeight(data.jumpAmplifier) - setBackYDistance;
             if (setBackYMargin >= 0.0) {
                 // Half block step up (definitive).
-                // NOTE: With the !resetTo condition in SurvivalFly (resetfrom) this will never get applied.
                 // Also, why is this even a "lost" ground case if the player has moved onto ground!?
                 // if (to.isOnGround() && setBackYMargin >= yDistance && hDistance <= thisMove.hAllowedDistance) {
                 //    if (lastMove.yDistance < 0.0 || yDistance <= cc.sfStepHeight && from.isOnGround(cc.sfStepHeight - yDistance)) {
@@ -180,23 +179,21 @@ public class LostGround {
                 // TODO: Confine by actually having placed a block nearby.
                 // TODO: Jump phase can be 6/7 - also confine by typical max jump phase (!)
                 final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier);
-                if (
-                        maxJumpGain > yDistance 
-                        && (
-                                // Typical: distance to ground + yDistance roughly covers maxJumpGain.
-                                yDistance > 0.0
-                                && lastMove.yDistance < 0.0 // Rather -0.15 or so.
-                                && Math.abs(lastMove.yDistance) + Magic.GRAVITY_MAX + yDistance > cc.yOnGround + maxJumpGain 
-                                && from.isOnGround(Magic.Y_ON_GROUND_DEFAULT)
-                                /*
-                                 * Rather rare: Come to rest above the block.
-                                 * Multiple 0-dist moves with looking packets.
-                                 * Not sure this happens with hdist > 0 at all.
-                                 */
-                                || lastMove.yDistance == 0.0
-                                && noobTowerStillCommon(to, yDistance)
-                                )
-                        ) {
+                if (maxJumpGain > yDistance 
+                    && (
+                        // Typical: distance to ground + yDistance roughly covers maxJumpGain.
+                        yDistance > 0.0
+                        && lastMove.yDistance < 0.0 // Rather -0.15 or so.
+                        && Math.abs(lastMove.yDistance) + Magic.GRAVITY_MAX + yDistance > cc.yOnGround + maxJumpGain 
+                        && from.isOnGround(Magic.Y_ON_GROUND_DEFAULT)
+                        /*
+                         * Rather rare: Come to rest above the block.
+                         * Multiple 0-dist moves with looking packets.
+                         * Not sure this happens with hdist > 0 at all.
+                         */
+                        || lastMove.yDistance == 0.0
+                        && noobTowerStillCommon(to, yDistance)
+                    )) {
                     // TODO: Ensure set back is slightly lower, if still on ground.
                     // setBackSafe: false to prevent a lowjump due to the setback reset.
                     return applyLostGround(player, from, false, thisMove, data, "nbtwr", tags);
@@ -356,7 +353,6 @@ public class LostGround {
         x2 -= x1;
         z2 -= z1;
 
-        // double y2 = data.fromY - y1; // Just for consistency checks (lastYDist).
         // Second: cap the size of the extra box (at least horizontal).
         double fMin = 1.0; // Factor for capping.
         if (Math.abs(x2) > hDistance2) {

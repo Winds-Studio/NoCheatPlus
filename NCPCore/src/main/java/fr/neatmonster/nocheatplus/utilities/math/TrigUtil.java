@@ -45,22 +45,21 @@ public class TrigUtil {
 
     public static final double PId2 =  Math.PI / 2.0;
 
-    private static final double radFull =  Math.PI * 2.0;
+    private static final double RAD_FULL =  Math.PI * 2.0;
 
-    private static final double degFull = 360.0;
+    private static final double DEG_FULL = 360.0;
 
-    private static final double radToIndex = 651.8986;
+    private static final double RAD_TO_INDEX = 651.8986;
 
-    private static final double degToIndex = 11.377778;
+    private static final double DEG_TO_INDEX = 11.377778;
 
-    public static final double deg2Rad = 0.017453292D;
+    public static final double DEG_TO_RAD = 0.017453292;
     /** Multiply to get grad from rad. */
-    public static final double fRadToGrad = degFull / PI2;
-
-    private static final float[] SIN_FAST = new float[4096]; // Uh, oh... Optifine might be a problem here.
+    public static final double fRadToGrad = DEG_FULL / PI2;
 
    /**
     * NMS table of sin values computed from 0 (inclusive) to 2*pi (exclusive), with steps of 2*PI / 65536.
+    * (Optifine uses a different table but let's pretend it doesn't exist for the moment... :))
     * From Mth.java (1.18.2)
     */
     private static float[] SIN = new float[65536];
@@ -70,13 +69,34 @@ public class TrigUtil {
             SIN[i] = (float) Math.sin((double) i * 3.141592653589793D * 2.0D / 65536.0D);
         }
     }
+
+    /**
+     * Sin looked up in a table
+     * @param var0
+     * @return the sin
+     */
+    public static double sin(double var0) 
+    {
+      return (double)SIN[(int)(var0 * 10430.378F) & '\uffff'];
+    }
+    
+    /**
+     * Cos looked up in the sin table with the appropriate offset
+     * @param var0
+     * @return the cos
+     */
+    public static double cos(double var0) 
+    {
+      return (double)SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
+    }
     
     /**
      * Sin looked up in a table
      * @param var0
      * @return the sin
      */
-    public static float sin(float var0) {
+    public static float sin(float var0) 
+    {
       return SIN[(int)(var0 * 10430.378F) & '\uffff'];
     }
     
@@ -85,7 +105,8 @@ public class TrigUtil {
      * @param var0
      * @return the cos
      */
-    public static float cos(float var0) {
+    public static float cos(float var0) 
+    {
       return SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
     }
 
@@ -832,5 +853,4 @@ public class TrigUtil {
     public static boolean isSameBlock(int x, int y, int z, Block block) {
         return x == block.getX() && y == block.getY() && z == block.getZ();
     }
-
 }

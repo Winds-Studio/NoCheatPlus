@@ -524,9 +524,10 @@ public class BlockProperties {
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
-        /** Values from client code. */
+        /** 1.15 changed the ground-seeking distance to 0.5 */
         final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
+        /** Default friction for all other blocks */
         final double DEFAULT_FRICTION = 0.6D;
         double friction = DEFAULT_FRICTION;
         if (isBlueIce(blockBelow)) {
@@ -1173,7 +1174,7 @@ public class BlockProperties {
         // Reset tool props.
         blocks.clear();
         
-        /**
+        /*
          * Clean up pending.
          * Move 1.14 and 1.12 blocks to to an extra setup class.
          * 

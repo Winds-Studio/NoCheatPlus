@@ -45,6 +45,7 @@ public class Magic {
     public static final double DOLPHIN_GRACE_INERTIA = 0.96;
     public static final double STRIDER_OFF_GROUND_PENALTY_MULTIPLIER = 0.5;
     public static final double SNEAK_MULTIPLIER = 0.3;
+    public static final double SPRINT_MULTIPLIER = 1.3;
     public static final double USING_ITEM_MULTIPLIER = 0.2;
     public static final double SNEAK_STEP_DISTANCE = 0.05;
     public static final double LAVA_HORIZONTAL_INERTIA = 0.5;
@@ -148,6 +149,41 @@ public class Magic {
     public static final double EXTREME_MOVE_DIST_HORIZONTAL = 22.0;
     /** Minimal xz-margin for chunk load. */
     public static final double CHUNK_LOAD_MARGIN_MIN = 3.0;
+
+    /**
+     * Test if this move was a bunnyhop (sprint-jump)
+     * 
+     * @param data
+     * @param fromPastOnGround
+     * @param sprinting
+     * @param allowHop Set to false if data.bunnyhopDelay is active.
+     * @param doubleHop Special hop case.
+     * @return true if is bunnyhop.
+     * 
+     */
+    public static boolean isBunnyhop(final MovingData data, final boolean fromPastOnGround, boolean sprinting, boolean allowHop, boolean doubleHop) {
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+
+        if (!allowHop || data.sfLowJump) {
+            return false;
+        }
+
+        return 
+                // This mechanic is applied only if the player is sprinting (We check for low-jumping to prevent abuse.)
+                sprinting && lastMove.toIsValid
+                // Normal jumping. Demand the player to hit the jumping envelope.
+                && thisMove.yDistance > data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
+                && (
+                    // Ordinary/obvious lift-off.
+                    data.sfJumpPhase == 0 && thisMove.from.onGround
+                    // Do allow hopping if a past on ground status is found or this (legitimate) on ground phase was lost 
+                    || data.sfJumpPhase == 1 && ((thisMove.touchedGroundWorkaround || fromPastOnGround) && !lastMove.bunnyHop)
+                    // Double bunny 
+                    || doubleHop 
+                )
+            ;
+    }
     
     /**
      * 
@@ -500,7 +536,8 @@ public class Magic {
     public static boolean noobJumpsOffTower(final double yDistance, final double maxJumpGain, 
             final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingData data) {
         final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
-        return (data.sfJumpPhase == 1 && lastMove.touchedGroundWorkaround // TODO: Not observed though.
+        return (
+                data.sfJumpPhase == 1 && lastMove.touchedGroundWorkaround // TODO: Not observed though.
                 || data.sfJumpPhase == 2 && inAir(lastMove)
                 && secondPastMove.valid && secondPastMove.touchedGroundWorkaround
                 )

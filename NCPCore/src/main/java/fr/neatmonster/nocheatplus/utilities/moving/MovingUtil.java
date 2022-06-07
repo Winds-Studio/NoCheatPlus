@@ -193,44 +193,44 @@ public class MovingUtil {
     public static void updateHorizontalSpeed(Player player, double strafe, double forward, double movementSpeedFactor, double xOldDistance, double zOldDistance, final PlayerLocation from) {
         // TODO: Add a method to know if the player is moving: RIGHT, LEFT, FORWARD, BACKWARDS (possibly with an enum class? i.e.: MovementDirection.LEFT, MovementDirection.RIGHT etc...) 
         // TODO: Also need to ensure that players cannot evade yaw checks by sending looking-direction packets or smoothing methods...
-        double distance = strafe * strafe + forward * forward;
-        float yaw = (float) from.getYaw();
-        
+        double distanceSq = strafe * strafe + forward * forward;        
         if (distance >= 1.0E-4) {
             
-            distance = Math.sqrt(distance);
+            double distance = Math.sqrt(distanceSq);
             if (distance < 1.0) {
                 distance = 1.0;
             }
             distance = movementSpeedFactor / distance;
             strafe = strafe * distance;
             forward = forward * distance;
-            float sinYaw = TrigUtil.sin(yaw * (float)Math.PI / (float)180.0); 
-            float cosYaw = TrigUtil.cos(yaw * (float)Math.PI / (float)180.0);
+            double sinYaw = TrigUtil.sin(from.getYaw() * Math.PI / 180.0); 
+            double cosYaw = TrigUtil.cos(from.getYaw() * Math.PI / 180.0);
             // Add the newly calculated speed
-            xOldDistance += (double)(strafe * cosYaw - forward * sinYaw);
-            zOldDistance += (double)(forward * cosYaw + strafe * sinYaw);
+            xOldDistance += (strafe * cosYaw - forward * sinYaw);
+            zOldDistance += (forward * cosYaw + strafe * sinYaw);
         }
     }
 
 
     /**
-     * Apply various speed modifiers from status (ex.: sneaking) and media (ex.: webs)
-     * (Here, the client would move the player with this method)
+     * Apply all horizontal speed modifiers from status (ex.: sneaking) and media (ex.: webs)
      * @param player
      * @param pData
      * @param from
      * @param data
      * @param to
      * @param sneaking
-     * @param xDistance Already updated xDistance
-     * @param zDistance Already updated zDistance
+     * @param xDistance xDistance to apply modifiers to 
+     * @param zDistance zDistance to apply modifiers to
      * @param onGround Accounts for ALL oddities (lost ground, past block activity etc)
+     * @param tags
+     * @param checkPermissions
+     * @param width
      * @return 
      */
-    public static void applyModifiersToUpdatedSpeed(final Player player, final IPlayerData pData, final PlayerLocation from, final MovingData data, 
-                                                    final PlayerLocation to, final boolean sneaking, double xDistance, double zDistance, final boolean onGround,
-                                                    final Collection<String> tags, boolean checkPermissions, final double width) {
+    public static void applySpeedModifiers(final Player player, final IPlayerData pData, final PlayerLocation from, final MovingData data, 
+                                           final PlayerLocation to, final boolean sneaking, double xDistance, double zDistance, final boolean onGround,
+                                           final Collection<String> tags, boolean checkPermissions, final double width) {
 
         // TODO: Stairs speed (how the fuck do they work with the auto-jump being able to boost speed?)  
         // TODO: Fluid pushing (!)
@@ -656,16 +656,6 @@ public class MovingUtil {
 
 
     /**
-     * Used for a workaround that resets the set back for the case of jumping on just placed blocks.
-     * @param id
-     * @return
-     */
-    public static boolean canJumpOffTop(final Material blockType) {
-        return BlockProperties.isGround(blockType) || BlockProperties.isSolid(blockType);
-    }
-
-
-    /**
      * Check the context-independent pre-conditions for checking for untracked
      * locations (not the world spawn, location is not passable, passable is
      * enabled for the player).
@@ -674,8 +664,7 @@ public class MovingUtil {
      * @param loc
      * @return
      */
-    public static boolean shouldCheckUntrackedLocation(final Player player, 
-            final Location loc, final IPlayerData pData) {
+    public static boolean shouldCheckUntrackedLocation(final Player player, final Location loc, final IPlayerData pData) {
         return !TrigUtil.isSamePos(loc, loc.getWorld().getSpawnLocation()) 
                 && !BlockProperties.isPassable(loc)
                 && pData.isCheckActive(CheckType.MOVING_PASSABLE, player);

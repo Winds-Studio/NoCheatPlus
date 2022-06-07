@@ -969,7 +969,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // TODO: Not sure if this is intentional but the cap would force NCP to always pick 30 for velocity entries smaller than 3.0
         // As a workaround/fix simply increase the actual velocity value
         // See: https://github.com/NoCheatPlus/NoCheatPlus/commit/a5ed7805429c73f8f2fec409c1947fb032210833
-        return Math.max(30, 1 + (int) Math.round(velocity * 50.0));
+        return Math.max(30, 1 + (int) Math.round(velocity * 10.0)); // (Revert to 10 due to the hSpeed recode)
     }
     
 
