@@ -1704,8 +1704,8 @@ public class BlockProperties {
         props = new BlockProps(BlockProperties.woodPickaxe, 1.25f, BlockProperties.secToMs(6.25, 0.95, 0.5, 0.35, 0.25, 0.2, 0.15));
         for (final Material mat : MaterialUtil.TERRACOTTA_BLOCKS) {
             if (mat != null) {
-               BlockProperties.setBlockProps(mat, props);
-               BlockFlags.setFlagsAs(mat, Material.STONE);
+                BlockProperties.setBlockProps(mat, props);
+                BlockFlags.setFlagsAs(mat, Material.STONE);
             }
         }
 

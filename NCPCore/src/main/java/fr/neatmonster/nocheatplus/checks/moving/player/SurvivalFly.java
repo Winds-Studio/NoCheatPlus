@@ -897,7 +897,7 @@ public class SurvivalFly extends Check {
                 // Account for NCP base speed modifiers. 
                 xDistance *= cc.survivalFlyWalkingSpeed / 100D;
                 zDistance *= cc.survivalFlyWalkingSpeed / 100D;
-                // Apply friction to simulate drag
+                // Apply friction 
                 xDistance *= inertia;
                 zDistance *= inertia;
             }
@@ -908,7 +908,7 @@ public class SurvivalFly extends Check {
                 // Account for NCP base speed modifiers.
                 xDistance *= cc.survivalFlySwimmingSpeed / 100D;
                 zDistance *= cc.survivalFlySwimmingSpeed / 100D;
-                // Apply friction to the new speed to simulate drag 
+                // Apply friction  
                 xDistance *= Magic.LAVA_HORIZONTAL_INERTIA;
                 zDistance *= Magic.LAVA_HORIZONTAL_INERTIA; 
             }
@@ -920,25 +920,25 @@ public class SurvivalFly extends Check {
             double acceleration = Magic.LIQUID_BASE_ACCELERATION;
             final double StriderLevel = BridgeEnchant.getDepthStriderLevel(player) * (!onGround ? Magic.STRIDER_OFF_GROUND_PENALTY_MULTIPLIER : 1.0); // NCP already caps Strider to 3
             
-            // Account for depth strider
+            // Account for depth strider (Less speed conservation[More friction], but more per-tick speed)
             if (StriderLevel > 0.0) {
                 waterInertia += (0.54600006D - waterInertia) * StriderLevel / 3.0;
                 acceleration += (speedAttribute * 1.0 - acceleration) * StriderLevel / 3.0; 
             }
             
-            // Account for dolphin's grace
+            // Account for dolphin's grace (More speed conservation[less friction], no change in the per-tick speed gain)
             // (This overrides swimming AND depth strider friction)
             // Should note that this is the only reference about dolphin's grace in the code that I could find. 
             if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
                 waterInertia = Magic.DOLPHIN_GRACE_INERTIA; 
             }
-
+            
             MovingUtil.updateHorizontalSpeed(player, 0.98, 0.98, acceleration, xDistance, zDistance, from);
             MovingUtil.applySpeedModifiers(player, pData, from, data, to, sneaking, xDistance, zDistance, onGround, tags, checkPermissions, mcAccess.getHandle().getWidth(player));
             // Account for NCP base speed modifiers.
             xDistance *= cc.survivalFlySwimmingSpeed / 100D;
             zDistance *= cc.survivalFlySwimmingSpeed / 100D;
-            // Apply friction to the new speed to simulate drag
+            // Apply friction 
             xDistance *= waterInertia; 
             zDistance *= waterInertia;
         }

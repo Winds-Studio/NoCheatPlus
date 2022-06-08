@@ -321,7 +321,7 @@ public class BridgeMaterial {
     // TODO: Which is the old long grass...
     public static final Material TALL_GRASS = getFirstNotNull("tall_grass", "long_grass");
 
-    public static final Material TERRACOTTA = getFirstNotNull("terracotta", "hard_clay");
+    public static final Material TERRACOTTA = getFirst("terracotta", "hard_clay");
 
     public static final Material VOID_AIR = get("void_air"); // May be null on legacy spigot.
 

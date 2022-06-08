@@ -194,7 +194,7 @@ public class MovingUtil {
         // TODO: Add a method to know if the player is moving: RIGHT, LEFT, FORWARD, BACKWARDS (possibly with an enum class? i.e.: MovementDirection.LEFT, MovementDirection.RIGHT etc...) 
         // TODO: Also need to ensure that players cannot evade yaw checks by sending looking-direction packets or smoothing methods...
         double distanceSq = strafe * strafe + forward * forward;        
-        if (distance >= 1.0E-4) {
+        if (distanceSq >= 1.0E-4) {
             
             double distance = Math.sqrt(distanceSq);
             if (distance < 1.0) {
