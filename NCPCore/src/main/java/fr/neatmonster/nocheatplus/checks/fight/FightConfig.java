@@ -33,68 +33,68 @@ import fr.neatmonster.nocheatplus.worlds.IWorldData;
  */
 public class FightConfig extends ACheckConfig {
 
-    public final double     angleMove;
-    public final double     angleYaw;
-    public final double     angleSwitch;
-    public final double     angleTime;
+    public final double angleMove;
+    public final double angleYaw;
+    public final double angleSwitch;
+    public final double angleTime;
     public final ActionList angleActions;
 
-    public final long		toolChangeAttackPenalty;
+    public final long toolChangeAttackPenalty;
 
-    public final double     criticalFallDistance;
-    public final double     criticalFallDistLeniency;
+    public final double criticalFallDistance;
+    public final double criticalFallDistLeniency;
     public final ActionList criticalActions;
 
-    public final boolean    directionStrict;
-    public final boolean    directionFailAll;
-    public final double     directionloopprecision;
-    public final double     directionangleprecision;
-    public final long       directionPenalty;
+    public final boolean directionStrict;
+    public final boolean directionFailAll;
+    public final double directionloopprecision;
+    public final double directionangleprecision;
+    public final long directionPenalty;
     public final ActionList directionActions;
 
-    public final long		fastHealInterval;
-    public final long		fastHealBuffer;
+    public final long fastHealInterval;
+    public final long fastHealBuffer;
     public final ActionList fastHealActions;
 
-    public final long 		godModeLagMinAge;
-    public final long 		godModeLagMaxAge;
+    public final long godModeLagMinAge;
+    public final long godModeLagMaxAge;
     public final ActionList godModeActions;
     
-    public final float      impossibleHitImprobableWeight;
+    public final float impossibleHitImprobableWeight;
     public final ActionList impossibleHitActions;
 
     public final ActionList noSwingActions;
 
-    public final long       reachPenalty;
-    public final boolean    reachPrecision;
-    public final boolean    reachReduce;
-    public final double		reachSurvivalDistance;
-    public final double		reachReduceDistance;
-    public final double		reachReduceStep;
-    public final boolean    reachImprobableFeedOnly;
-    public final float      reachImprobableWeight;
+    public final long reachPenalty;
+    public final boolean reachPrecision;
+    public final boolean reachReduce;
+    public final double	reachSurvivalDistance;
+    public final double reachReduceDistance;
+    public final double reachReduceStep;
+    public final boolean reachImprobableFeedOnly;
+    public final float reachImprobableWeight;
 
     public final ActionList reachActions;
 
     public final ActionList selfHitActions;
 
-    public final int        speedLimit;
-    public final int        speedBuckets;
-    public final long       speedBucketDur;
-    public final float      speedBucketFactor;  
+    public final int speedLimit;
+    public final int speedBuckets;
+    public final long speedBucketDur;
+    public final float speedBucketFactor;  
 
-    public final int        speedShortTermLimit;
-    public final int        speedShortTermTicks;
-    public final boolean    speedImprobableFeedOnly;
-    public final float      speedImprobableWeight;
+    public final int speedShortTermLimit;
+    public final int speedShortTermTicks;
+    public final boolean speedImprobableFeedOnly;
+    public final float speedImprobableWeight;
     public final ActionList speedActions;
 
     // Special flags:
-    public final boolean    cancelDead;
-    public final boolean    knockBackVelocityPvP;
+    public final boolean cancelDead;
+    public final boolean knockBackVelocityPvP;
 
     /** Maximum latency counted in ticks for the loop checks (reach, direction). */
-    public final long       loopMaxLatencyTicks; // TODO: Configurable,  sections for players and entities.
+    public final long loopMaxLatencyTicks; // TODO: Configurable,  sections for players and entities.
 
     /**
      * Instantiates a new fight configuration.
@@ -123,7 +123,6 @@ public class FightConfig extends ACheckConfig {
         directionloopprecision = config.getDouble(ConfPaths.FIGHT_DIRECTION_LOOPPRECISION, 0.0, 2.0, 0.5);
         directionPenalty = config.getLong(ConfPaths.FIGHT_DIRECTION_PENALTY);
         directionActions = config.getOptimizedActionList(ConfPaths.FIGHT_DIRECTION_ACTIONS, Permissions.FIGHT_DIRECTION);
-
         if (ServerVersion.compareMinecraftVersion("1.9") >= 0) {
             /** Note: Disable check should use
              *    NCPAPIProvider#getNoCheatPlusAPI()#getWorldDataManager()#overrideCheckActivation()
@@ -180,5 +179,4 @@ public class FightConfig extends ACheckConfig {
         AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.FIGHT_PVP_KNOCKBACKVELOCITY, AlmostBoolean.MAYBE);
         knockBackVelocityPvP = ref == AlmostBoolean.MAYBE ? Bugs.shouldPvpKnockBackVelocity() : ref.decide();
     }
-
 }

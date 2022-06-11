@@ -34,16 +34,16 @@ public class BlockPlaceConfig extends ACheckConfig {
 
     public final ActionList againstActions;
 
-    public final boolean    autoSignSkipEmpty;
+    public final boolean autoSignSkipEmpty;
     public final ActionList autoSignActions;
 
     public final ActionList directionActions;
 
-    public final int        fastPlaceLimit;
-    public final int        fastPlaceShortTermTicks;
-    public final int        fastPlaceShortTermLimit;
-    public final boolean    fastPlaceImprobableFeedOnly;
-    public final float      fastPlaceImprobableWeight;
+    public final int fastPlaceLimit;
+    public final int fastPlaceShortTermTicks;
+    public final int fastPlaceShortTermLimit;
+    public final boolean fastPlaceImprobableFeedOnly;
+    public final float fastPlaceImprobableWeight;
     public final ActionList fastPlaceActions;
 
     public final Set<Material> noSwingExceptions = new HashSet<Material>();
@@ -54,17 +54,17 @@ public class BlockPlaceConfig extends ACheckConfig {
     public final ActionList scaffoldActions;
     public final boolean scaffoldAngle;
     public final boolean scaffoldTime;
-    public final int     scaffoldTimeAvg;
+    public final int scaffoldTimeAvg;
     public final boolean scaffoldSprint;
     public final boolean scaffoldRotate;
-    public final int     scaffoldRotateDiff;
+    public final int scaffoldRotateDiff;
     public final boolean scaffoldToolSwitch;
     public final boolean scaffoldImprobableFeedOnly;
     public final float   scaffoldImprobableWeight;
 
-    public final long       speedInterval;
-    public final boolean    speedImprobableFeedOnly;
-    public final float      speedImprobableWeight;
+    public final long speedInterval;
+    public final boolean speedImprobableFeedOnly;
+    public final float speedImprobableWeight;
     public final ActionList speedActions;
 
     /** General activation flag. */
@@ -84,7 +84,6 @@ public class BlockPlaceConfig extends ACheckConfig {
 
         autoSignSkipEmpty = config.getBoolean(ConfPaths.BLOCKPLACE_AUTOSIGN_SKIPEMPTY);
         autoSignActions = config.getOptimizedActionList(ConfPaths.BLOCKPLACE_AUTOSIGN_ACTIONS, Permissions.BLOCKPLACE_AUTOSIGN);
-
 
         directionActions = config.getOptimizedActionList(ConfPaths.BLOCKPLACE_DIRECTION_ACTIONS, Permissions.BLOCKPLACE_DIRECTION);
 

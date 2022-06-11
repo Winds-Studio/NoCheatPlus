@@ -39,5 +39,4 @@ public class BukkitSnow implements BukkitShapeModel {
         }
         return 0;
     }
-
 }

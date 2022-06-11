@@ -20,8 +20,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 public class BukkitBamboo implements BukkitShapeModel {
 
     @Override
-    public double[] getShape(final BlockCache blockCache, 
-            final World world, final int x, final int y, final int z) {
+    public double[] getShape(final BlockCache blockCache, final World world, final int x, final int y, final int z) {
         
         // Taken from NMS - Offset/Noise
         long i = (x * 3129871L) ^ z * 116129781L ^ 0;
@@ -29,14 +28,11 @@ public class BukkitBamboo implements BukkitShapeModel {
         i = i >> 16;
         final double xOffset = (((i & 15L) / 15.0F) - 0.5D) * 0.5D;
         final double zOffset = (((i >> 8 & 15L) / 15.0F) - 0.5D) * 0.5D;
-
 	    return new double[] {0.40625 + xOffset, 0.0, 0.40625 + zOffset, 0.59375 + xOffset, 1.0, 0.59375 + zOffset};
     }
 
     @Override
-    public int getFakeData(final BlockCache blockCache, 
-            final World world, final int x, final int y, final int z) {
+    public int getFakeData(final BlockCache blockCache, final World world, final int x, final int y, final int z) {
         return 0;
     }
-
 }

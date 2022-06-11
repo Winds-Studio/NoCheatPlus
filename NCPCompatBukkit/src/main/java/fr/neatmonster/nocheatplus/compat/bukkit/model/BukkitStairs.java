@@ -51,12 +51,9 @@ public class BukkitStairs implements BukkitShapeModel {
     private final int[] shape_by_state = new int[]{12, 5, 3, 10, 14, 13, 7, 11, 13, 7, 11, 14, 8, 4, 1, 2, 4, 1, 2, 8};
 
     @Override
-    public double[] getShape(final BlockCache blockCache, 
-        final World world, final int x, final int y, final int z) {
-
+    public double[] getShape(final BlockCache blockCache, final World world, final int x, final int y, final int z) {
         final Block block = world.getBlockAt(x, y, z);
         final BlockData blockData = block.getState().getBlockData();
-
         if (blockData instanceof Stairs) {
             final Stairs stairs = (Stairs) blockData;
             final Half half = stairs.getHalf();
@@ -71,8 +68,7 @@ public class BukkitStairs implements BukkitShapeModel {
     }
 
     @Override
-    public int getFakeData(final BlockCache blockCache, 
-            final World world, final int x, final int y, final int z) {
+    public int getFakeData(final BlockCache blockCache, final World world, final int x, final int y, final int z) {
         //final Block block = world.getBlockAt(x, y, z);
         //final BlockState state = block.getState();
         //final BlockData blockData = state.getBlockData();
@@ -90,16 +86,14 @@ public class BukkitStairs implements BukkitShapeModel {
         return 0;
     }
 
-    private double[][] makeshape(double[] slab, 
-            double[] octet_nn, double[] octet_pn, double[] octet_np, double[] octet_pp) {
+    private double[][] makeshape(double[] slab, double[] octet_nn, double[] octet_pn, double[] octet_np, double[] octet_pp) {
         return IntStream
                 .range(0, 16)
                 .mapToObj((flags) -> makeStairShape(flags, slab, octet_nn, octet_pn, octet_np, octet_pp))
                 .toArray(double[][]::new);
     }
 
-    private double[] makeStairShape(int flags, double[] slab,
-            double[] octet_nn, double[] octet_pn, double[] octet_np, double[] octet_pp) {
+    private double[] makeStairShape(int flags, double[] slab, double[] octet_nn, double[] octet_pn, double[] octet_np, double[] octet_pp) {
         double[] res = slab;
         if ((flags & 1) != 0) {
             res = merge(res, octet_nn);
@@ -154,24 +148,22 @@ public class BukkitStairs implements BukkitShapeModel {
             final double tmaxX = bounds[i*6-3];
             final double tmaxY = bounds[i*6-2];
             final double tmaxZ = bounds[i*6-1];
-            if (sameshape(minX, minY, minZ, maxX, maxY, maxZ, 
-                     tminX, tminY, tminZ, tmaxX, tmaxY, tmaxZ)) {
-                final List<Axis> a = getRelative(minX, minY, minZ, maxX, maxY, maxZ, 
-                        tminX, tminY, tminZ, tmaxX, tmaxY, tmaxZ);
+            if (sameshape(minX, minY, minZ, maxX, maxY, maxZ, tminX, tminY, tminZ, tmaxX, tmaxY, tmaxZ)) {
+                final List<Axis> a = getRelative(minX, minY, minZ, maxX, maxY, maxZ, tminX, tminY, tminZ, tmaxX, tmaxY, tmaxZ);
                 if (a.size() == 1) {
                     Axis axis = a.get(0);
                     switch (axis) {
-                    case X_AXIS:
-                        res[i*6-6] = Math.min(tminX, minX);
-                        res[i*6-3] = Math.max(tmaxX, maxX);
-                        return res;
-                    //case Y_AXIS:
-                    //        break;
-                    case Z_AXIS:
-                        res[i*6-4] = Math.min(tminZ, minZ);
-                        res[i*6-1] = Math.max(tmaxZ, maxZ);
-                        return res;
-                    default:
+                        case X_AXIS:
+                            res[i*6-6] = Math.min(tminX, minX);
+                            res[i*6-3] = Math.max(tmaxX, maxX);
+                            return res;
+                        //case Y_AXIS:
+                        //  break;
+                        case Z_AXIS:
+                            res[i*6-4] = Math.min(tminZ, minZ);
+                            res[i*6-1] = Math.max(tmaxZ, maxZ);
+                            return res;
+                        default:
                             break;
                     }
                 }  
@@ -188,7 +180,7 @@ public class BukkitStairs implements BukkitShapeModel {
     }
 
     private List<Axis> getRelative(double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
-            double tminX, double tminY, double tminZ, double tmaxX, double tmaxY, double tmaxZ) {
+                                   double tminX, double tminY, double tminZ, double tmaxX, double tmaxY, double tmaxZ) {
         final List<Axis> list = new ArrayList<Axis>();
         if (minX == tmaxX || maxX == tminX) {
             list.add(Axis.X_AXIS);
@@ -203,7 +195,7 @@ public class BukkitStairs implements BukkitShapeModel {
     }
 
     private boolean sameshape(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, double tminX,
-            double tminY, double tminZ, double tmaxX, double tmaxY, double tmaxZ) {
+                              double tminY, double tminZ, double tmaxX, double tmaxY, double tmaxZ) {
         final double dx = maxX - minX;
         final double dy = maxY - minY;
         final double dz = maxZ - minZ;

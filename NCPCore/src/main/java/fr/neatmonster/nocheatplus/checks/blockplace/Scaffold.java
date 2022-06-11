@@ -43,7 +43,7 @@ public class Scaffold extends Check {
     public List<String> tags = new LinkedList<>();
     
    /*
-    * Instanties a new Scaffold check
+    * Instantiates a new Scaffold check
     */
     public Scaffold() {
         super(CheckType.BLOCKPLACE_SCAFFOLD);
@@ -141,7 +141,7 @@ public class Scaffold extends Check {
         // Note: Yaw speed change is also monitored. (See listener...)
         if (cc.scaffoldRotate) {
             data.lastYaw = player.getLocation().getYaw();
-            TickListener pitchTick = new TickListener() {
+            TickListener yawTick = new TickListener() {
                 @Override
                 public void onTick(int tick, long timeLast) {
                     // Needs to be run on the next tick
@@ -157,7 +157,7 @@ public class Scaffold extends Check {
                     }
                 }
             };
-            TickTask.addTickListener(pitchTick);
+            TickTask.addTickListener(yawTick);
         }
 
         // Tool Switch - Check if the player is quickly switching inventory slots between block placements

@@ -50,11 +50,12 @@ import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
  */
 public class CombinedListener extends CheckListener {
 
-    protected final Improbable improbable 	= addCheck(new Improbable());
+    protected final Improbable improbable = addCheck(new Improbable());
 
     protected final MunchHausen munchHausen = addCheck(new MunchHausen());
 
     private final Counters counters = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class);
+
     private final int idFakeInvulnerable = counters.registerKey("fakeinvulnerable");
 
     @SuppressWarnings("unchecked")
@@ -88,32 +89,26 @@ public class CombinedListener extends CheckListener {
     }
 
     /**
-     * We listen to this event to prevent players from leaving while falling, so from avoiding fall damages.
+     * We listen to this event to prevent players from leaving while falling, so from avoiding fall damage.
      * 
      * @param event
      *            the event
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(final PlayerJoinEvent event) {
-
-        // TODO: EventPriority
-
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
-
-        if (!pData.isCheckActive(CheckType.COMBINED, player)) return;
-
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         final CombinedConfig cc = pData.getGenericInstance(CombinedConfig.class);
 
         if (cc.invulnerableCheck 
-                && (cc.invulnerableTriggerAlways || cc.invulnerableTriggerFallDistance 
-                        && player.getFallDistance() > 0)){
+            && (cc.invulnerableTriggerAlways || cc.invulnerableTriggerFallDistance && player.getFallDistance() > 0)) {
             // TODO: maybe make a heuristic for small fall distances with ground under feet (prevents future abuse with jumping) ?
             final int invulnerableTicks = mcAccess.getHandle().getInvulnerableTicks(player);
             if (invulnerableTicks == Integer.MAX_VALUE) {
                 // TODO: Maybe log a warning.
-            } else {
+            } 
+            else {
                 final int ticks = cc.invulnerableInitialTicksJoin >= 0 ? cc.invulnerableInitialTicksJoin : invulnerableTicks;
                 data.invulnerableTick = TickTask.getTick() + ticks;
                 mcAccess.getHandle().setInvulnerableTicks(player, 0);
@@ -126,32 +121,36 @@ public class CombinedListener extends CheckListener {
     public void onPlayerLeave(final PlayerQuitEvent event) {
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
-        if (!pData.isCheckActive(CheckType.COMBINED, player)) return;
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Don't keep Improbable's data
         data.improbableCount.clear(System.currentTimeMillis());
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onEntityDamage(final EntityDamageEvent event){
+    public void onEntityDamage(final EntityDamageEvent event) {
         final Entity entity = event.getEntity();
-        if (!(entity instanceof Player)) return;
+        if (!(entity instanceof Player)) {
+            return;
+        }
         final Player  player = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(player);
-
-        if (!pData.isCheckActive(CheckType.COMBINED, player)) return;
-
         final CombinedConfig cc = pData.getGenericInstance(CombinedConfig.class);
-        if (!cc.invulnerableCheck) return;
+        if (!cc.invulnerableCheck) {
+            return;
+        }
         final DamageCause cause = event.getCause();
         // Ignored causes.
-        if (cc.invulnerableIgnore.contains(cause)) return;
+        if (cc.invulnerableIgnore.contains(cause)) {
+            return;
+        }
         // Modified invulnerable ticks.
         Integer modifier = cc.invulnerableModifiers.get(cause);
         if (modifier == null) modifier = cc.invulnerableModifierDefault;
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // TODO: account for tick task reset ? [it should not though, due to data resetting too, but API would allow it]
-        if (TickTask.getTick() >= data.invulnerableTick + modifier.intValue()) return;
+        if (TickTask.getTick() >= data.invulnerableTick + modifier.intValue()) {
+            return;
+        }
         // Still invulnerable.
         event.setCancelled(true);
         counters.addPrimaryThread(idFakeInvulnerable, 1);
@@ -170,20 +169,19 @@ public class CombinedListener extends CheckListener {
     }
     
     // TODO: Why do we need to feed improable for toggle sneaking exactly?
-    @EventHandler(priority=EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerToggleSneak(final PlayerToggleSneakEvent event){
         // Check also in case of cancelled events.
         // Feed the improbable.
         Improbable.feed(event.getPlayer(), 0.35f, System.currentTimeMillis());
     }
 
-    @EventHandler(priority=EventPriority.LOWEST)
-    public void onPlayerFish(final PlayerFishEvent event){
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerFish(final PlayerFishEvent event) {
         // Check also in case of cancelled events.
         final Player player = event.getPlayer();
-        if (munchHausen.isEnabled(player) && munchHausen.checkFish(player, event.getCaught(), event.getState())){
+        if (munchHausen.isEnabled(player) && munchHausen.checkFish(player, event.getCaught(), event.getState())) {
             event.setCancelled(true);
         }
     }
-
 }

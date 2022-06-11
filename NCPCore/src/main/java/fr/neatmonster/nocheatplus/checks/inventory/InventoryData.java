@@ -26,26 +26,25 @@ import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
 public class InventoryData extends ACheckData {
 
     // Violation levels.
-    public double   invMoveVL;
-    public double   fastClickVL;
-    public double   instantBowVL;
-    public double   instantEatVL;
-    public double   gutenbergVL;
+    public double invMoveVL;
+    public double fastClickVL;
+    public double instantBowVL;
+    public double instantEatVL;
+    public double gutenbergVL;
 
-    // General.
+    // Data shared between the checks.
     /** Remember the last time an inventory click happened. Always updates with each click */
-    public long     lastClickTime = 0;
+    public long lastClickTime = 0;
     /** Remember the time at which a containter was interacted with */
-    public long     containerOpenTime = 0;
-   /**
-    * Remember only the first time an inventory click was registered. Intention is to see if players could have opened their inventory:
-    * It resets when we receive an InventoryCloseEvent or other events that would forcibly close the player's inv (for false positives).
-    * See: https://www.spigotmc.org/threads/detecting-when-player-opens-their-own-inv.397535/#post-3563623
-    */
+    public long containerOpenTime = 0;
+    /**
+     * Remember when the player clicked in an inventory for the first time. Intention is to see if players could have opened their inventory:
+     * It resets when we receive an InventoryCloseEvent or other events that would forcibly close the player's inv (for false positives).
+     * See: https://www.spigotmc.org/threads/detecting-when-player-opens-their-own-inv.397535/#post-3563623
+     */
     public long firstClickTime;
 
     // Data of the fast click check.
-    //    public boolean  fastClickLastCancelled;
     public final ActionFrequency fastClickFreq = new ActionFrequency(5, 200L);
     public Material fastClickLastClicked = null;
     public int fastClickLastSlot = InventoryView.OUTSIDE;
@@ -54,14 +53,13 @@ public class InventoryData extends ACheckData {
 
     // Data of the instant bow check.
     /** Last time right click interact on bow. A value of 0 means 'invalid'.*/
-    public long     instantBowInteract = 0;
-    public long     instantBowShoot;
+    public long instantBowInteract = 0;
+    public long instantBowShoot;
 
     // Data of the instant eat check.
     public Material instantEatFood;
-    public long     instantEatInteract;
+    public long instantEatInteract;
     
     // Data of the InventoryMove check.
-    public long     lastMoveEvent = 0;
-
+    public long lastMoveEvent = 0;
 }

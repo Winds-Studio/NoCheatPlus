@@ -47,19 +47,17 @@ public class InstantEat extends Check {
     public boolean check(final Player player, final int level) {
         // Take time once.
         final long time = System.currentTimeMillis();
-
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
-
         boolean cancel = false;
 
         // Hunger level change seems to not be the result of eating.
-        if (data.instantEatFood == null || level <= player.getFoodLevel())
+        if (data.instantEatFood == null || level <= player.getFoodLevel()) {
             return false;
+        }
 
         // Rough estimation about how long it should take to eat
         final long expectedTimeWhenEatingFinished = Math.max(data.instantEatInteract, data.lastClickTime) + 700L;
-
         if (data.instantEatInteract > 0 && expectedTimeWhenEatingFinished < time){
             // Acceptable, reduce VL to reward the player.
             data.instantEatVL *= 0.6D;
@@ -69,23 +67,18 @@ public class InstantEat extends Check {
         }
         else {
             final double difference = (expectedTimeWhenEatingFinished - time) / 100D;
-
             // Player was too fast, increase their violation level.
             data.instantEatVL += difference;
-
             // Execute whatever actions are associated with this check and the violation level and find out if we should
             // cancel the event.
-            final ViolationData vd = new ViolationData(this, player, data.instantEatVL, 
-                    difference, pData.getGenericInstance(InventoryConfig.class).instantEatActions);
+            final ViolationData vd = new ViolationData(this, player, data.instantEatVL, difference, pData.getGenericInstance(InventoryConfig.class).instantEatActions);
             if (data.instantEatFood != null) {
                 vd.setParameter(ParameterName.FOOD, data.instantEatFood.toString());
             }
             cancel = executeActions(vd).willCancel();
         }
-
         data.instantEatInteract = 0;
         data.instantEatFood = null;
         return cancel;
     }
-
 }

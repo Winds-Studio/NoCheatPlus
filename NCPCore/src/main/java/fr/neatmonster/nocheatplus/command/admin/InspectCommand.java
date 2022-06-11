@@ -110,8 +110,6 @@ public class InspectCommand extends BaseCommand {
 
         builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is in " + player.getGameMode() + " gamemode.");
 
-        builder.append("\n "+ c1 + "" + c2 + "•" + c1 + (mCC.assumeSprint ? " Is assumed to be sprinting." : " Assume sprint workaround disabled."));
-
         builder.append("\n "+ c1 + "" + c2 + "•" + c1 +" FlySpeed: " + player.getFlySpeed());
 
         builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " WalkSpeed: " + player.getWalkSpeed());

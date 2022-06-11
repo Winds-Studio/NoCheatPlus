@@ -239,9 +239,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         }
         final Player player = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(player);
-
-        if (!pData.isCheckActive(CheckType.INVENTORY, player)) return;
-
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
         final int slot = event.getSlot();
         final String inventoryAction = hasInventoryAction ? event.getAction().name() : null;
@@ -357,10 +354,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
 
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-
-        if (!pData.isCheckActive(CheckType.INVENTORY, player)) return;
-        
+        final InventoryData data = pData.getGenericInstance(InventoryData.class);        
         // Check left click too to prevent any bypasses
         // Set the container opening time.
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null 
@@ -449,9 +443,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
 
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
-
-        if (!pData.isCheckActive(CheckType.INVENTORY, player)) return;
-
         // Illegal enchantments hotfix check.
         final Item item = event.getItemDrop();
         if (item != null) {
@@ -470,15 +461,12 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
     public final void onPlayerInteract(final PlayerInteractEvent event) {
 
         // Only interested in right-clicks while holding an item.
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
-
+        }
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
-
-        if (!pData.isCheckActive(CheckType.INVENTORY, player)) return;
-
         boolean resetAll = false;
 
         if (event.hasItem()) {
@@ -586,9 +574,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
-
-        if (!pData.isCheckActive(CheckType.INVENTORY, player)) return;
-
         if (pData.isDebugActive(checkType) && data.instantEatFood != null) {
             debug(player, "PlayerItemHeldEvent, reset fastconsume (legacy: instanteat).");
         }
@@ -726,16 +711,14 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onMove(final PlayerMoveEvent event) {
-
         final Player player = event.getPlayer();
         final Location from = event.getFrom();
         final Location to = event.getTo();
         final boolean PoYdiff = from.getPitch() != to.getPitch() || from.getYaw() != to.getYaw();
         final IPlayerData pData = DataManager.getPlayerData(player);
-        if (pData == null) return;
-
-        if (!pData.isCheckActive(CheckType.INVENTORY, player)) return;
-
+        if (pData == null) {
+            return;
+        }
         final InventoryData iData = pData.getGenericInstance(InventoryData.class);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final Inventory inv = player.getOpenInventory().getTopInventory();

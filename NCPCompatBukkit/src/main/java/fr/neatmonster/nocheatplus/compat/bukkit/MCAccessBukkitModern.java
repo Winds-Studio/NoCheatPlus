@@ -138,7 +138,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
             this.reflectDamageSource = new ReflectDamageSource(this.reflectBase);
             this.reflectLivingEntity = new ReflectLivingEntity(this.reflectBase, null, this.reflectDamageSource);
         } 
-        catch(ClassNotFoundException ex) {}
+        catch (ClassNotFoundException ex) {}
     }
 
     @Override
@@ -192,6 +192,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
             Material.CHORUS_FLOWER}) {
             processedBlocks.add(mat);
         }
+
         for (final Material mat : BridgeMaterial.getAllBlocks(
             "light", "glow_lichen", "big_dripleaf_stem",
             // TODO: Not fully tested
@@ -471,9 +472,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
                     // TODO: Perhaps another model flag.
                     addModel(mat, MODEL_GATE);
                 }
-                else {
-                    addModel(mat, MODEL_THICK_FENCE);
-                }
+                else addModel(mat, MODEL_THICK_FENCE);
             }
         }
         super.setupBlockProperties(worldConfigProvider);
@@ -501,7 +500,6 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
     @Override
     public void dealFallDamage(Player player, double damage) {
         if (canDealFallDamage()) {
-
             Object handle = getHandle(player);
             if (handle != null) {
                 ReflectionUtil.invokeMethod(this.reflectLivingEntity.nmsDamageEntity, handle, this.reflectDamageSource.nmsFALL, (float) damage);

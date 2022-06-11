@@ -36,12 +36,12 @@ import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 public class BlockInteractData extends ACheckData {
 
     // Violation levels.
-    public double directionVL	= 0;
-    public double reachVL		= 0;
-    public double speedVL		= 0;
-    public double visibleVL		= 0;
+    public double directionVL;
+    public double reachVL;
+    public double speedVL;
+    public double visibleVL;
 
-    // General data
+    // Data shared between checks
     public int lookInteraction = -1;
     // Last block interacted with
     /** Set to Integer.MAX_VALUE for reset. */
@@ -57,7 +57,8 @@ public class BlockInteractData extends ACheckData {
 
     // Data of the reach check.
     public double reachDistance;
-
+    
+    // Data of the speed check.
     /** Last reset time. */
     public long speedTime	= 0;
     /** Number of interactions since last reset-time. */
@@ -341,5 +342,4 @@ public class BlockInteractData extends ACheckData {
     public void setLastAllowUseBlock(final boolean allowUseBlock) {
         this.lastAllowUseBlock = allowUseBlock;
     }
-
 }

@@ -38,38 +38,38 @@ import fr.neatmonster.nocheatplus.worlds.IWorldData;
  */
 public class InventoryConfig extends ACheckConfig {
 
-    public final boolean    fastClickSpareCreative;
-    public final boolean 	fastClickTweaks1_5;
-    public final float		fastClickShortTermLimit;
-    public final float		fastClickNormalLimit;
-    public final int        chestOpenLimit;
+    public final boolean fastClickSpareCreative;
+    public final boolean fastClickTweaks1_5;
+    public final float fastClickShortTermLimit;
+    public final float fastClickNormalLimit;
+    public final int chestOpenLimit;
     public final Set<String> inventoryExemptions = new HashSet<String>();
-    public final float      fastClickImprobableWeight;
+    public final float fastClickImprobableWeight;
     public final ActionList fastClickActions;
 
-    public final long		fastConsumeDuration;
-    public final boolean    fastConsumeWhitelist;
+    public final long fastConsumeDuration;
+    public final boolean fastConsumeWhitelist;
     public final Set<Material> fastConsumeItems = new HashSet<Material>();
     public final ActionList fastConsumeActions;
 
-    public final int        gutenbergPageLimit;
+    public final int gutenbergPageLimit;
     public final ActionList gutenbergActions;
 
-    public final boolean 	instantBowStrict;
-    public final long       instantBowDelay;
-    public final boolean    instantBowImprobableFeedOnly;
-    public final float      instantBowImprobableWeight;
+    public final boolean instantBowStrict;
+    public final long instantBowDelay;
+    public final boolean instantBowImprobableFeedOnly;
+    public final float instantBowImprobableWeight;
     public final ActionList instantBowActions;
 
     public final ActionList instantEatActions;
 
-    public final boolean	openClose;
-    public final boolean	openCancelOther;
+    public final boolean openClose;
+    public final boolean openCancelOther;
     
-    public final boolean    invMoveDisableCreative;
-    public final double     invMoveHdistDivisor;
-    public final boolean    invMoveImprobableFeedOnly;
-    public static float     invMoveImprobableWeight;
+    public final boolean invMoveDisableCreative;
+    public final double invMoveHdistDivisor;
+    public final boolean invMoveImprobableFeedOnly;
+    public static float invMoveImprobableWeight;
     public final ActionList invMoveActionList;
 
     // Hot fixes.
@@ -84,7 +84,6 @@ public class InventoryConfig extends ACheckConfig {
     public InventoryConfig(final IWorldData worldData) {
         super(worldData);
         final ConfigFile data = worldData.getRawConfiguration();
-
         fastClickSpareCreative = data.getBoolean(ConfPaths.INVENTORY_FASTCLICK_SPARECREATIVE);
         fastClickTweaks1_5 = data.getBoolean(ConfPaths.INVENTORY_FASTCLICK_TWEAKS1_5);
         fastClickShortTermLimit = (float) data.getDouble(ConfPaths.INVENTORY_FASTCLICK_LIMIT_SHORTTERM);
@@ -132,13 +131,12 @@ public class InventoryConfig extends ACheckConfig {
         openClose = data.getBoolean(ConfPaths.INVENTORY_OPEN_CLOSE);
         openCancelOther = data.getBoolean(ConfPaths.INVENTORY_OPEN_CANCELOTHER);
         
-	    invMoveDisableCreative = data.getBoolean(ConfPaths.INVENTORY_INVENTORYMOVE_DISABLECREATIVE);
-	    invMoveHdistDivisor = data.getDouble(ConfPaths.INVENTORY_INVENTORYMOVE_HDISTDIVISOR);
+        invMoveDisableCreative = data.getBoolean(ConfPaths.INVENTORY_INVENTORYMOVE_DISABLECREATIVE);
+        invMoveHdistDivisor = data.getDouble(ConfPaths.INVENTORY_INVENTORYMOVE_HDISTDIVISOR);
         invMoveImprobableFeedOnly = data.getBoolean(ConfPaths.INVENTORY_INVENTORYMOVE_IMPROBABLE_FEEDONLY);
         invMoveImprobableWeight = (float) data.getDouble(ConfPaths.INVENTORY_INSTANTBOW_IMPROBABLE_WEIGHT);
         invMoveActionList = data.getOptimizedActionList(ConfPaths.INVENTORY_INVENTORYMOVE_ACTIONS, Permissions.INVENTORY_INVENTORYMOVE);
 
         hotFixFallingBlockEndPortalActive = data.getBoolean(ConfPaths.INVENTORY_HOTFIX_DUPE_FALLINGBLOCKENDPORTAL);
     }
-
 }

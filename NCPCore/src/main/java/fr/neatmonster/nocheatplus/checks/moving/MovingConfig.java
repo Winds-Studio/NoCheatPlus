@@ -61,9 +61,8 @@ public class MovingConfig extends ACheckConfig {
     public static final String ID_EFFECT_RIPTIDING = "effect.riptiding";
 
     // INSTANCE
-
-    public final boolean    ignoreCreative;
-    public final boolean    ignoreAllowFlight;
+    public final boolean ignoreCreative;
+    public final boolean ignoreAllowFlight;
 
     private final Map<GameMode, ModelFlying> flyingModelGameMode = new HashMap<GameMode, ModelFlying>();
     private final ModelFlying flyingModelElytra;
@@ -73,29 +72,29 @@ public class MovingConfig extends ACheckConfig {
     public final ActionList creativeFlyActions;
 
     /** Assumed number of packets per second under ideal conditions. */
-    public final float      morePacketsEPSIdeal;
+    public final float morePacketsEPSIdeal;
     /** The maximum number of packets per second that we accept. */
-    public final float      morePacketsEPSMax;
-    public final int        morePacketsEPSBuckets;
-    public final float		morePacketsBurstPackets;
-    public final double		morePacketsBurstDirect;
-    public final double		morePacketsBurstEPM;
-    public final int        morePacketsSetBackAge;
+    public final float morePacketsEPSMax;
+    public final int morePacketsEPSBuckets;
+    public final float morePacketsBurstPackets;
+    public final double morePacketsBurstDirect;
+    public final double morePacketsBurstEPM;
+    public final int morePacketsSetBackAge;
     public final ActionList morePacketsActions;
 
     /**
      * Deal damage instead of Minecraft, whenever a player is judged to be on
      * ground.
      */
-    public final boolean    noFallDealDamage;
-    public final boolean    noFallSkipAllowFlight;
+    public final boolean noFallDealDamage;
+    public final boolean noFallSkipAllowFlight;
     /**
      * Reset data on violation, i.e. a player taking fall damage without being
      * on ground.
      */
-    public final boolean    noFallViolationReset;
+    public final boolean noFallViolationReset;
     /** Reset data on tp. */
-    public final boolean 	noFallTpReset;
+    public final boolean noFallTpReset;
     /** Reset if in vehicle. */
     public final boolean noFallVehicleReset;
     /** Reset fd to 0  if on ground (dealdamage only). */
@@ -104,57 +103,57 @@ public class MovingConfig extends ACheckConfig {
 
     // TODO: passableAccuracy: also use if not using ray-tracing
     public final ActionList passableActions;
-    public final double     passableHorizontalMargins;
-    public final double     passableVerticalMargins;
-    public final boolean    passableUntrackedTeleportCheck;
-    public final boolean    passableUntrackedCommandCheck;
-    public final boolean    passableUntrackedCommandTryTeleport;
+    public final double passableHorizontalMargins;
+    public final double passableVerticalMargins;
+    public final boolean passableUntrackedTeleportCheck;
+    public final boolean passableUntrackedCommandCheck;
+    public final boolean passableUntrackedCommandTryTeleport;
     public final SimpleCharPrefixTree passableUntrackedCommandPrefixes = new SimpleCharPrefixTree();
 
-    public final int        survivalFlyBlockingSpeed;
-    public final int        survivalFlySneakingSpeed;
-    public final int        survivalFlySpeedingSpeed;
-    public final int        survivalFlySprintingSpeed;
-    public final int        survivalFlySwimmingSpeed;
-    public final int        survivalFlyWalkingSpeed;
-    public final boolean    sfSlownessSprintHack;
+    public final int survivalFlyBlockingSpeed;
+    public final int survivalFlySneakingSpeed;
+    public final int survivalFlySpeedingSpeed;
+    public final int survivalFlySprintingSpeed;
+    public final int survivalFlySwimmingSpeed;
+    public final int survivalFlyWalkingSpeed;
+    public final boolean sfSlownessSprintHack;
     /**
      * If true, will allow moderate bunny hop without lift off. Applies for
      * normal speed on 1.6.4 and probably below.
      */
-    public final boolean    sfGroundHop;
-    public final double     sfStepHeight;
-    public final boolean    survivalFlyAccountingH;
-    public final boolean    survivalFlyAccountingV;
-    public final boolean    survivalFlyAccountingStep;
-    public final boolean    survivalFlyResetItem;
+    public final boolean sfGroundHop;
+    public final double sfStepHeight;
+    public final boolean survivalFlyAccountingH;
+    public final boolean survivalFlyAccountingV;
+    public final boolean survivalFlyAccountingStep;
+    public final boolean survivalFlyResetItem;
     // Leniency settings.
     /** Horizontal buffer (rather sf), after failure leniency. */
-    public final double     hBufMax;
-    public final long       survivalFlyVLFreezeCount;
-    public final boolean    survivalFlyVLFreezeInAir;
+    public final double hBufMax;
+    public final long survivalFlyVLFreezeCount;
+    public final boolean survivalFlyVLFreezeInAir;
     // Set back policy.
-    public final boolean    sfSetBackPolicyVoid;
-    public final boolean    sfSetBackPolicyFallDamage;
+    public final boolean sfSetBackPolicyVoid;
+    public final boolean sfSetBackPolicyFallDamage;
     public final ActionList survivalFlyActions;
 
-    public final boolean 	sfHoverCheck; // TODO: Sub check ?
-    public final int 		sfHoverTicks;
-    public final int		sfHoverLoginTicks;
-    public final boolean    sfHoverFallDamage;
-    public final double		sfHoverViolation;
+    public final boolean sfHoverCheck; // TODO: Sub check ?
+    public final int sfHoverTicks;
+    public final int sfHoverLoginTicks;
+    public final boolean sfHoverFallDamage;
+    public final double sfHoverViolation;
 
     // Special tolerance values:
     /**
      * Number of moving packets until which a velocity entry must be activated,
      * in order to not be removed.
      */
-    public final int		velocityActivationCounter;
+    public final int velocityActivationCounter;
     /** Server ticks until invalidating queues velocity. */
-    public final int		velocityActivationTicks;
-    public final boolean	velocityStrictInvalidation;
-    public final double     noFallyOnGround;
-    public final double     yOnGround;
+    public final int velocityActivationTicks;
+    public final boolean velocityStrictInvalidation;
+    public final double noFallyOnGround;
+    public final double yOnGround;
 
     // General things.
     /**
@@ -278,13 +277,11 @@ public class MovingConfig extends ACheckConfig {
             if (Bukkit.getVersion().toLowerCase().indexOf("spigot") != -1) {
                 // Assume 1.8 clients being supported.
                 ref = "1.7.10";
-            } else {
-                ref = "1.8";
-            }
+            } 
+            else ref = "1.8";
             this.sfStepHeight = ServerVersion.select(ref, 0.5, 0.6, 0.6, 0.5).doubleValue();
-        } else {
-            this.sfStepHeight = sfStepHeight;
-        }
+        } 
+        else this.sfStepHeight = sfStepHeight;
         hBufMax = config.getDouble(ConfPaths.MOVING_SURVIVALFLY_LENIENCY_HBUFMAX);
         survivalFlyVLFreezeCount = config.getInt(ConfPaths.MOVING_SURVIVALFLY_LENIENCY_FREEZECOUNT);
         survivalFlyVLFreezeInAir = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_LENIENCY_FREEZEINAIR);
@@ -317,18 +314,13 @@ public class MovingConfig extends ACheckConfig {
         assumeSprint = config.getBoolean(ConfPaths.MOVING_ASSUMESPRINT);
         speedGrace = Math.max(0, (int) Math.round(config.getDouble(ConfPaths.MOVING_SPEEDGRACE) * 20.0)); // Config: seconds
         AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.MOVING_ENFORCELOCATION, AlmostBoolean.MAYBE);
-        if (ref == AlmostBoolean.MAYBE) {
-            enforceLocation = Bugs.shouldEnforceLocation();
-        } else {
-            enforceLocation = ref.decide();
-        }
+        enforceLocation = ref == AlmostBoolean.MAYBE ? Bugs.shouldEnforceLocation() : ref.decide();
         // TODO: Rename overall flag to trackBlockChanges. Create a sub-config rather.
         trackBlockMove = config.getBoolean(ConfPaths.COMPATIBILITY_BLOCKS_CHANGETRACKER_ACTIVE) 
                 && (config.getBoolean(ConfPaths.COMPATIBILITY_BLOCKS_CHANGETRACKER_PISTONS
                         // TODO: || other activation flags.
                         ));
-        final PlayerSetBackMethod playerSetBackMethod = PlayerSetBackMethod.fromString(
-                "extern.fromconfig", config.getString(ConfPaths.MOVING_SETBACK_METHOD));
+        final PlayerSetBackMethod playerSetBackMethod = PlayerSetBackMethod.fromString("extern.fromconfig", config.getString(ConfPaths.MOVING_SETBACK_METHOD));
         if (playerSetBackMethod.doesThisMakeSense()) {
             // (Might info/warn if legacy is used without setTo and without SCHEDULE and similar?)
             this.playerSetBackMethod = playerSetBackMethod;
@@ -336,10 +328,8 @@ public class MovingConfig extends ACheckConfig {
         else if (ServerVersion.compareMinecraftVersion("1.9") < 0) {
             this.playerSetBackMethod = PlayerSetBackMethod.LEGACY;
         }
-        else {
-            // Latest.
-            this.playerSetBackMethod = PlayerSetBackMethod.MODERN;
-        }
+        // Latest.
+        else this.playerSetBackMethod = PlayerSetBackMethod.MODERN;
 
         traceMaxAge = config.getInt(ConfPaths.MOVING_TRACE_MAXAGE, 30);
         traceMaxSize = config.getInt(ConfPaths.MOVING_TRACE_MAXSIZE, 30);
@@ -352,8 +342,7 @@ public class MovingConfig extends ACheckConfig {
         schedulevehicleSetPassenger = config.getAlmostBoolean(ConfPaths.MOVING_VEHICLE_DELAYADDPASSENGER, AlmostBoolean.MAYBE).decideOptimistically();
         ref = config.getAlmostBoolean(ConfPaths.MOVING_VEHICLE_ENVELOPE_ACTIVE, AlmostBoolean.MAYBE);
         if (ServerVersion.compareMinecraftVersion("1.9") < 0) {
-            worldData.overrideCheckActivation(CheckType.MOVING_VEHICLE_ENVELOPE, 
-                    AlmostBoolean.NO, OverrideType.PERMANENT, true);
+            worldData.overrideCheckActivation(CheckType.MOVING_VEHICLE_ENVELOPE, AlmostBoolean.NO, OverrideType.PERMANENT, true);
         }
         config.readDoubleValuesForEntityTypes(ConfPaths.MOVING_VEHICLE_ENVELOPE_HSPEEDCAP, vehicleEnvelopeHorizontalSpeedCap, 4.0, true);
         vehicleEnvelopeActions = config.getOptimizedActionList(ConfPaths.MOVING_VEHICLE_ENVELOPE_ACTIONS, Permissions.MOVING_VEHICLE_ENVELOPE);
@@ -375,7 +364,6 @@ public class MovingConfig extends ACheckConfig {
             }
             catch (IllegalArgumentException e) {}
         }
-
 
         // Messages.
         msgKickIllegalMove = ColorUtil.replaceColors(config.getString(ConfPaths.MOVING_MESSAGE_ILLEGALPLAYERMOVE));
