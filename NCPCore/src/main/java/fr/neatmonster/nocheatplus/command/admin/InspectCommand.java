@@ -150,10 +150,6 @@ public class InspectCommand extends BaseCommand {
             builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is using an item."); // TODO: Which item?
         }
 
-        if (mData.lostSprintCount > 0) {
-            builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Their sprint status has been lost for: " + mData.lostSprintCount + " ticks.");
-        }
-
         if (player.isInsideVehicle()) {
             builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is riding a vehicle (" + player.getVehicle().getType() +") at " + locString(player.getVehicle().getLocation()));
         }

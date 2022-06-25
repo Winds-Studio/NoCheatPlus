@@ -54,8 +54,8 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 
-public class NoSlow extends BaseAdapter {
-    private final static String dftag = "system.nocheatplus.noslow";
+public class UseItemAdapter extends BaseAdapter {
+    private final static String dftag = "system.nocheatplus.useitemadapter";
     private final static MiniListener<?>[] miniListeners = new MiniListener<?>[] {
         new MiniListener<PlayerItemConsumeEvent>() {
             @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -100,7 +100,7 @@ public class NoSlow extends BaseAdapter {
         return types.toArray(new PacketType[types.size()]);
     }
 
-    public NoSlow(Plugin plugin) {
+    public UseItemAdapter(Plugin plugin) {
         super(plugin, ListenerPriority.MONITOR, initPacketTypes());
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
         for (final MiniListener<?> listener : miniListeners) {
@@ -113,14 +113,14 @@ public class NoSlow extends BaseAdapter {
         if (event.isPlayerTemporary()) return;
         if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
             handleDiggingPacket(event);
-        } else {
+        } 
+        else {
             handleBlockPlacePacket(event);
         }
     }
 
     private static void onItemConsume(final PlayerItemConsumeEvent e){
         final Player p = e.getPlayer();
-        
         final IPlayerData pData = DataManager.getPlayerData(p);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         data.isUsingItem = false;        
@@ -129,7 +129,6 @@ public class NoSlow extends BaseAdapter {
     private static void onInventoryOpen(final InventoryOpenEvent e){
         if (e.isCancelled()) return;
         final Player p = (Player) e.getPlayer();
-        
         final IPlayerData pData = DataManager.getPlayerData(p);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         data.isUsingItem = false;        
@@ -283,7 +282,7 @@ public class NoSlow extends BaseAdapter {
      * If time lower this value, A check will flag
      * Should be set from 51-100. Larger number, more protection more false-positive
      * 
-     * @param milliseconds
+     * @param time milliseconds
      */ 
     public static void setuseRLThreshold(int time) {
         timeBetweenRL = time;

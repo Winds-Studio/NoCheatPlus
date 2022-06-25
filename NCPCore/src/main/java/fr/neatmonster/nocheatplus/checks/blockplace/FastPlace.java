@@ -55,15 +55,15 @@ public class FastPlace extends Check {
         // Full period frequency.
         final float fullScore = data.fastPlaceBuckets.score(1f);
 
-        // Short term arrivals.
-        if (tick < data.fastPlaceShortTermTick ) {
+        // Short term limit.
+        if (tick < data.fastPlaceShortTermTick) {
             // TickTask got reset.
             data.fastPlaceShortTermTick = tick;
             data.fastPlaceShortTermCount = 1;
         }
-        else if (tick - data.fastPlaceShortTermTick < cc.fastPlaceShortTermTicks){
+        else if (tick - data.fastPlaceShortTermTick < cc.fastPlaceShortTermTicks) {
             // Account for server side lag.
-            if (!lag || TickTask.getLag(50L * (tick - data.fastPlaceShortTermTick), true) < 1.2f){
+            if (!lag || TickTask.getLag(50L * (tick - data.fastPlaceShortTermTick), true) < 1.2f) {
                 // Within range, add.
                 data.fastPlaceShortTermCount ++;
             }
@@ -78,7 +78,7 @@ public class FastPlace extends Check {
             data.fastPlaceShortTermCount = 1;
         }
 
-        // Find if one of both or both are violations:
+        // Find out if one of both are violations:
         final float fullViolation;
         if (fullScore > cc.fastPlaceLimit) {
             // Account for server side lag.
@@ -90,7 +90,7 @@ public class FastPlace extends Check {
         final float violation = Math.max(fullViolation, shortTermViolation);
         boolean cancel = false;
 
-        if (violation > 0f) {
+        if (violation > 0.0) {
             final double change = (double) violation;
             data.fastPlaceVL += change;
             cancel = executeActions(player, data.fastPlaceVL, change, cc.fastPlaceActions).willCancel();
@@ -100,5 +100,4 @@ public class FastPlace extends Check {
         }
         return cancel;
     }
-
 }

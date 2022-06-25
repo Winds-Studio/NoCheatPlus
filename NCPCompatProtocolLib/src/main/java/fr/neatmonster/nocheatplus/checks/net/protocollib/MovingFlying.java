@@ -38,6 +38,7 @@ import fr.neatmonster.nocheatplus.checks.net.FlyingFrequency;
 import fr.neatmonster.nocheatplus.checks.net.Moving;
 import fr.neatmonster.nocheatplus.checks.net.NetConfig;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
+import fr.neatmonster.nocheatplus.checks.net.WrongTurn;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying.PACKET_CONTENT;
 import fr.neatmonster.nocheatplus.checks.net.model.TeleportQueue.AckReference;
@@ -59,7 +60,7 @@ import fr.neatmonster.nocheatplus.worlds.IWorldData;
  * Run checks related to moving (pos/look/flying). Skip packets that shouldn't
  * get processed anyway due to a teleport. Also update lastKeepAliveTime.
  * 
- * @author dev1mc
+ * @author asofold
  *
  */
 public class MovingFlying extends BaseAdapter {
@@ -78,11 +79,7 @@ public class MovingFlying extends BaseAdapter {
     
     private final Plugin plugin = Bukkit.getPluginManager().getPlugin("NoCheatPlus");
     private static PacketType[] initPacketTypes() {
-        final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(
-                PacketType.Play.Client.LOOK,
-                PacketType.Play.Client.POSITION,
-                PacketType.Play.Client.POSITION_LOOK
-        ));
+        final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(PacketType.Play.Client.LOOK, PacketType.Play.Client.POSITION, PacketType.Play.Client.POSITION_LOOK));
         if (ServerVersion.compareMinecraftVersion("1.17") < 0) {
             types.add(PacketType.Play.Client.FLYING);
             StaticLog.logInfo("Add listener for legacy PlayInFlying packet.");
@@ -102,13 +99,22 @@ public class MovingFlying extends BaseAdapter {
     private final FlyingFrequency flyingFrequency = new FlyingFrequency();
     /** Other checks related to packet content. */
     private final Moving moving = new Moving();
+    /** Ilegal pitch check */
+    private final WrongTurn wrongTurn = new WrongTurn(); 
+
     private final int idFlying = counters.registerKey("packet.flying");
+
     private final int idAsyncFlying = counters.registerKey("packet.flying.asynchronous");
+
     /** If a packet can't be parsed, this time stamp is set for occasional logging. */
     private long packetMismatch = Long.MIN_VALUE;
-    private long packetMismatchLogFrequency = 60000; // Every minute max, good for updating :).
+    /** Every minute max, good for updating :).*/
+    private long packetMismatchLogFrequency = 60000;
+
     private final HashSet<PACKET_CONTENT> validContent = new LinkedHashSet<PACKET_CONTENT>();
+
     private final PacketType confirmTeleportType = ProtocolLibComponent.findPacketTypeByName(Protocol.PLAY, Sender.CLIENT, "TeleportAccept");
+
     private boolean acceptConfirmTeleportPackets = confirmTeleportType != null;
 
     public MovingFlying(Plugin plugin) {
@@ -128,8 +134,12 @@ public class MovingFlying extends BaseAdapter {
             if (event.isPlayerTemporary()) return;
         } 
         catch(NoSuchMethodError e) {
-            if (event.getPlayer() == null) return;
-            if (DataManager.getPlayerDataSafe(event.getPlayer()) == null) return;
+            if (event.getPlayer() == null) {
+                return;
+            }
+            if (DataManager.getPlayerDataSafe(event.getPlayer()) == null) {
+                return;
+            }
         }
         if (event.getPacketType().equals(confirmTeleportType)) {
             if (acceptConfirmTeleportPackets) {
@@ -190,6 +200,7 @@ public class MovingFlying extends BaseAdapter {
             counters.addSynchronized(idAsyncFlying, 1);
             // TODO: Detect game phase for the player?
         }
+
         final long time =  System.currentTimeMillis();
         final Player player = event.getPlayer();
         if (player == null) {
@@ -205,15 +216,10 @@ public class MovingFlying extends BaseAdapter {
         data.lastKeepAliveTime = time; // Update without much of a contract.
         // TODO: Leniency options too (packet order inversion). -> current: flyingQueue is fetched.
         final IWorldData worldData = pData.getCurrentWorldDataSafe();
-        if (!worldData.isCheckActive(CheckType.NET_FLYINGFREQUENCY)) {
-            return;
-        }
-
         final NetConfig cc = pData.getGenericInstance(NetConfig.class);
         boolean cancel = false;
         // Interpret the packet content.
         final DataPacketFlying packetData = interpretPacket(event, time);
-
         // Early return tests, if the packet can be interpreted.
         boolean skipFlyingFrequency = false;
         if (packetData != null) {
@@ -236,7 +242,7 @@ public class MovingFlying extends BaseAdapter {
                         // Don't add to the flying queue for now (assumed invalid).
                         final AckReference ackReference = data.teleportQueue.getLastAckReference();
                         if (ackReference.lastOutgoingId != Integer.MIN_VALUE
-                                && ackReference.lastOutgoingId != ackReference.maxConfirmedId) {
+                            && ackReference.lastOutgoingId != ackReference.maxConfirmedId) {
                             // Still waiting for a 'confirm teleport' packet. More or less safe to cancel this out.
                             /*
                              * TODO: The actual issue with this, apart from
@@ -277,22 +283,24 @@ public class MovingFlying extends BaseAdapter {
         // Actual packet frequency check.
         // TODO: Consider using the NetStatic check.
         if (!cancel && !skipFlyingFrequency 
-            && !pData.hasBypass(CheckType.NET_FLYINGFREQUENCY, player)
-            && flyingFrequency.check(player, packetData, time, data, cc, pData)) {
+            && flyingFrequency.check(player, packetData, time, data, cc, pData)
+            && !pData.hasBypass(CheckType.NET_FLYINGFREQUENCY, player)) {
             cancel = true;
         }
         
         // More packet checks.
-        if (!cancel && !pData.hasBypass(CheckType.NET_MOVING, player) && !skipFlyingFrequency
-            && moving.check(player, packetData, data, cc, pData, plugin)) {
+        if (!cancel && !skipFlyingFrequency && pData.isCheckActive(CheckType.NET_MOVING, player) 
+            && moving.check(player, packetData, data, cc, pData, plugin)
+            && !pData.hasBypass(CheckType.NET_MOVING, player)) {
             cancel = true;
         }
-
-        // Cancel redundant packets, when frequency is high anyway.
-        // TODO: Recode to detect cheating in a more reliable way, normally this is not the primary thread.
-        //        if (!cancel && primaryThread && packetData != null && cc.flyingFrequencyRedundantActive && checkRedundantPackets(player, packetData, allScore, time, data, cc)) {
-        //            event.setCancelled(true);
-        //        }
+        
+        // Illegal pitch check
+        if (!cancel && pData.isCheckActive(CheckType.NET_WRONGTURN, player) 
+            && wrongTurn.check(player, packetData.getPitch(), data, cc)
+            && !pData.hasBypass(CheckType.NET_WRONGTURN, player)) {
+            cancel = true; // Is it a good idea to cancel or should we just reset the players pitch?
+        }
 
         // Process cancel and debug log.
         if (cancel) {

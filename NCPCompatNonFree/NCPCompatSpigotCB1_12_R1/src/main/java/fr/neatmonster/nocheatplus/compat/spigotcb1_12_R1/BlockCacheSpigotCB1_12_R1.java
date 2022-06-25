@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.compat.cbdev;
+package fr.neatmonster.nocheatplus.compat.spigotcb1_12_R1;
 
 import java.util.Iterator;
 import java.util.List;
@@ -30,13 +30,13 @@ import net.minecraft.server.v1_12_R1.BlockPosition;
 import net.minecraft.server.v1_12_R1.EntityBoat;
 import net.minecraft.server.v1_12_R1.EntityShulker;
 
-public class BlockCacheCBDev extends BlockCache {
+public class BlockCacheSpigotCB1_12_R1 extends BlockCache {
 
     protected net.minecraft.server.v1_12_R1.World world;
 
     protected World bukkitWorld;
 
-    public BlockCacheCBDev(World world) {
+    public BlockCacheSpigotCB1_12_R1(World world) {
         setAccess(world);
     }
 

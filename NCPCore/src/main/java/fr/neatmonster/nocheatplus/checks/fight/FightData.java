@@ -96,16 +96,10 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
     // Data of the SelfHit check.
     public ActionFrequency selfHitVL = new ActionFrequency(6, 5000);
 
-    // Data of the frequency check.
-    public final ActionFrequency speedBuckets;
-    public int speedShortTermCount;
-    public int speedShortTermTick;
-
     // Data of the ImpossibleHit check
     public int lookFight = -1;
 
     public FightData(final FightConfig config){
-        speedBuckets = new ActionFrequency(config.speedBuckets, config.speedBucketDur);
         // Start with full fast-heal buffer.
         fastHealBuffer = config.fastHealBuffer; 
     }
@@ -125,12 +119,6 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
                 case FIGHT_ANGLE:
                     angleVL = 0;
                     angleHits.clear();
-                    break;
-                case FIGHT_SPEED:
-                    speedVL = 0;
-                    speedBuckets.clear(System.currentTimeMillis());
-                    speedShortTermCount = 0;
-                    speedShortTermTick = 0;
                     break;
                 case FIGHT_FASTHEAL:
                     fastHealVL = 0;

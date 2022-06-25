@@ -535,24 +535,6 @@ public abstract class ConfPaths {
 	public static final String FIGHT_SELFHIT_EXCLUDEPROJECTILE           = FIGHT_SELFHIT + "excludeprojectile";
 	public static final String FIGHT_SELFHIT_MESSAGE                     = FIGHT_SELFHIT + "warn_player";
     public static final String FIGHT_SELFHIT_ACTIONS                     = FIGHT_SELFHIT + "actions";
-
-
-    private static final String FIGHT_SPEED                              = FIGHT + "speed.";
-    public static final String  FIGHT_SPEED_CHECK                        = FIGHT_SPEED + SUB_ACTIVE;
-    public static final String  FIGHT_SPEED_LIMIT                        = FIGHT_SPEED + "limit";
-    private static final String FIGHT_SPEED_BUCKETS                      = FIGHT_SPEED + "buckets.";
-    @GlobalConfig
-    public static final String  FIGHT_SPEED_BUCKETS_N                    = FIGHT_SPEED_BUCKETS + "number";
-    @GlobalConfig
-    public static final String  FIGHT_SPEED_BUCKETS_DUR                  = FIGHT_SPEED_BUCKETS + "duration";
-    public static final String  FIGHT_SPEED_BUCKETS_FACTOR               = FIGHT_SPEED_BUCKETS + "factor";
-    private static final String FIGHT_SPEED_SHORTTERM                    = FIGHT_SPEED + "shortterm.";
-    public static final String  FIGHT_SPEED_SHORTTERM_LIMIT              = FIGHT_SPEED_SHORTTERM + "limit";
-    public static final String  FIGHT_SPEED_SHORTTERM_TICKS              = FIGHT_SPEED_SHORTTERM + "ticks";
-    private static final String FIGHT_SPEED_IMPROBABLE                   = FIGHT_SPEED + "improbable.";
-    public static final String  FIGHT_SPEED_IMPROBABLE_FEEDONLY          = FIGHT_SPEED_IMPROBABLE + "feedonly";
-    public static final String  FIGHT_SPEED_IMPROBABLE_WEIGHT            = FIGHT_SPEED_IMPROBABLE + "weight";
-    public static final String  FIGHT_SPEED_ACTIONS                      = FIGHT_SPEED + "actions";
     
     private static final String FIGHT_YAWRATE                            = FIGHT + "yawrate.";
     public static final String  FIGHT_YAWRATE_CHECK                      = FIGHT_YAWRATE + SUB_ACTIVE;
@@ -631,7 +613,7 @@ public abstract class ConfPaths {
     public static final String  MOVING_CREATIVEFLY_IGNOREALLOWFLIGHT     = MOVING_CREATIVEFLY + "ignoreallowflight";
     public static final String  MOVING_CREATIVEFLY_MODEL                 = MOVING_CREATIVEFLY + SUB_MODEL + ".";
     public static final String  MOVING_CREATIVEFLY_ACTIONS               = MOVING_CREATIVEFLY + "actions";
-	public static final String  MOVING_CREATIVEFLY_EYTRA_FWRESET         = MOVING_CREATIVEFLY_MODEL + "elytra.resetFwOnground";
+    public static final String  MOVING_CREATIVEFLY_EYTRA_FWRESET         = MOVING_CREATIVEFLY_MODEL + "elytra.resetFwOnground";
     public static final String  MOVING_CREATIVEFLY_EYTRA_STRICT          = MOVING_CREATIVEFLY_MODEL + "elytra.strict";
 
     private static final String MOVING_MOREPACKETS                       = MOVING + "morepackets.";
@@ -679,19 +661,17 @@ public abstract class ConfPaths {
     public static final String MOVING_SURVIVALFLY_SPRINTINGSPEED            = MOVING_SURVIVALFLY + "sprintingspeed";
     public static final String MOVING_SURVIVALFLY_SWIMMINGSPEED             = MOVING_SURVIVALFLY + "swimmingspeed";
     public static final String MOVING_SURVIVALFLY_WALKINGSPEED              = MOVING_SURVIVALFLY + "walkingspeed";
-    public static final String MOVING_SURVIVALFLY_SLOWNESSSPRINTHACK        = MOVING_SURVIVALFLY + "slownesssprinthack";
-    public static final String MOVING_SURVIVALFLY_GROUNDHOP                 = MOVING_SURVIVALFLY + "groundhop";
     public static final String MOVING_SURVIVALFLY_STEPHEIGHT                = MOVING_SURVIVALFLY + "stepheight";
     private static final String MOVING_SURVIVALFLY_EXTENDED                 = MOVING_SURVIVALFLY + "extended.";
-    public static final String MOVING_SURVIVALFLY_EXTENDED_HACC             = MOVING_SURVIVALFLY_EXTENDED + "horizontal-accounting";
+    // public static final String MOVING_SURVIVALFLY_EXTENDED_HACC             = MOVING_SURVIVALFLY_EXTENDED + "horizontal-accounting";
     public static final String MOVING_SURVIVALFLY_EXTENDED_VACC             = MOVING_SURVIVALFLY_EXTENDED + "vertical-accounting";
     public static final String MOVING_SURVIVALFLY_EXTENDED_STEP             = MOVING_SURVIVALFLY_EXTENDED + "step-accounting";
     public static final String MOVING_SURVIVALFLY_EXTENDED_NOSLOW           = MOVING_SURVIVALFLY_EXTENDED + "noslow";
     public static final String MOVING_SURVIVALFLY_EXTENDED_RESETITEM        = MOVING_SURVIVALFLY_EXTENDED + "reset-activeitem";
     private static final String MOVING_SURVIVALFLY_LENIENCY                 = MOVING_SURVIVALFLY + "leniency.";
-    public static final String  MOVING_SURVIVALFLY_LENIENCY_HBUFMAX         = MOVING_SURVIVALFLY_LENIENCY + "hbufmax";
-    public static final String  MOVING_SURVIVALFLY_LENIENCY_FREEZECOUNT     = MOVING_SURVIVALFLY_LENIENCY + "freezecount";
-    public static final String  MOVING_SURVIVALFLY_LENIENCY_FREEZEINAIR     = MOVING_SURVIVALFLY_LENIENCY + "freezeinair";
+    public static final String MOVING_SURVIVALFLY_LENIENCY_HBUFMAX          = MOVING_SURVIVALFLY_LENIENCY + "hbufmax";
+    public static final String MOVING_SURVIVALFLY_LENIENCY_FREEZECOUNT      = MOVING_SURVIVALFLY_LENIENCY + "freezecount";
+    public static final String MOVING_SURVIVALFLY_LENIENCY_FREEZEINAIR      = MOVING_SURVIVALFLY_LENIENCY + "freezeinair";
     private static final String MOVING_SURVIVALFLY_SETBACKPOLICY            = MOVING_SURVIVALFLY + "setbackpolicy.";
     public static final String MOVING_SURVIVALFLY_SETBACKPOLICY_FALLDAMAGE  = MOVING_SURVIVALFLY_SETBACKPOLICY + "falldamage";
     public static final String MOVING_SURVIVALFLY_SETBACKPOLICY_VOIDTOVOID  = MOVING_SURVIVALFLY_SETBACKPOLICY + "voidtovoid";
@@ -717,7 +697,6 @@ public abstract class ConfPaths {
     private static final String MOVING_VELOCITY                             = MOVING + "velocity.";
     public static final String  MOVING_VELOCITY_ACTIVATIONCOUNTER           = MOVING_VELOCITY + "activationcounter";
     public static final String  MOVING_VELOCITY_ACTIVATIONTICKS             = MOVING_VELOCITY + "activationticks";
-    public static final String  MOVING_VELOCITY_STRICTINVALIDATION          = MOVING_VELOCITY + "strictinvalidation";
 
     public static final String  MOVING_NOFALL_YONGROUND                     = MOVING_NOFALL + "yonground";
     public static final String  MOVING_YONGROUND                            = MOVING + "yonground";
@@ -734,8 +713,6 @@ public abstract class ConfPaths {
     public static final String  MOVING_LOADCHUNKS_TELEPORT                  = MOVING_LOADCHUNKS + "teleport";
     public static final String  MOVING_LOADCHUNKS_WORLDCHANGE               = MOVING_LOADCHUNKS + "worldchange";
     public static final String  MOVING_SPRINTINGGRACE                       = MOVING + "sprintinggrace";
-    public static final String  MOVING_FLYINGGRACE                          = MOVING + "flyinggrace";
-    public static final String  MOVING_ASSUMESPRINT                         = MOVING + "assumesprint";
     public static final String  MOVING_SPEEDGRACE                           = MOVING + "speedgrace";
     public static final String  MOVING_ENFORCELOCATION                      = MOVING + "enforcelocation";
     private static final String MOVING_SETBACK                              = MOVING + "setback.";
@@ -787,12 +764,6 @@ public abstract class ConfPaths {
     @GlobalConfig
     public static final String  NET_FLYINGFREQUENCY_PACKETSPERSECOND        = NET_FLYINGFREQUENCY + "packetspersecond";
     public static final String  NET_FLYINGFREQUENCY_ACTIONS                 = NET_FLYINGFREQUENCY + "actions";
-    // TODO: Reduceredundant has been removed (implement or remove config).
-    private static final String NET_FLYINGFREQUENCY_REDUNDANT               = NET_FLYINGFREQUENCY + "reduceredundant.";
-    public static final String  NET_FLYINGFREQUENCY_REDUNDANT_ACTIVE        = NET_FLYINGFREQUENCY_REDUNDANT + SUB_ACTIVE;
-    @GlobalConfig
-    public static final String  NET_FLYINGFREQUENCY_REDUNDANT_SECONDS       = NET_FLYINGFREQUENCY_REDUNDANT + "seconds";
-    public static final String  NET_FLYINGFREQUENCY_REDUNDANT_ACTIONS       = NET_FLYINGFREQUENCY_REDUNDANT + "actions";
 
     private static final String NET_KEEPALIVEFREQUENCY                      = NET + "keepalivefrequency.";
     public static final String  NET_KEEPALIVEFREQUENCY_ACTIVE               = NET_KEEPALIVEFREQUENCY + SUB_ACTIVE;
@@ -812,11 +783,16 @@ public abstract class ConfPaths {
     private static final String NET_SOUNDDISTANCE                           = NET + "sounddistance.";
     public static final String  NET_SOUNDDISTANCE_ACTIVE                    = NET_SOUNDDISTANCE + SUB_ACTIVE;
     public static final String  NET_SOUNDDISTANCE_MAXDISTANCE               = NET_SOUNDDISTANCE + "maxdistance";
-
-    /** Somehow superseded packets, typically leniency options .*/
+    
     private static final String NET_SUPERSEDED                              = NET + "superseded.";
     private static final String NET_SUPERSEDED_FLYING                       = NET_SUPERSEDED + "flying.";
     public static final String  NET_SUPERSEDED_FLYING_CANCELWAITING         = NET_SUPERSEDED_FLYING + "cancelwaiting";
+    
+    private static final String NET_TOGGLEFREQUENCY                         = NET + "togglefrequency.";
+    public static final String NET_TOGGLEFREQUENCY_ACTIVE                   = NET_TOGGLEFREQUENCY + SUB_ACTIVE;
+    public static final String NET_TOGGLEFREQUENCY_SECONDS                  = NET_TOGGLEFREQUENCY + "seconds";
+    public static final String NET_TOGGLEFREQUENCY_LIMIT                    = NET_TOGGLEFREQUENCY + "limit";
+    public static final String NET_TOGGLEFREQUENCY_ACTIONS                  = NET_TOGGLEFREQUENCY + "actions";
     
     private static final String NET_WRONGTURN                               = NET + "wrongturn.";
     public static final String  NET_WRONGTURN_ACTIVE                        = NET_WRONGTURN + SUB_ACTIVE;
@@ -880,8 +856,6 @@ public abstract class ConfPaths {
     public static final String  INVENTORY_ENSURECLOSE                    = "checks.inventory.ensureclose";
     @Moved(newPath = LOGGING_EXTENDED_STATUS)
     public static final String LOGGING_DEBUG                             = "logging.debug";
-    @Moved(newPath = NET_FLYINGFREQUENCY_REDUNDANT_ACTIVE)
-    public static final String  NET_FLYINGFREQUENCY_CANCELREDUNDANT      = "checks.net.flyingfrequency.cancelredundant";
     @Moved(newPath = MOVING_CREATIVEFLY_MODEL + "creative." + SUB_HORIZONTALSPEED)
     public static final String  MOVING_CREATIVEFLY_HORIZONTALSPEED       = "checks.moving.creativefly.horizontalspeed";
     @Moved(newPath = MOVING_CREATIVEFLY_MODEL + "creative." + SUB_VERTICALSPEED)
@@ -891,9 +865,9 @@ public abstract class ConfPaths {
     @Moved(newPath = MOVING_SURVIVALFLY_SETBACKPOLICY_FALLDAMAGE)
     public static final String MOVING_SURVIVALFLY_FALLDAMAGE             = "checks.moving.survivalfly.falldamage";
     @Moved(newPath=MOVING_VEHICLE_ENFORCELOCATION)
-    public static final String  MOVING_VEHICLES_ENFORCELOCATION             = "checks.moving.vehicles.enforcelocation";
+    public static final String  MOVING_VEHICLES_ENFORCELOCATION          = "checks.moving.vehicles.enforcelocation";
     @Moved(newPath=MOVING_VEHICLE_PREVENTDESTROYOWN)
-    public static final String  MOVING_VEHICLES_PREVENTDESTROYOWN           = "checks.moving.vehicles.preventdestroyown";
+    public static final String  MOVING_VEHICLES_PREVENTDESTROYOWN        = "checks.moving.vehicles.preventdestroyown";
     @Moved(newPath=MOVING_VEHICLE_MOREPACKETS_CHECK)
     public static final String  MOVING_MOREPACKETSVEHICLE_CHECK          = "checks.moving.morepacketsvehicle.active";
     @Moved(newPath=MOVING_VEHICLE_MOREPACKETS_ACTIONS)
@@ -902,6 +876,51 @@ public abstract class ConfPaths {
     public static final String MOVING_SURVIVALFLY_HBUFMAX                = "checks.moving.survivalfly.hbufmax";
 
     // Deprecated paths (just removed).
+    // TODO: Reduceredundant has been removed (implement or remove config).
+    @Deprecated
+    private static final String NET_FLYINGFREQUENCY_REDUNDANT               = NET_FLYINGFREQUENCY + "reduceredundant.";
+    @Deprecated
+    public static final String  NET_FLYINGFREQUENCY_REDUNDANT_ACTIVE        = NET_FLYINGFREQUENCY_REDUNDANT + SUB_ACTIVE;
+    @Deprecated
+    public static final String  NET_FLYINGFREQUENCY_REDUNDANT_SECONDS       = NET_FLYINGFREQUENCY_REDUNDANT + "seconds";
+    @Deprecated
+    public static final String  NET_FLYINGFREQUENCY_REDUNDANT_ACTIONS       = NET_FLYINGFREQUENCY_REDUNDANT + "actions";
+    @Deprecated
+    public static final String  MOVING_VELOCITY_STRICTINVALIDATION          = MOVING_VELOCITY + "strictinvalidation";
+    @Deprecated
+    private static final String FIGHT_SPEED                              = FIGHT + "speed.";
+    @Deprecated
+    public static final String  FIGHT_SPEED_CHECK                        = FIGHT_SPEED + SUB_ACTIVE;
+    @Deprecated
+    public static final String  FIGHT_SPEED_LIMIT                        = FIGHT_SPEED + "limit";
+    @Deprecated
+    private static final String FIGHT_SPEED_BUCKETS                      = FIGHT_SPEED + "buckets.";
+    @Deprecated
+    public static final String  FIGHT_SPEED_BUCKETS_N                    = FIGHT_SPEED_BUCKETS + "number";
+    @Deprecated
+    public static final String  FIGHT_SPEED_BUCKETS_DUR                  = FIGHT_SPEED_BUCKETS + "duration";
+    @Deprecated
+    public static final String  FIGHT_SPEED_BUCKETS_FACTOR               = FIGHT_SPEED_BUCKETS + "factor";
+    @Deprecated
+    private static final String FIGHT_SPEED_SHORTTERM                    = FIGHT_SPEED + "shortterm.";
+    @Deprecated
+    public static final String  FIGHT_SPEED_SHORTTERM_LIMIT              = FIGHT_SPEED_SHORTTERM + "limit";
+    @Deprecated
+    public static final String  FIGHT_SPEED_SHORTTERM_TICKS              = FIGHT_SPEED_SHORTTERM + "ticks";
+    @Deprecated
+    private static final String FIGHT_SPEED_IMPROBABLE                   = FIGHT_SPEED + "improbable.";
+    @Deprecated
+    public static final String  FIGHT_SPEED_IMPROBABLE_FEEDONLY          = FIGHT_SPEED_IMPROBABLE + "feedonly";
+    @Deprecated
+    public static final String  FIGHT_SPEED_IMPROBABLE_WEIGHT            = FIGHT_SPEED_IMPROBABLE + "weight";
+    @Deprecated
+    public static final String  FIGHT_SPEED_ACTIONS                      = FIGHT_SPEED + "actions";
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_SLOWNESSSPRINTHACK     = MOVING_SURVIVALFLY + "slownesssprinthack";
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_GROUNDHOP              = MOVING_SURVIVALFLY + "groundhop";
+    @Deprecated
+    public static final String  MOVING_ASSUMESPRINT                      = MOVING + "assumesprint";
     @Deprecated
     private static final String COMBINED_BEDLEAVE                        = COMBINED + "bedleave.";
     @Deprecated
@@ -929,6 +948,7 @@ public abstract class ConfPaths {
     @Deprecated
     public static final  String INVENTORY_INVENTORYMOVE_HDISTMIN         = "checks.inventory.inventorymove.hdist_min";
     // Clients settings
+    @Deprecated
     private static final String PROTECT_CLIENTS                          = PROTECT + "clients.";
     @Deprecated
     private static final String PROTECT_CLIENTS_MOTD                     = PROTECT_CLIENTS + "motd.";

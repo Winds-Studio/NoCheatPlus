@@ -82,10 +82,10 @@ public class MovingUtil {
      * Primary thread only.
      * 
      * @param player
-     * @param fromLoc
+     * @param fromLocation
      *            The location the player is moving from or just where the
      *            player is.
-     * @param toLoc
+     * @param toLocation
      *            The location the player has moved to.
      * @param data
      * @param cc
@@ -135,8 +135,9 @@ public class MovingUtil {
     /**
      * From HoneyBlock.java (client 1.18.2)
      * @param from
-     * @param mcAccess
+     * @param width
      * @param thisMove
+     * @param player
      * @return if the player is sliding on the honey block.
      */
     public static boolean isSlidingDown(final PlayerLocation from, final double width, final PlayerMoveData thisMove, final Player player) {
@@ -536,7 +537,8 @@ public class MovingUtil {
      * Check lift-off (CB: on ground is done wrongly, inWater probably is
      * correct, web is not checked).
      * 
-     * @param fromLocation
+     * @param player
+     * @param loc
      * @param data
      * @return
      */

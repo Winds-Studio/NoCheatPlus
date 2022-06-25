@@ -44,9 +44,6 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.ITraceEntry;
-import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
-import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
 import fr.neatmonster.nocheatplus.checks.moving.player.UnusedVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -110,9 +107,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
 
     /** The self hit check */
     private final SelfHit selfHit = addCheck(new SelfHit());
-
-    /** The speed check. */
-    private final Speed speed = addCheck(new Speed());
 
     /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
     private final Location useLoc1 = new Location(null, 0, 0, 0);
@@ -190,7 +184,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         if (Items.checkIllegalEnchantmentsAllHands(player, pData)) {
             return true;
         }
-
+        /** Whether a check has requested to cancel the event */
         boolean cancelled = false;
         final boolean debug = pData.isDebugActive(checkType);
         final String worldName = player.getWorld().getName();
@@ -303,37 +297,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         else data.thornsId = Integer.MIN_VALUE;
 
         // Run through the main checks.
-        // TODO: Consider to always check improbable (first?). At least if config.always or speed or net.attackfrequency are enabled.
-        // Attacking speed first
-        if (!cancelled && speed.isEnabled(player, pData)) {
-            if (speed.check(player, now, data, cc, pData)) {
-                cancelled = true;
-
-                // Still feed the improbable.
-                if (data.speedVL > 50) {
-                	if (cc.speedImprobableWeight > 0.0f) {
-                        // Do check only for higher speeds.
-                    	if (!cc.speedImprobableFeedOnly) {
-                            Improbable.check(player, cc.speedImprobableWeight, now, "fight.speed", pData);
-                        }
-                    }
-                }
-                // Only feed for lower speeds.
-                else if (cc.speedImprobableWeight > 0.0f) {
-                    Improbable.feed(player, cc.speedImprobableWeight, now);
-                }
-            }
-            // Feed improbable in case of ok-moves too.
-            // TODO: consider only feeding if attacking with higher average speed (!)
-            else if (normalizedMove > 2.0) { 
-                if (cc.speedImprobableWeight > 0.0f) {
-                    if (!cc.speedImprobableFeedOnly && Improbable.check(player, cc.speedImprobableWeight, now, "fight.speed", pData)) {
-                        cancelled = true;
-                    }
-                }
-            }
-        }
-        
         // Illegal critical hits
         if (!cancelled && critical.isEnabled(player, pData) 
             && critical.check(player, loc, data, cc, pData, penaltyList)) {
@@ -362,7 +325,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         // Checks that use the LocationTrace instance of the attacked entity/player.
         // TODO: To be replaced by Fight.HitBox
         if (!cancelled) {
-
             final boolean reachEnabled = reach.isEnabled(player, pData);
             final boolean directionEnabled = direction.isEnabled(player, pData) && mData.timeRiptiding + 3000 < now;
             if (reachEnabled || directionEnabled) {
@@ -399,7 +361,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
                 cancelled = true;
             }
             // Angle check.
-            if (angle.check(player, loc, damaged, worldChanged, data, cc, pData)) {
+            if (!cancelled && angle.check(player, loc, damaged, worldChanged, data, cc, pData)) {
                 if (!cancelled && debug) {
                     debug(player, "FIGHT_ANGLE cancel without yawrate cancel.");
                 }
@@ -413,39 +375,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         data.lastAttackedX = damagedLoc.getX();
         data.lastAttackedY = damagedLoc.getY();
         data.lastAttackedZ = damagedLoc.getZ();
-        //    	data.lastAttackedDist = targetDist;
-
-        // Care for the "lost sprint problem": sprint resets, client moves as if still...
-        // TODO: If this is just in-air, model with friction, so this can be removed.
-        // TODO: Use stored distance calculation same as reach check?
-        // TODO: For pvp: make use of "player was there" heuristic later on.
-        // TODO: Confine further with simple pre-conditions.
-        // TODO: Evaluate if moving traces can help here.
-        if (!cancelled && TrigUtil.distance(loc.getX(), loc.getZ(), damagedLoc.getX(), damagedLoc.getZ()) < 4.5) {
-
-            // Check if fly checks is an issue at all, re-check "real sprinting".
-            final PlayerMoveData lastMove = mData.playerMoves.getFirstPastMove();
-            if (lastMove.valid && mData.liftOffEnvelope == LiftOffEnvelope.NORMAL) {
-
-                final double hDist = TrigUtil.xzDistance(loc, lastMove.from);
-                if (hDist >= 0.23) {
-
-                    // TODO: Might need to check hDist relative to speed / modifiers.
-                    final PlayerMoveInfo moveInfo = auxMoving.usePlayerMoveInfo();
-                    moveInfo.set(player, loc, null, mCc.yOnGround);
-                    if (now <= mData.timeSprinting + mCc.sprintingGrace 
-                        && MovingUtil.shouldCheckSurvivalFly(player, moveInfo.from, moveInfo.to, mData, mCc, pData)) {
-                        // Judge as "lost sprint" problem.
-                        // TODO: What would mData.lostSprintCount > 0  mean here?
-                        mData.lostSprintCount = 7;
-                        if ((debug || pData.isDebugActive(CheckType.MOVING)) && BuildParameters.debugLevel > 0) {
-                            debug(player, "lostsprint: hDist to last from: " + hDist + " | targetdist=" + TrigUtil.distance(loc.getX(), loc.getZ(), damagedLoc.getX(), damagedLoc.getZ()) + " | sprinting=" + player.isSprinting() + " | food=" + player.getFoodLevel() +" | hbuf=" + mData.sfHorizontalBuffer);
-                        }
-                    }
-                    auxMoving.returnPlayerMoveInfo(moveInfo);
-                }
-            }
-        }
+        // data.lastAttackedDist = targetDist;
 
         // Generic attacking penalty.
         // (Cancel after sprinting hacks, because of potential fp).
@@ -947,7 +877,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
 
     @EventHandler(ignoreCancelled = false, priority = EventPriority.MONITOR)
     public void onItemHeld(final PlayerItemHeldEvent event) {
-        
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final long penalty = pData.getGenericInstance(FightConfig.class).toolChangeAttackPenalty;

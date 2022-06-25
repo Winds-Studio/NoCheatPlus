@@ -32,7 +32,8 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 
-public class Fight extends BaseAdapter{
+// TODO: Name is misleading; doesn't contain any packet related to combat. Rename to something more appropriate (i.e.: MiscAdapter)
+public class Fight extends BaseAdapter {
     private static PacketType[] initPacketTypes() {
         final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(
                 //PacketType.Play.Client.ARM_ANIMATION,

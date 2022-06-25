@@ -235,7 +235,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * @return True, if the event is to be cancelled.
      */
     private boolean handleEntityToggleGlideEvent(final Entity entity, final boolean isGliding) {
-
         // Ignore non players.
         if (!(entity instanceof Player)) {
             return false;
@@ -658,24 +657,16 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
 
         //////////////////////////////////////////////
-        // Check for sprinting (assumeSprint)       //
+        // Check for sprinting                      //
         //////////////////////////////////////////////
-        if (player.isSprinting() || cc.assumeSprint) {
+        if (player.isSprinting()) {
             // TODO: Collect all these properties within a context object (abstraction + avoid re-fetching). 
             if (player.getFoodLevel() > 5 || player.getAllowFlight() || player.isFlying()) {
                 data.timeSprinting = time;
-                data.multSprinting = attributeAccess.getHandle().getSprintAttributeMultiplier(player);
-
-                if (data.multSprinting == Double.MAX_VALUE) {
-                    data.multSprinting = 1.30000002;
-                }
-                else if (cc.assumeSprint && data.multSprinting == 1.0) {
-                    // Server side can be inconsistent, so the multiplier might be plain wrong (1.0).
-                    // TODO: Could be more/less than actual, but "infinite" latency would not work either.
-                    data.multSprinting = 1.30000002;
-                }
             }
-            else if (time < data.timeSprinting) data.timeSprinting = 0;
+            else if (time < data.timeSprinting) {
+                data.timeSprinting = 0;
+            }
         }
         else if (time < data.timeSprinting) data.timeSprinting = 0;
         
@@ -749,11 +740,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (MovingUtil.shouldCheckSurvivalFly(player, pFrom, pTo, data, cc, pData)) {
             checkCf = false;
             checkSf = true;
+            thisMove.flyCheck = CheckType.MOVING_SURVIVALFLY;
             data.adjustWalkSpeed(player.getWalkSpeed(), tick, cc.speedGrace);
         }
         else if (pData.isCheckActive(CheckType.MOVING_CREATIVEFLY, player)) {
             checkCf = true;
             checkSf = false;
+            thisMove.flyCheck = CheckType.MOVING_CREATIVEFLY;
             prepareCreativeFlyCheck(player, from, to, moveInfo, thisMove, multiMoveCount, tick, data, cc);
         }
         // (thisMove.flyCheck stays null.)
@@ -986,16 +979,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     debug(player, "Add vertical velocity for bubble stream launch effect.");
                 }
             }
-            if (!data.hasQueuedHorVel() && thisMove.yDistance != 0.0
-                && thisMove.hDistance > 0.1 && thisMove.hDistance < thisMove.walkSpeed && thisMove.from.inBubbleStream
-                && BlockProperties.isAir(pFrom.getTypeIdAbove()) && data.insideBubbleStreamCount < 7
-                && !Magic.inAir(thisMove)) {
-                data.addHorizontalVelocity(new AccountEntry(0.5, 0, MovingData.getHorVelValCount(0.5)));
-                data.addHorizontalVelocity(new AccountEntry(0.7, 1, MovingData.getHorVelValCount(0.7)));
-                if (debug) {
-                    debug(player, "Add horizontal velocity for bubble stream bounce effect on the surface.");
-                }
-            }
         }
 
         
@@ -1008,7 +991,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 1.1: Prepare from, to, thisMove for full checking.
             // TODO: Could further differentiate if really needed to (newTo / NoFall).
             MovingUtil.prepareFullCheck(pFrom, pTo, thisMove, Math.max(cc.noFallyOnGround, cc.yOnGround));
-
             // 1.2: HACK: Add velocity for transitions between creativefly and survivalfly.
             if (lastMove.toIsValid && lastMove.flyCheck == CheckType.MOVING_CREATIVEFLY) { 
                 final long tickHasLag = data.delayWorkaround + Math.round(200 / TickTask.getLag(200, true));
@@ -1021,10 +1003,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 1.3: Actual check.
             // Only check if passable has not already set back.
             if (newTo == null) {
-                thisMove.flyCheck = CheckType.MOVING_SURVIVALFLY;
                 newTo = survivalFly.check(player, pFrom, pTo, multiMoveCount, data, cc, pData, tick, time, useBlockChangeTracker);
             }
-
+            
             // 1.4: Only check NoFall, if not already vetoed.
             if (checkNf) {
                 checkNf = noFall.isEnabled(player, pData);
@@ -1067,9 +1048,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // 2: Then creativefly
         else if (checkCf) {
             if (newTo == null) {
-                thisMove.flyCheck = CheckType.MOVING_CREATIVEFLY;
                 newTo = creativeFly.check(player, pFrom, pTo, data, cc, pData, time, tick, useBlockChangeTracker);
-
                 // Check for NoFall
                 if (checkNf && noFall.isEnabled(player, pData)) {
                     noFall.check(player, pFrom, pTo, previousSetBackY, data, cc, pData);

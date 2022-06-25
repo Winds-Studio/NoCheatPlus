@@ -112,13 +112,15 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
         // Actual checks.
         if (ServerVersion.compareMinecraftVersion("1.6.4") <= 0) {
             // Don't use this listener.
-            NCPAPIProvider.getNoCheatPlusAPI().getLogManager().info(Streams.STATUS, "Disable EntityUseAdapter due to incompatibilities. Use fight.speed instead of net.attackfrequency.");
+            NCPAPIProvider.getNoCheatPlusAPI().getLogManager().info(Streams.STATUS, "Disable EntityUseAdapter due to incompatibilities. Click speed won't be monitored.");
         }
         else if (worldMan.isActiveAnywhere(CheckType.NET_ATTACKFREQUENCY)) {
             // (Also sets lastKeepAliveTime, if enabled.)
             register("fr.neatmonster.nocheatplus.checks.net.protocollib.UseEntityAdapter", plugin);
         }
-        if (worldMan.isActiveAnywhere(CheckType.NET_FLYINGFREQUENCY) || worldMan.isActiveAnywhere(CheckType.NET_MOVING)) {
+        if (worldMan.isActiveAnywhere(CheckType.NET_FLYINGFREQUENCY) 
+            || worldMan.isActiveAnywhere(CheckType.NET_MOVING)
+            || worldMan.isActiveAnywhere(CheckType.NET_WRONGTURN)) {
             // (Also sets lastKeepAliveTime, if enabled.)
             register("fr.neatmonster.nocheatplus.checks.net.protocollib.MovingFlying", plugin);
             register("fr.neatmonster.nocheatplus.checks.net.protocollib.OutgoingPosition", plugin);
@@ -130,18 +132,20 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
         if (worldMan.isActiveAnywhere(CheckType.NET_SOUNDDISTANCE)) {
             register("fr.neatmonster.nocheatplus.checks.net.protocollib.SoundDistance", plugin);
         }
-        if (worldMan.isActiveAnywhere(CheckType.NET_WRONGTURN)) {
-            register("fr.neatmonster.nocheatplus.checks.net.protocollib.WrongTurnAdapter", plugin);
-        }
         if (ServerVersion.compareMinecraftVersion("1.9") < 0) {
             if (worldMan.isActiveAnywhere(CheckType.NET_PACKETFREQUENCY)) {
                 register("fr.neatmonster.nocheatplus.checks.net.protocollib.CatchAllAdapter", plugin);
             }
         }
         if (ServerVersion.compareMinecraftVersion("1.8") >= 0) {
-        	if (ConfigManager.isTrueForAnyConfig(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_NOSLOW)) 
-        	    register("fr.neatmonster.nocheatplus.checks.net.protocollib.NoSlow", plugin);
-            register("fr.neatmonster.nocheatplus.checks.net.protocollib.Fight", plugin);
+            if (ConfigManager.isTrueForAnyConfig(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_NOSLOW)) {
+        	    register("fr.neatmonster.nocheatplus.checks.net.protocollib.UseItemAdapter", plugin);
+                register("fr.neatmonster.nocheatplus.checks.net.protocollib.Fight", plugin);
+            }
+            
+            if (worldMan.isActiveAnywhere(CheckType.NET_TOGGLEFREQUENCY)) {
+                register("fr.neatmonster.nocheatplus.checks.net.protocollib.EntityActionAdapter", plugin);
+            }
         }
         if (!registeredPacketAdapters.isEmpty()) {
             List<String> names = new ArrayList<String>(registeredPacketAdapters.size());

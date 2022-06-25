@@ -78,17 +78,6 @@ public class FightConfig extends ACheckConfig {
 
     public final ActionList selfHitActions;
 
-    public final int speedLimit;
-    public final int speedBuckets;
-    public final long speedBucketDur;
-    public final float speedBucketFactor;  
-
-    public final int speedShortTermLimit;
-    public final int speedShortTermTicks;
-    public final boolean speedImprobableFeedOnly;
-    public final float speedImprobableWeight;
-    public final ActionList speedActions;
-
     // Special flags:
     public final boolean cancelDead;
     public final boolean knockBackVelocityPvP;
@@ -163,16 +152,6 @@ public class FightConfig extends ACheckConfig {
         reachActions = config.getOptimizedActionList(ConfPaths.FIGHT_REACH_ACTIONS, Permissions.FIGHT_REACH);
 
         selfHitActions = config.getOptimizedActionList(ConfPaths.FIGHT_SELFHIT_ACTIONS, Permissions.FIGHT_SELFHIT);
-
-        speedLimit = config.getInt(ConfPaths.FIGHT_SPEED_LIMIT);
-        speedBuckets = config.getInt(ConfPaths.FIGHT_SPEED_BUCKETS_N, 6);
-        speedBucketDur = config.getLong(ConfPaths.FIGHT_SPEED_BUCKETS_DUR, 333);
-        speedBucketFactor = (float) config.getDouble(ConfPaths.FIGHT_SPEED_BUCKETS_FACTOR, 1f);
-        speedShortTermLimit = config.getInt(ConfPaths.FIGHT_SPEED_SHORTTERM_LIMIT);
-        speedShortTermTicks = config.getInt(ConfPaths.FIGHT_SPEED_SHORTTERM_TICKS);
-        speedImprobableFeedOnly = config.getBoolean(ConfPaths.FIGHT_SPEED_IMPROBABLE_FEEDONLY);
-        speedImprobableWeight = (float) config.getDouble(ConfPaths.FIGHT_SPEED_IMPROBABLE_WEIGHT);
-        speedActions = config.getOptimizedActionList(ConfPaths.FIGHT_SPEED_ACTIONS, Permissions.FIGHT_SPEED);
 
         cancelDead = config.getBoolean(ConfPaths.FIGHT_CANCELDEAD);
 		loopMaxLatencyTicks = config.getInt(ConfPaths.FIGHT_MAXLOOPLETENCYTICKS, 1, 15, 8);

@@ -78,7 +78,6 @@ public enum CheckType {
     FIGHT_NOSWING(CheckTypeType.CHECK, FIGHT, Permissions.FIGHT_NOSWING),
     FIGHT_REACH(CheckTypeType.CHECK, FIGHT, Permissions.FIGHT_REACH),
     FIGHT_SELFHIT(CheckTypeType.CHECK, FIGHT, Permissions.FIGHT_SELFHIT),
-    FIGHT_SPEED(CheckTypeType.CHECK, FIGHT, Permissions.FIGHT_SPEED),
 
     INVENTORY(CheckTypeType.GROUP, CheckType.ALL, Permissions.INVENTORY),
     INVENTORY_FASTCLICK(CheckTypeType.CHECK, INVENTORY, Permissions.INVENTORY_FASTCLICK),
@@ -108,6 +107,7 @@ public enum CheckType {
     NET_MOVING(CheckTypeType.CHECK, NET, Permissions.NET_MOVING),
     NET_PACKETFREQUENCY(CheckTypeType.CHECK, NET, Permissions.NET_PACKETFREQUENCY),
     NET_SOUNDDISTANCE(CheckTypeType.CHECK, NET), // Can not exempt players from this one.
+    NET_TOGGLEFREQUENCY(CheckTypeType.CHECK, NET),
     NET_WRONGTURN(CheckTypeType.CHECK, NET, Permissions.NET_WRONGTURN)
     ;
 

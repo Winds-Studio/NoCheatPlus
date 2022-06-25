@@ -50,11 +50,6 @@ public class NetData extends ACheckData {
 
     // Moving
     public double movingVL = 0;
-    /**
-     * Monitors redundant packets, when more than 20 packets per second are
-     * sent. Use System.currentTimeMillis() for time.
-     */
-    public final ActionFrequency flyingFrequencyRedundantFreq;
 
     // KeepAliveFrequency
     /**
@@ -63,8 +58,12 @@ public class NetData extends ACheckData {
      */
     public ActionFrequency keepAliveFreq = new ActionFrequency(20, 1000);
 	
-	// Wrong Turn
+    // Wrong Turn
     public double wrongTurnVL = 0;
+    
+    // ToggleFrequency
+    public double toggleFrequencyVL = 0;
+    public ActionFrequency playerActionFreq;
     
     // Shared.
     /**
@@ -99,13 +98,11 @@ public class NetData extends ACheckData {
 
     public NetData(final NetConfig config) {
         flyingFrequencyAll = new ActionFrequency(config.flyingFrequencySeconds, 1000L);
-        flyingFrequencyRedundantFreq = new ActionFrequency(config.flyingFrequencyRedundantSeconds, 1000L);
         if (config.packetFrequencySeconds <= 2) {
             packetFrequency = new ActionFrequency(config.packetFrequencySeconds * 3, 333);
         }
-        else {
-            packetFrequency = new ActionFrequency(config.packetFrequencySeconds * 2, 500);
-        }
+        else packetFrequency = new ActionFrequency(config.packetFrequencySeconds * 2, 500);
+        playerActionFreq = new ActionFrequency(Math.max(1, config.toggleActionSeconds), 1000L);
     }
 
     public void onJoin(final Player player) {
@@ -200,5 +197,4 @@ public class NetData extends ACheckData {
         // (Keep flyingQueue.)
         // (ActionFrequency can handle this.)
     }
-
 }

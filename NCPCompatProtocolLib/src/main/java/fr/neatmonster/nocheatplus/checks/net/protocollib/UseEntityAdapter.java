@@ -31,6 +31,7 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.net.AttackFrequency;
 import fr.neatmonster.nocheatplus.checks.net.NetConfig;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
+import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
@@ -176,6 +177,7 @@ public class UseEntityAdapter extends BaseAdapter {
             }
         }
         if (!packetInterpreted) {
+            StaticLog.logWarning("[NoCheatPlus] Attack packet couldn't be interpreted. Skipping AttackFrequency.");
             // TODO: Log warning once, if the packet could not be interpreted.
             return;
         }
@@ -187,7 +189,8 @@ public class UseEntityAdapter extends BaseAdapter {
         if (isAttack) {
             final NetConfig cc = pData.getGenericInstance(NetConfig.class);
             if (attackFrequency.isEnabled(player, pData)
-                    && attackFrequency.check(player, time, data, cc, pData)) {
+                && attackFrequency.check(player, time, data, cc, pData)
+                && !pData.hasBypass(CheckType.NET_ATTACKFREQUENCY, player)) {
                 cancel = true;
             }
         }

@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.compat.cbdev;
+package fr.neatmonster.nocheatplus.compat.spigotcb1_12_R1;
 
 import java.lang.reflect.Method;
 
@@ -42,7 +42,7 @@ import net.minecraft.server.v1_12_R1.IBlockAccess;
 import net.minecraft.server.v1_12_R1.IBlockData;
 import net.minecraft.server.v1_12_R1.MobEffectList;
 
-public class MCAccessCBDev implements MCAccess {
+public class MCAccessSpigotCB1_12_R1 implements MCAccess {
 
     private final MobEffectList JUMP;
     private final MobEffectList FASTER_MOVEMENT;
@@ -50,7 +50,7 @@ public class MCAccessCBDev implements MCAccess {
     /**
      * Test for availability in constructor.
      */
-    public MCAccessCBDev() {
+    public MCAccessSpigotCB1_12_R1() {
         //        try {
         getCommandMap();
         Method blockGetAABB = ReflectionUtil.getMethod(Block.class, "b", IBlockData.class, IBlockAccess.class, BlockPosition.class);
@@ -102,7 +102,6 @@ public class MCAccessCBDev implements MCAccess {
 
     @Override
     public String getMCVersion() {
-        // 1.12 (1_12_R1)
         return "1.12-1.12.2";
     }
 
@@ -123,7 +122,7 @@ public class MCAccessCBDev implements MCAccess {
 
     @Override
     public BlockCache getBlockCache(final World world) {
-        return new BlockCacheCBDev(world);
+        return new BlockCacheSpigotCB1_12_R1(world);
     }
 
     @Override

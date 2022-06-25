@@ -219,7 +219,8 @@ public class BlockBreakListener extends CheckListener {
                     || bdata.isPassedCheck(CheckType.BLOCKINTERACT_VISIBLE))) {
                     skippedRedundantChecks ++;
                 }
-                else if (direction.isEnabled(player, pData) && direction.check(player, loc, eyeHeight, block, null, flyingHandle, data, cc, pData)) {
+                else if (direction.isEnabled(player, pData) 
+                        && direction.check(player, loc, eyeHeight, block, null, flyingHandle, data, cc, pData)) {
                     cancelled = true;
                 }
             }
@@ -241,8 +242,7 @@ public class BlockBreakListener extends CheckListener {
             //        	data.clickedX = Integer.MAX_VALUE;
             // Debug log (only if not cancelled, to avoid spam).
             if (pData.isDebugActive(CheckType.BLOCKBREAK)) {
-                debugBlockBreakResult(player, block, skippedRedundantChecks, 
-                        flyingHandle, pData);
+                debugBlockBreakResult(player, block, skippedRedundantChecks, flyingHandle, pData);
             }
         }
         

@@ -103,8 +103,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public float flySpeed = 0.0f;
     /** Keep track of the amplifier given by the jump potion. */
     public double jumpAmplifier = 0;
-    /** Multiplier at the last time sprinting. */
-    public double multSprinting = 1.30000002; 
     /** Used in workaroundFlyCheckTransition() in the MovingListener for velocity. */
     public long delayWorkaround = 0;
     /** Last time the player was actually sprinting. */
@@ -235,8 +233,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public int sfVLMoveCount = 0;
     /** The current horizontal buffer value. Horizontal moving VLs get compensated with emptying the buffer. */
     public double sfHorizontalBuffer = 0.0;
-    /** Event-counter to cover up for sprinting resetting server side only. Set in the FighListener. */
-    public int lostSprintCount = 0;
     /** Count how long the player has been in the air, resets when landing on ground. */
     public int sfJumpPhase = 0;
     /** Count how many times in a row yDistance has been zero, only for in-air moves, updated on not cancelled moves (aimed at in-air workarounds) */
@@ -369,7 +365,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         clearAccounting();
         clearNoFallData();
         removeAllPlayerSpeedModifiers();
-        lostSprintCount = 0;
         sfHoverTicks = sfHoverLoginTicks = -1;
         sfDirty = false;
         sfLowJump = false;
@@ -403,7 +398,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // Keep jump amplifier
         // Keep bunny-hop delay. Harsher on bunnyhop cheats.
         // keep jump phase.
-        lostSprintCount = 0;
         sfHoverTicks = -1; // 0 ?
         sfDirty = false;
         sfLowJump = false;

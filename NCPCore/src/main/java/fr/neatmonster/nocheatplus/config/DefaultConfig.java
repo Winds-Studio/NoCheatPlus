@@ -380,14 +380,6 @@ public class DefaultConfig extends ConfigFile {
         // SelfHit, legacy
         set(ConfPaths.FIGHT_SELFHIT_CHECK, "default", 785);
         set(ConfPaths.FIGHT_SELFHIT_ACTIONS, "cancel log:fselfhit:0:5:icf cmdc:kickselfhit:0:5", 1154);
-        // Speed
-        set(ConfPaths.FIGHT_SPEED_CHECK, "default", 785);
-        set(ConfPaths.FIGHT_SPEED_LIMIT, 15, 1154); 
-        set(ConfPaths.FIGHT_SPEED_ACTIONS, "cancel vl>10 cancel log:fspeed:2:5:i vl>60 cancel log:fspeed:0:5:if cmdc:kickattackfrequency:0:10", 1154);
-        set(ConfPaths.FIGHT_SPEED_SHORTTERM_TICKS, 7, 785);
-        set(ConfPaths.FIGHT_SPEED_SHORTTERM_LIMIT, 5, 1154);
-        set(ConfPaths.FIGHT_SPEED_IMPROBABLE_FEEDONLY, false, 1154);
-        set(ConfPaths.FIGHT_SPEED_IMPROBABLE_WEIGHT, 1.0, 1154);
 
 
         /* Inventory */
@@ -495,7 +487,7 @@ public class DefaultConfig extends ConfigFile {
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_VERTICAL_ASCEND_SPEED, 0, 785);
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_VERTICAL_MAXHEIGHT, cfMaxWorldY, 1104);
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_MODIFIERS, false, 785);
-			set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_FWRESET, false, 1154);
+	    set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_FWRESET, false, 1154);
             set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_STRICT, true, 1154);
         }
         set(ConfPaths.MOVING_CREATIVEFLY_ACTIONS,
@@ -534,7 +526,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.MOVING_SURVIVALFLY_CHECK, "default", 785);
         set(ConfPaths.MOVING_SURVIVALFLY_STEPHEIGHT, "default", 785);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_VACC, true, 785);
-        set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_HACC, true, 1154);
+        // set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_HACC, true, 1154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_STEP, true, 1154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_NOSLOW, true, 1154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_RESETITEM, true, 1154);
@@ -568,7 +560,6 @@ public class DefaultConfig extends ConfigFile {
         // Velocity.
         set(ConfPaths.MOVING_VELOCITY_ACTIVATIONCOUNTER, 20, 1154);
         set(ConfPaths.MOVING_VELOCITY_ACTIVATIONTICKS, 140, 785);
-        set(ConfPaths.MOVING_VELOCITY_STRICTINVALIDATION, true, 785);
         // General.
         set(ConfPaths.MOVING_SPLITMOVES, "default", 785);
         set(ConfPaths.MOVING_IGNORESTANCE, "default", 785);
@@ -578,7 +569,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.MOVING_LOADCHUNKS_TELEPORT, true, 785);
         set(ConfPaths.MOVING_LOADCHUNKS_WORLDCHANGE, true, 785);
         set(ConfPaths.MOVING_SPRINTINGGRACE, 4.0, 785);
-        set(ConfPaths.MOVING_ASSUMESPRINT, true, 785);
         set(ConfPaths.MOVING_SPEEDGRACE, 4.0, 785);
         set(ConfPaths.MOVING_ENFORCELOCATION, "default", 785);
         set(ConfPaths.MOVING_SETBACK_METHOD, "default", 785);
@@ -618,9 +608,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.NET_FLYINGFREQUENCY_SECONDS, 5, 785);
         set(ConfPaths.NET_FLYINGFREQUENCY_PACKETSPERSECOND, 60, 785);
         set(ConfPaths.NET_FLYINGFREQUENCY_ACTIONS, "cancel vl>20 cancel log:flyingfrequency:3:2:i vl>500 cancel log:flyingfrequency:0:5:if vl>1000 cancel log:flyingfrequency:0:2:icf cmdc:kickflyingfrequency:0:10", 1154); 
-        set(ConfPaths.NET_FLYINGFREQUENCY_REDUNDANT_ACTIVE, true, 785);
-        set(ConfPaths.NET_FLYINGFREQUENCY_REDUNDANT_SECONDS, 3, 785);
-        set(ConfPaths.NET_FLYINGFREQUENCY_REDUNDANT_ACTIONS, "cancel", 785); 
         // KeepAliveFrequency
         set(ConfPaths.NET_KEEPALIVEFREQUENCY_ACTIVE, "default", 785);
         set(ConfPaths.NET_KEEPALIVEFREQUENCY_SECONDS, 20, 1153);
@@ -636,6 +623,12 @@ public class DefaultConfig extends ConfigFile {
         // SoundDistance
         set(ConfPaths.NET_SOUNDDISTANCE_ACTIVE, "default", 785);
         set(ConfPaths.NET_SOUNDDISTANCE_MAXDISTANCE, 320, 785);
+        // ToggleFrequency
+        set(ConfPaths.NET_TOGGLEFREQUENCY_ACTIVE, "default", 1154);
+        set(ConfPaths.NET_TOGGLEFREQUENCY_SECONDS, 1, 1154);
+        set(ConfPaths.NET_TOGGLEFREQUENCY_LIMIT, 25, 1154);
+        set(ConfPaths.NET_TOGGLEFREQUENCY_ACTIONS, "cancel vl>10 cancel log:togglefrequency:3:5:if", 1154);
+
         // Superseded
         set(ConfPaths.NET_SUPERSEDED_FLYING_CANCELWAITING, true, 1090);
         // WrongTurn
@@ -733,6 +726,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.STRINGS + ".tellchatnormal", tell + "Too many messages, slow down...", 1154);
         set(ConfPaths.STRINGS + ".tempkick1", "ncp tempkick [player] 1 &c&l(!)&7 You have to wait 1 minute before joining this server again.", 1154);
         set(ConfPaths.STRINGS + ".tempkick5", "ncp tempkick [player] 5 &c&l(!)&7 You have to wait 5 minutes before joining this server again.", 1154);
+        set(ConfPaths.STRINGS + ".togglefrequency", start + "tried to toggle sneak/sprint too quicly" + end, 1154);
         set(ConfPaths.STRINGS + ".vehicleenvelope", start + "tried to move a vehicle unexpectedly (Tags/Vehicle: &6[tags]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".wrongturn", start + "tried to send an impossible pitch rotation (&6>90 &7or&6 <-90&7)" + end, 1154);
         // Clear a check data  

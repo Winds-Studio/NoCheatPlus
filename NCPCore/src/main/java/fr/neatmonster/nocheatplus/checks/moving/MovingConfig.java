@@ -116,14 +116,9 @@ public class MovingConfig extends ACheckConfig {
     public final int survivalFlySprintingSpeed;
     public final int survivalFlySwimmingSpeed;
     public final int survivalFlyWalkingSpeed;
-    public final boolean sfSlownessSprintHack;
-    /**
-     * If true, will allow moderate bunny hop without lift off. Applies for
-     * normal speed on 1.6.4 and probably below.
-     */
-    public final boolean sfGroundHop;
+   
     public final double sfStepHeight;
-    public final boolean survivalFlyAccountingH;
+    // public final boolean survivalFlyAccountingH;
     public final boolean survivalFlyAccountingV;
     public final boolean survivalFlyAccountingStep;
     public final boolean survivalFlyResetItem;
@@ -151,7 +146,6 @@ public class MovingConfig extends ACheckConfig {
     public final int velocityActivationCounter;
     /** Server ticks until invalidating queues velocity. */
     public final int velocityActivationTicks;
-    public final boolean velocityStrictInvalidation;
     public final double noFallyOnGround;
     public final double yOnGround;
 
@@ -168,7 +162,6 @@ public class MovingConfig extends ACheckConfig {
     public final boolean loadChunksOnTeleport;
     public final boolean loadChunksOnWorldChange;
     public final long sprintingGrace;
-    public final boolean assumeSprint;
     public final int speedGrace;
     public final boolean enforceLocation;
     public final boolean trackBlockMove;
@@ -263,9 +256,7 @@ public class MovingConfig extends ACheckConfig {
         survivalFlySprintingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_SPRINTINGSPEED, 100);
         survivalFlySwimmingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_SWIMMINGSPEED, 100);
         survivalFlyWalkingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_WALKINGSPEED, 100);
-        sfSlownessSprintHack = config.getAlmostBoolean(ConfPaths.MOVING_SURVIVALFLY_SLOWNESSSPRINTHACK, AlmostBoolean.MAYBE).decideOptimistically();
-        sfGroundHop = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_GROUNDHOP, ServerVersion.compareMinecraftVersion("1.7") == -1);
-        survivalFlyAccountingH = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_HACC);
+        // survivalFlyAccountingH = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_HACC);
         survivalFlyAccountingV = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_VACC);
         survivalFlyAccountingStep = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_STEP);
         survivalFlyResetItem = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_RESETITEM);
@@ -295,7 +286,6 @@ public class MovingConfig extends ACheckConfig {
 
         velocityActivationCounter = config.getInt(ConfPaths.MOVING_VELOCITY_ACTIVATIONCOUNTER);
         velocityActivationTicks = config.getInt(ConfPaths.MOVING_VELOCITY_ACTIVATIONTICKS);
-        velocityStrictInvalidation = config.getBoolean(ConfPaths.MOVING_VELOCITY_STRICTINVALIDATION);
         yOnGround = config.getDouble(ConfPaths.MOVING_YONGROUND, Magic.Y_ON_GROUND_MIN, Magic.Y_ON_GROUND_MAX, Magic.Y_ON_GROUND_DEFAULT); // sqrt(1/256), see: NetServerHandler.
         noFallyOnGround = config.getDouble(ConfPaths.MOVING_NOFALL_YONGROUND, Magic.Y_ON_GROUND_MIN, Magic.Y_ON_GROUND_MAX, yOnGround);
 
@@ -311,7 +301,6 @@ public class MovingConfig extends ACheckConfig {
         loadChunksOnTeleport = config.getBoolean(ConfPaths.MOVING_LOADCHUNKS_TELEPORT);
         loadChunksOnWorldChange = config.getBoolean(ConfPaths.MOVING_LOADCHUNKS_WORLDCHANGE);
         sprintingGrace = Math.max(0L, (long) (config.getDouble(ConfPaths.MOVING_SPRINTINGGRACE) * 1000.0)); // Config: seconds.
-        assumeSprint = config.getBoolean(ConfPaths.MOVING_ASSUMESPRINT);
         speedGrace = Math.max(0, (int) Math.round(config.getDouble(ConfPaths.MOVING_SPEEDGRACE) * 20.0)); // Config: seconds
         AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.MOVING_ENFORCELOCATION, AlmostBoolean.MAYBE);
         enforceLocation = ref == AlmostBoolean.MAYBE ? Bugs.shouldEnforceLocation() : ref.decide();

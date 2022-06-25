@@ -41,18 +41,18 @@ public class Permissions {
         }
     }
 
-    private static final String NOCHEATPLUS                  = "nocheatplus";
+    private static final String NOCHEATPLUS                                = "nocheatplus";
 
     // Access to all commands and debug info.
-    private static final String ADMINISTRATION               = NOCHEATPLUS + ".admin";
+    private static final String ADMINISTRATION                             = NOCHEATPLUS + ".admin";
     public static final RegisteredPermission  ADMINISTRATION_DEBUG         = add(ADMINISTRATION + ".debug");
 
     // Bypasses held extra from command permissions.
-    private static final String BYPASS                       = NOCHEATPLUS + ".bypass";
-    public static final RegisteredPermission BYPASS_DENY_LOGIN            = add(BYPASS + "denylogin");
+    private static final String BYPASS                                     = NOCHEATPLUS + ".bypass";
+    public static final RegisteredPermission BYPASS_DENY_LOGIN             = add(BYPASS + "denylogin");
 
     // Bypass command filter.
-    private static final String FILTER                       = NOCHEATPLUS + ".filter";
+    private static final String FILTER                                     = NOCHEATPLUS + ".filter";
     public static final RegisteredPermission  FILTER_COMMAND               = add(FILTER + ".command");
     public static final RegisteredPermission  FILTER_COMMAND_NOCHEATPLUS   = add(FILTER_COMMAND + ".nocheatplus");
 
@@ -144,7 +144,6 @@ public class Permissions {
     public static final RegisteredPermission  FIGHT_NOSWING                = add(FIGHT + ".noswing");
     public static final RegisteredPermission  FIGHT_REACH                  = add(FIGHT + ".reach");
     public static final RegisteredPermission  FIGHT_SELFHIT                = add(FIGHT + ".selfhit");
-    public static final RegisteredPermission  FIGHT_SPEED                  = add(FIGHT + ".speed");
 
     public static final RegisteredPermission  INVENTORY                    = add(CHECKS + ".inventory");
     public static final RegisteredPermission  INVENTORY_FASTCLICK          = add(INVENTORY + ".fastclick");
@@ -163,7 +162,8 @@ public class Permissions {
     public static final RegisteredPermission  NET_KEEPALIVEFREQUENCY       = add(NET + ".keepalivefrequency");
     public static final RegisteredPermission  NET_MOVING                   = add(NET + ".moving");
     public static final RegisteredPermission  NET_PACKETFREQUENCY          = add(NET + ".packetfrequency");
-	public static final RegisteredPermission  NET_WRONGTURN                = add(NET + ".wrongturn");
+    public static final RegisteredPermission  NET_TOGGLEFREQUENCY          = add(NET + ".togglefrequency");
+    public static final RegisteredPermission  NET_WRONGTURN                = add(NET + ".wrongturn");
 
     public static final RegisteredPermission  MOVING                       = add(CHECKS + ".moving");
     public static final RegisteredPermission  MOVING_CREATIVEFLY           = add(MOVING + ".creativefly");

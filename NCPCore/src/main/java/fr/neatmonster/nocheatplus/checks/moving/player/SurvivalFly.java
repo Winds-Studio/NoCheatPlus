@@ -115,6 +115,7 @@ public class SurvivalFly extends Check {
      *            0: Ordinary, 1/2: first/second of a split move.
      * @param data
      * @param cc
+     * @param pData
      * @param tick
      * @param now
      * @param useBlockChangeTracker
@@ -140,6 +141,7 @@ public class SurvivalFly extends Check {
         final boolean toOnGround = thisMove.to.onGround || useBlockChangeTracker && to.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick);  // TODO: Work in the past ground stuff differently (thisMove, touchedGround?, from/to ...)
         /** To a reset-condition location (basically everything that isn't in air) */
         final boolean resetTo = toOnGround || to.isResetCond();
+        final boolean sprinting = now <= data.timeSprinting + cc.sprintingGrace;
 
         if (debug) {
             justUsedWorkarounds.clear();
@@ -173,35 +175,6 @@ public class SurvivalFly extends Check {
             // Cleanup
             useLoc.setWorld(null);
         }
-
-        // Determine if the player is actually sprinting.
-        final boolean sprinting;
-        if (data.lostSprintCount > 0) {
-            // Sprint got toggled off, though the client is still (legitimately) moving at sprinting speed.
-            // NOTE: This could extend the "sprinting grace" period, theoretically, until on ground.
-            if (resetTo && (fromOnGround || from.isResetCond()) || hDistance <= Magic.WALK_SPEED) {
-                // Invalidate.
-                data.lostSprintCount = 0;
-                tags.add("invalidate_lostsprint");
-                sprinting = now <= data.timeSprinting + cc.sprintingGrace;
-            }
-            else {
-                tags.add("lostsprint");
-                sprinting = true;
-                if (data.lostSprintCount < 3 && toOnGround || to.isResetCond()) {
-                    data.lostSprintCount = 0;
-                }
-                else data.lostSprintCount --;
-            }
-        }
-        else if (now <= data.timeSprinting + cc.sprintingGrace) {
-            // Within grace period for hunger level being too low for sprinting on server side (latency).
-            if (now != data.timeSprinting) {
-                tags.add("sprintgrace");
-            }
-            sprinting = true;
-        }
-        else sprinting = false;
         
         /** From a reset-condition location, lostground is accounted for here. */
         // TODO: This isn't correct, needs redesign.
@@ -246,13 +219,6 @@ public class SurvivalFly extends Check {
         }
         // No horizontal distance present
         else {
-            // Prevent way too easy abuse by simply collecting queued entries while standing still with no-knockback on. (Experimental, likely too strict)
-            if (cc.velocityStrictInvalidation && lastMove.hAllowedDistance == 0.0 
-                && data.hasQueuedHorVel()) {
-                data.clearAllHorVel();
-                hFreedom = 0.0;  
-            }
-            // Always clear active velocity, regardless of velocityStrictInvalidation.
             data.clearActiveHorVel();
             thisMove.hAllowedDistance = 0.0;
         }
@@ -402,7 +368,7 @@ public class SurvivalFly extends Check {
         //////////////////////////////////////////////////////////////////////////////////////////////
         //  Set data for normal move or violation without cancel (cancel would have returned above) //
         //////////////////////////////////////////////////////////////////////////////////////////////
-        // 1: Adjust lift off envelope to medium
+        // Adjust lift off envelope to medium
         // NOTE: isNextToGround(0.15, 0.4) allows a little much (yMargin), but reduces false positives.
         // Related commit: https://github.com/NoCheatPlus/NoCheatPlus/commit/c8ac66de2c94ac9f70f29c350054dd7896cd8646#diff-b8df089e2a4295e12695420f6066320d96119aa12c80e1c64efcb959f089db2d
         final LiftOffEnvelope oldLiftOffEnvelope = data.liftOffEnvelope;
@@ -488,7 +454,7 @@ public class SurvivalFly extends Check {
         }
         else data.insideMediumCount ++;
 
-        // 3: Apply reset conditions.
+        // Apply reset conditions.
         if (resetTo) {
             // The player has moved onto ground.
             if (toOnGround) {
@@ -535,7 +501,7 @@ public class SurvivalFly extends Check {
             }
         }
         
-        // 4: Adjust in-air counters.
+        // Adjust in-air counters.
         if (inAir) {
             if (yDistance == 0.0) {
                 data.sfZeroVdistRepeat ++;
@@ -548,12 +514,7 @@ public class SurvivalFly extends Check {
             data.sfVLInAir = false;
         }
 
-        // 5: Horizontal velocity invalidation.
-        if (hDistance <= (cc.velocityStrictInvalidation ? thisMove.hAllowedDistance : thisMove.hAllowedDistance / 2.0)) {
-            data.clearActiveHorVel();
-        }
-
-        // 6: Update unused velocity tracking.
+        // Update unused velocity tracking.
         // TODO: Hide and seek with API.
         // TODO: Pull down tick / timing data (perhaps add an API object for millis + source + tick + sequence count (+ source of sequence count).
         if (debug) {
@@ -567,13 +528,13 @@ public class SurvivalFly extends Check {
             UnusedVelocity.checkUnusedVelocity(player, type, data, cc);
         }
       
-        // 7: Adjust various speed/friction factors (both h/v).
+        // Adjust various speed/friction factors (both h/v).
         data.lastFrictionHorizontal = data.nextFrictionHorizontal;
         data.lastFrictionVertical = data.nextFrictionVertical;
         data.lastStuckInBlockHorizontal = data.nextStuckInBlockHorizontal;  
         data.lastBlockSpeedHorizontal = data.nextBlockSpeedHorizontal;
 
-        // 8: Log tags added after violation handling.
+        // Log tags added after violation handling.
         if (debug && tags.size() > tagsLength) {
             logPostViolationTags(player);
         }
@@ -592,6 +553,9 @@ public class SurvivalFly extends Check {
      * 
      * @param player
      *            the player
+     * @param pData
+     * @param cc
+     * @param data
      * @return If to prevent action (use the set back location of survivalfly).
      */
     public boolean checkBed(final Player player, final IPlayerData pData, final MovingConfig cc, final MovingData data) {
@@ -979,6 +943,7 @@ public class SurvivalFly extends Check {
             && !onGround && lastMove.toIsValid && !from.isHeadObstructed()
             && !to.isHeadObstructed()) {
             // (Assume micro-gravity changes to be catched by vDistWeb)
+            bufferUse = false;
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
             Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
             tags.add("nogravityweb");
@@ -1258,7 +1223,7 @@ public class SurvivalFly extends Check {
             else vDistRelVL = true;
         }
         
-        // No match found (unexpected move) or move is beyond allowed dist: use velocity as compensation, if available.
+        // No match found (unexpected move): use velocity as compensation, if available.
         if (vDistRelVL) {
             if (data.getOrUseVerticalVelocity(yDistance) == null) {
                 vDistanceAboveLimit = Math.max(vDistanceAboveLimit, Math.abs(yDistance - vAllowedDistance));
@@ -1340,10 +1305,7 @@ public class SurvivalFly extends Check {
                 tags.add("ychdec");
                 // Catch low jump between last ascending phase and current descend phase
                 // NOTE: this only checks jump height, not motion speed.
-                // TODO: sfDirty: Account for actual velocity (demands consuming queued for dir-change(!))!
-                if (!data.sfLowJump && !data.sfNoLowJump && lastMove.toIsValid && lastMove.yDistance > 0.0 
-                    && !data.isVelocityJumpPhase()) {
-                    
+                if (!data.sfLowJump && !data.sfNoLowJump && lastMove.toIsValid && lastMove.yDistance > 0.0) {                    
                     /** Only count it if the player has actually been jumping (higher than setback). */
                     final double setBackYDistance = from.getY() - data.getSetBackY();
                     /** Estimation of minimal jump height */
@@ -1358,18 +1320,20 @@ public class SurvivalFly extends Check {
                             || Bridge1_17.hasLeatherBootsOn(player) 
                             && data.liftOffEnvelope == LiftOffEnvelope.POWDER_SNOW && lastMove.from.inPowderSnow
                             && lastMove.yDistance <= Magic.GRAVITY_MAX * 2.36 && lastMove.yDistance > 0.0
-                            && thisMove.yDistance < 0.0
                             ) {
                             // Exempt.
                             tags.add("lowjump_skip");
                         }
                         else {
-                            // Violation
-                            vDistanceAboveLimit = Math.max(vDistanceAboveLimit, Math.abs(minJumpHeight - setBackYDistance));
-                            // Set a flag to tell us that from here, this whole descending phase is due to a lowjump
-                            data.sfLowJump = true;
-                            // Feed the Improbable.
-                            Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
+                            // Attempt to use velocity
+                            if (data.getOrUseVerticalVelocity(yDistance) == null) {
+                                // Violation
+                                vDistanceAboveLimit = Math.max(vDistanceAboveLimit, Math.abs(minJumpHeight - setBackYDistance));
+                                // Set a flag to tell us that from here, this whole descending phase is due to a lowjump
+                                data.sfLowJump = true;
+                                // Feed the Improbable.
+                                Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
+                            }
                         }
                     }
                 } 
@@ -1488,7 +1452,7 @@ public class SurvivalFly extends Check {
                                        boolean useBlockChangeTracker, final boolean fromOnGround, final boolean toOnGround) {
 
 
-        // 1: Attempt to reset item on NoSlow Violation, if set so in the configuration.
+        // 1: Attempt to release the item upon a NoSlow Violation, if set so in the configuration.
         if (cc.survivalFlyResetItem && hDistanceAboveLimit > 0.0 && data.sfHorizontalBuffer <= 0.5 && tags.contains("usingitem")) {
             tags.add("itemreset");
             // Handle through nms
@@ -1586,7 +1550,6 @@ public class SurvivalFly extends Check {
             hDistanceAboveLimit -= amount;
             data.sfHorizontalBuffer = Math.max(0.0, data.sfHorizontalBuffer - amount); // Ensure we never end up below zero.
             tags.add("hbufuse("+ StringUtil.fdec3.format(data.sfHorizontalBuffer) + "/" + cc.hBufMax +")" );
-
         }
         return new double[]{hAllowedDistance, hDistanceAboveLimit, hFreedom};
     }
@@ -1828,13 +1791,12 @@ public class SurvivalFly extends Check {
      * @param cc
      * @return vAllowedDistance, vDistanceAboveLimit
      */
-    private double[] vDistWeb(final Player player, final PlayerMoveData thisMove, 
+    private double[] vDistWeb(final Player player, final PlayerMoveData thisMove, final boolean fromOnGround,
                               final boolean toOnGround, final double hDistanceAboveLimit, final long now, 
                               final MovingData data, final MovingConfig cc, final PlayerLocation from) {
 
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final double yDistance = thisMove.yDistance;
-        final boolean step = toOnGround && yDistance > 0.0 && yDistance <= cc.sfStepHeight || thisMove.from.inWeb && !lastMove.from.inWeb && yDistance <= cc.sfStepHeight;
         double vAllowedDistance, vDistanceAboveLimit;
         data.sfNoLowJump = true;
         data.jumpAmplifier = 0; 
@@ -1843,6 +1805,10 @@ public class SurvivalFly extends Check {
             // Allow stepping
             if (fromOnGround && toOnGround) {
                 vAllowedDistance = cc.sfStepHeight;
+            }
+            // Allow player to ascend if jumping into a web block and the player is still ascending
+            else if (!lastMove.from.inWeb) {
+                vAllowedDistance = lastMove.yDistance * Magic.FRICTION_MEDIUM_AIR - Magic.GRAVITY_ODD;
             }
             // Bubble columns can slowly push the player upwards through the web.
             else if (from.isInBubbleStream() && !from.isDraggedByBubbleStream() && yDistance < Magic.bubbleStreamAscend) {
@@ -1854,18 +1820,18 @@ public class SurvivalFly extends Check {
             }
             // Don't allow players to ascend in web.
             else vAllowedDistance = 0.0;
-            vDistanceAboveLimit = yDistance - vAllowedDistance
+            vDistanceAboveLimit = yDistance - vAllowedDistance;
         }
         // (Falling speed is static, however if falling from high enough places, it can depend on how fast one "dives" in.)
         else {
-            // Lenient on first move(s) in web.
-            if (data.insideMediumCount < 4 && lastMove.yDistance <= 0.0) {
-                vAllowedDistance = lastMove.yDistance * Magic.FRICTION_MEDIUM_AIR - Magic.GRAVITY_MAX;
+            // Lenient on first move in web.
+            if (!lastMove.from.inWeb) {
+                vAllowedDistance = lastMove.yDistance * Magic.FRICTION_MEDIUM_AIR - Magic.GRAVITY_MIN;
             }
             // Ordinary.
             // We could be stricter but spamming WASD in a tower of webs results in random falling speed changes: ca. observed -0.058 (!? Mojang...)
             else vAllowedDistance = -Magic.GRAVITY_MIN * Magic.FRICTION_MEDIUM_AIR;
-            // (Only enforce slower speeds, don't care if players fall too slowly)
+            // (We only care about players falling faster than legit, don't care about falling too slowly)
             vDistanceAboveLimit = yDistance < vAllowedDistance ? Math.abs(yDistance - vAllowedDistance) : 0.0;
         }
 
@@ -1896,31 +1862,31 @@ public class SurvivalFly extends Check {
 
         final double yDistance = thisMove.yDistance;
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final double jumpGainMargin = 0.005;
+        final double jumpGainMargin = 0.002;
         double vAllowedDistance, vDistanceAboveLimit;
 
         if (yDistance >= 0.0) {
             // Allow stepping
-            if (toOnGround && toOnGround) {
+            if (fromOnGround && toOnGround) {
                 vAllowedDistance = cc.sfStepHeight;
             }
             // Leniency for the first move if the player jumped near a berry bush and was still ascending while entering.
             else if (!lastMove.from.inBerryBush) {
                 vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_SPAN;
             }
-            // Ordinary jump motion.
+            // Ordinary jumping motion.
             else if (fromOnGround) {
                 vAllowedDistance = data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) + jumpGainMargin; 
             }
             // Likewise webs, one can't ascend in berry bushes (demand immediate fall)
-            else vAllowedDistance = 0.0;
+            else  vAllowedDistance = 0.0;
             vDistanceAboveLimit = yDistance - vAllowedDistance;
         }
         // (Falling speed is static, however if falling from high enough places, it can depend on how fast one "dives" in.)
         else {
             // Lenient on the first move in bush
-            if (!lastMove.from.inBerryBush && lastMove.yDistance <= 0.0) {
-                vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_SPAN;
+            if (!lastMove.from.inBerryBush) {
+                vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical;
             }
             // Ordinary
             // (Falling speed seems to be kept reliably, unlike webs)

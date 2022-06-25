@@ -29,8 +29,17 @@ public class AttackFrequency extends Check {
         super(CheckType.NET_ATTACKFREQUENCY);
     }
 
-    public boolean check(final Player player, final long time, 
-            final NetData data, final NetConfig cc, final IPlayerData pData) {
+    /**
+     * Checks a player
+     * (Checks hasBypass on violation only)
+     * @param player
+     * @param time milliseconds
+     * @param data
+     * @param cc
+     * @param pData
+     * @return true if successful
+     */
+    public boolean check(final Player player, final long time, final NetData data, final NetConfig cc, final IPlayerData pData) {
         // Update frequency.
         data.attackFrequencySeconds.add(time, 1f);
         double maxVL = 0.0;
@@ -91,14 +100,11 @@ public class AttackFrequency extends Check {
                 vd.setParameter(ParameterName.LIMIT, Integer.toString((int) maxLimit));
                 vd.setParameter(ParameterName.TAGS, tags);
             }
-            if (executeActions(vd).willCancel()) {
-                cancel = true;
-            }
+            cancel = executeActions(vd).willCancel();
             // Feed Improbable.
             if (cc.attackFrequencyImprobableWeight > 0.0f) {
-            		TickTask.requestImprobableUpdate(player.getUniqueId(), cc.attackFrequencyImprobableWeight);
+            	TickTask.requestImprobableUpdate(player.getUniqueId(), cc.attackFrequencyImprobableWeight);
             }
-            // TickTask.requestImprobableUpdate(player.getUniqueId(), 2f);
         }
 
         return cancel;
