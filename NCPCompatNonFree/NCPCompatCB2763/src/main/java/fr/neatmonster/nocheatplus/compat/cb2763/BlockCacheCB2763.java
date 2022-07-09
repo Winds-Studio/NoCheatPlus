@@ -22,6 +22,7 @@ import org.bukkit.craftbukkit.v1_5_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_5_R3.entity.CraftEntity;
 import org.bukkit.entity.Entity;
 
+import fr.neatmonster.nocheatplus.compat.blocks.LegacyBlocks;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import net.minecraft.server.v1_5_R3.AxisAlignedBB;
 import net.minecraft.server.v1_5_R3.EntityBoat;
@@ -107,11 +108,13 @@ public class BlockCacheCB2763 extends BlockCache {
 
     @Override
     public double[] fetchBounds(final int x, final int y, final int z){
-
         // TODO: change api for this / use nodes (!)
+    	final org.bukkit.Material mat = getType(x, y, z);
         final int id = iBlockAccess.getTypeId(x, y, z);		
         final net.minecraft.server.v1_5_R3.Block block = net.minecraft.server.v1_5_R3.Block.byId[id];
         if (block == null) return null;
+        final double[] shape = LegacyBlocks.getShape(this, mat, x, y, z, true);
+        if (shape != null) return shape;
         block.updateShape(iBlockAccess, x, y, z); // TODO: use THIS instead of world.
 
         // minX, minY, minZ, maxX, maxY, maxZ

@@ -42,8 +42,10 @@ public final class BridgeEnchant {
 
     private final static Enchantment SOUL_SPEED = parseEnchantment("SOUL_SPEED");
 
+    private final static Enchantment SWIFT_SNEAK = parseEnchantment("SWIFT_SNEAK");
+
     /**
-     * Retrieve the maximum level for an enchantment, present in armor slots.
+     * Retrieve the maximum level for an enchantment, present in any armor slot.
      * 
      * @param player
      * @param enchantment
@@ -62,6 +64,86 @@ public final class BridgeEnchant {
             if (!BlockProperties.isAir(item)) {
                 level = Math.max(item.getEnchantmentLevel(enchantment), level);
             }
+        }
+        return level;
+    }
+
+    /**
+     * Retrieve the level for an enchantment, present in helmet slot.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, 0 will be returned.
+     * @return 0 if not found and vice versa
+     */
+    private static int getHelmetLevelArmor(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return 0;
+        }
+        int level = 0;
+        final ItemStack armor = player.getInventory().getHelmet();
+        if (!BlockProperties.isAir(armor)) {
+            level = Math.max(armor.getEnchantmentLevel(enchantment), level);
+        }
+        return level;
+    }
+
+    /**
+     * Retrieve the level for an enchantment, present in chestplate slot.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, 0 will be returned.
+     * @return 0 if not found and vice versa
+     */
+    private static int getChestplateLevelArmor(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return 0;
+        }
+        int level = 0;
+        final ItemStack armor = player.getInventory().getChestplate();
+        if (!BlockProperties.isAir(armor)) {
+            level = Math.max(armor.getEnchantmentLevel(enchantment), level);
+        }
+        return level;
+    }
+
+    /**
+     * Retrieve the level for an enchantment, present in leggings slot.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, 0 will be returned.
+     * @return 0 if not found and vice versa
+     */
+    private static int getLeggingsLevelArmor(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return 0;
+        }
+        int level = 0;
+        final ItemStack armor = player.getInventory().getLeggings();
+        if (!BlockProperties.isAir(armor)) {
+            level = Math.max(armor.getEnchantmentLevel(enchantment), level);
+        }
+        return level;
+    }
+
+    /**
+     * Retrieve the level for an enchantment, present in boots slot.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, 0 will be returned.
+     * @return 0 if not found and vice versa
+     */
+    private static int getBootsLevelArmor(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return 0;
+        }
+        int level = 0;
+        final ItemStack armor = player.getInventory().getBoots();
+        if (!BlockProperties.isAir(armor)) {
+            level = Math.max(armor.getEnchantmentLevel(enchantment), level);
         }
         return level;
     }
@@ -89,6 +171,82 @@ public final class BridgeEnchant {
         return false;
     }
 
+    /**
+     * Test, if there is helmet with the given enchantment on.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, false will be returned.
+     * @return
+     */
+    private static boolean hasHelmet(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return false;
+        }
+        final ItemStack contents = player.getInventory().getHelmet();
+        if (contents != null && contents.getEnchantmentLevel(enchantment) > 0){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Test, if there is chestplate with the given enchantment on.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, false will be returned.
+     * @return
+     */
+    private static boolean hasChestplate(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return false;
+        }
+        final ItemStack contents = player.getInventory().getChestplate();
+        if (contents != null && contents.getEnchantmentLevel(enchantment) > 0){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Test, if there are leggings with the given enchantment on.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, false will be returned.
+     * @return
+     */
+    private static boolean hasLeggings(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return false;
+        }
+        final ItemStack contents = player.getInventory().getLeggings();
+        if (contents != null && contents.getEnchantmentLevel(enchantment) > 0){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Test, if there are boots with the given enchantment on.
+     * 
+     * @param player
+     * @param enchantment
+     *            If null, false will be returned.
+     * @return
+     */
+    private static boolean hasBoots(final Player player, final Enchantment enchantment) {
+        if (enchantment == null) {
+            return false;
+        }
+        final ItemStack contents = player.getInventory().getBoots();
+        if (contents != null && contents.getEnchantmentLevel(enchantment) > 0){
+            return true;
+        }
+        return false;
+    }
+
     public static boolean hasThorns() {
         return THORNS != null;
     }
@@ -103,6 +261,10 @@ public final class BridgeEnchant {
 
     public static boolean hasSoulSpeed() {
         return SOUL_SPEED != null;
+    }
+
+    public static boolean hasSwiftSneak() {
+        return SWIFT_SNEAK != null;
     }
 
     /**
@@ -124,7 +286,7 @@ public final class BridgeEnchant {
      * @return
      */
     public static boolean hasSoulSpeed(final Player player) {
-        return hasArmor(player, SOUL_SPEED);
+        return hasBoots(player, SOUL_SPEED);
     }
 
     /**
@@ -135,7 +297,7 @@ public final class BridgeEnchant {
      */
     public static int getFeatherFallingLevel(final Player player) {
         // Cap at four.
-        return Math.min(4, getMaxLevelArmor(player, FEATHER_FALLING));
+        return Math.min(4, getBootsLevelArmor(player, FEATHER_FALLING));
     }
     
     /**
@@ -146,7 +308,7 @@ public final class BridgeEnchant {
      */
     public static int getDepthStriderLevel(final Player player) {
         // Cap at three.
-        return Math.min(3, getMaxLevelArmor(player, DEPTH_STRIDER));
+        return Math.min(3, getBootsLevelArmor(player, DEPTH_STRIDER));
     }
 
     /**
@@ -157,9 +319,20 @@ public final class BridgeEnchant {
      */
     public static int getSoulSpeedLevel(final Player player) {
         // Cap at three.
-        return Math.min(3, getMaxLevelArmor(player, SOUL_SPEED));
+        return Math.min(3, getBootsLevelArmor(player, SOUL_SPEED));
     }
-    
+
+    /**
+     * 
+     * @param player
+     * @return Maximum level of SOUL_SPEED found on armor items, capped at 3.
+     *         Will return 0 if not available.
+     */
+    public static int getSwiftSneakLevel(final Player player) {
+        // Cap at three.
+        return Math.min(3, getLeggingsLevelArmor(player, SWIFT_SNEAK));
+    }
+
     /**
      * Retrieve the maximum level for an enchantment, present in main and off hand slot.
      * 

@@ -22,6 +22,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitShapeModel;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 
 /**
@@ -86,7 +87,7 @@ public class BlockCacheBukkitModern extends BlockCacheBukkit {
             // TODO: Probably check vehicle ids too before doing this ?
             for (final Entity vehicle : entity.getNearbyEntities(0.1, 2.0, 0.1)){
                 final EntityType type = vehicle.getType();
-                if (type != EntityType.BOAT && type != EntityType.SHULKER){ //  && !(vehicle instanceof Minecart)) 
+                if (!MaterialUtil.isBoat(type) && type != EntityType.SHULKER){ //  && !(vehicle instanceof Minecart)) 
                     continue; 
                 }
                 final double vehicleY = vehicle.getLocation(useLoc).getY() + vehicle.getHeight();

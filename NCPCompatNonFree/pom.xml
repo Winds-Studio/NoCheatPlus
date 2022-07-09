@@ -114,13 +114,14 @@
             </modules>
         </profile>
 
-        <!-- Legacy, unsupported
         <profile>
             <id>cblegacy</id>
             <modules>
+                <!-- Legacy, unsupported
                 <module>NCPCompatCB2512</module>
                 <module>NCPCompatCB2545</module>
                 <module>NCPCompatCB2602</module>
+                -->
                 <module>NCPCompatCB2645</module>
                 <module>NCPCompatCB2691</module>
                 <module>NCPCompatCB2763</module>
@@ -132,7 +133,6 @@
                 <module>NCPCompatCB3043</module>
             </modules>
         </profile>
-        -->
     </profiles>
 
     <repositories>

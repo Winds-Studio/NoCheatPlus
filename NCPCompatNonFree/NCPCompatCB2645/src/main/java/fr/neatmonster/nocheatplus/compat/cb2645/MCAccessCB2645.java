@@ -183,6 +183,11 @@ public class MCAccessCB2645 implements MCAccess {
         return AlmostBoolean.NO;
     }
 
+    @Override
+    public boolean resetActiveItem(Player player) {
+        return false;
+    }
+
     //	@Override
     //	public void correctDirection(final Player player) {
     //		final EntityPlayer mcPlayer = ((CraftPlayer) player).getHandle();

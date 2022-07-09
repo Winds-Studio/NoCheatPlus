@@ -337,8 +337,14 @@ public class BridgeHealth {
             return new EntityDamageEvent(entity, damageCause, damage);
         }
         catch(IncompatibleClassChangeError e) {
-            return new EntityDamageEvent(entity, damageCause, 
-                    (int) Math.round(damage));
+            Object o = ReflectionUtil.newInstance(
+                    ReflectionUtil.getConstructor(EntityDamageEvent.class, Entity.class, DamageCause.class, int.class),
+                    entity, damageCause, (int) Math.round(damage)
+                );
+            if (o instanceof EntityDamageEvent) {
+                return (EntityDamageEvent)o;
+            }
+            return null;
         }
     }
 

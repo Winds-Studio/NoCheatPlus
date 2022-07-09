@@ -20,11 +20,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
 import org.bukkit.Material;
+import org.bukkit.entity.EntityType;
 
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
@@ -48,7 +50,7 @@ public class MaterialUtil {
     ///////////////////////
 
     private static final List<String> woodTypes = Arrays.asList(
-            "acacia", "birch", "dark_oak", "jungle", "oak", "spruce", "warped", "crimson",
+            "acacia", "birch", "dark_oak", "jungle", "oak", "spruce", "warped", "crimson", "mangrove",
             "wood" // Legacy
             );
 
@@ -212,6 +214,22 @@ public class MaterialUtil {
         temp.addAll(InventoryUtil.collectItemsByPrefix("BOAT_"));
         temp.addAll(InventoryUtil.collectItemsBySuffix("_BOAT"));
         BOATS = Collections.unmodifiableSet(temp);
+    }
+
+    private static final List<EntityType> BOATSTYPE = collectTypesBySuffix("BOAT");
+    public static boolean isBoat(final EntityType et) {
+    	return BOATSTYPE.contains(et);
+    }
+
+    private final static List<EntityType> collectTypesBySuffix(String prefix) {
+        prefix = prefix.toLowerCase();
+        final List<EntityType> res = new LinkedList<EntityType>();
+        for (final EntityType type : EntityType.values()) {
+            if (type.name().toLowerCase().endsWith(prefix)) {
+                res.add(type);
+            }
+        }
+        return res;
     }
 
     public static final Set<Material> CARPETS = Collections.unmodifiableSet(addBlocks(
@@ -500,7 +518,7 @@ public class MaterialUtil {
     public static final Set<Material> INSTANT_PLANTS = Collections.unmodifiableSet(join(
             BridgeMaterial.getBySuffix(Arrays.asList(
                     "bush", "sapling", "tulip", "orchid", "mushroom", "bluet", "fungus", "roots"), 
-                    AlmostBoolean.YES, "legacy", "potted"),
+                    AlmostBoolean.YES, "legacy", "potted", "muddy", "mangrove"),
             BridgeMaterial.getByPrefixAndSuffix(
                     null,
                     Arrays.asList("coral_fan", "coral_wall_fan", "coral"),
@@ -513,7 +531,8 @@ public class MaterialUtil {
                     "seagrass", "sunflower", "tall_seagrass", "yellow_flower",
                     "spore_blossom", "small_dripleaf", "cave_vines", "cave_vines_plant",
                     "weeping_vines", "weeping_vines_plant",
-                    "twisting_vines", "twisting_vines_plant"
+                    "twisting_vines", "twisting_vines_plant",
+                    "mangrove_propagule"
                     ),
             new HashSet<Material>(Arrays.asList(BridgeMaterial.TALL_GRASS, 
                     BridgeMaterial.WHEAT_CROPS, BridgeMaterial.CARROTS, 

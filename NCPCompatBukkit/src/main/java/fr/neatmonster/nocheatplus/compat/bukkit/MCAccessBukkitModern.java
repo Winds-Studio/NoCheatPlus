@@ -115,6 +115,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
     private static final BukkitShapeModel MODEL_GROUND_HEAD = new BukkitStatic(0.25, 0.5);
     private static final BukkitShapeModel MODEL_SINGLE_CHEST = new BukkitStatic(0.0625, 0.875);
     private static final BukkitShapeModel MODEL_HONEY_BLOCK = new BukkitStatic(0.0625, 0.9375);
+    private static final BukkitShapeModel MODEL_SCULK_SHRIEKER = new BukkitStatic(0.0, 0.5);
 
     // Static blocks with full height sorted by inset.
     private static final BukkitShapeModel MODEL_INSET16_1_HEIGHT100 = new BukkitStatic(0.0625, 1.0);
@@ -143,7 +144,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
 
     @Override
     public String getMCVersion() {
-        return "1.13-1.18|?";
+        return "1.13-1.19|?";
     }
 
     @Override
@@ -458,6 +459,10 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         // Grindstone.
         mt = BridgeMaterial.getBlock("grindstone");
         if (mt != null) addModel(mt, MODEL_GRIND_STONE);
+
+        // Sculk Shrieker
+        mt = BridgeMaterial.getBlock("sculk_shrieker");
+        if (mt != null) addModel(mt, MODEL_SCULK_SHRIEKER);
 
         // Sort to processed by flags.
         for (final Material mat : Material.values()) {

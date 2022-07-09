@@ -101,7 +101,7 @@ public class Critical extends Check {
             }
             // Player is on ground with server-side fall distance; we are going to force a violation here :)
             // (Might want to skip the fall distance comparison part. Just checking if the player has fall distance present while on ground should suffice.)
-            else if (ncpFallDistance != mcFallDistance && BlockProperties.isOnGround(player, loc, mCC.yOnGround) 
+            else if (Math.abs(ncpFallDistance - mcFallDistance) > 1e-5 && BlockProperties.isOnGround(player, loc, mCC.yOnGround) 
                     && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
                 tags.add("falldist_mismatch");
                 violation = true;

@@ -47,6 +47,8 @@ import fr.neatmonster.nocheatplus.utilities.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
@@ -203,16 +205,15 @@ public class VehicleEnvelope extends Check {
 
         final Double cap = cc.vehicleEnvelopeHorizontalSpeedCap.get(type);
         final Double globalcap = cc.vehicleEnvelopeHorizontalSpeedCap.get(null);
-
         if (cap == null) {
-            if (type == EntityType.BOAT) {
-                return getHDistCapBoats(thisMove,data,1.0,globalcap);
+            if (MaterialUtil.isBoat(type)){
+                return getHDistCapBoats(thisMove, data, 1.0, globalcap);
             }
             return globalcap;
         }
         else {
-            if (type == EntityType.BOAT) {
-                return getHDistCapBoats(thisMove,data,cap, globalcap);
+            if (MaterialUtil.isBoat(type)) {
+                return getHDistCapBoats(thisMove, data, cap, globalcap);
             }
             return cap;
         }
@@ -517,7 +518,7 @@ public class VehicleEnvelope extends Check {
         checkDetails.toIsSafeMedium = thisMove.to.inWater || thisMove.to.onGround || thisMove.to.inWeb;
         checkDetails.inAir = !checkDetails.fromIsSafeMedium && !checkDetails.toIsSafeMedium;
         // Distinguish by entity class (needs future proofing at all?).
-        if (vehicle instanceof Boat) {
+        if (vehicle != null && MaterialUtil.isBoat(vehicle.getType())) {
             checkDetails.simplifiedType = EntityType.BOAT;
             checkDetails.maxAscend = MagicVehicle.maxAscend;
         }

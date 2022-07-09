@@ -17,6 +17,7 @@ package fr.neatmonster.nocheatplus.compat.cbreflect;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 
+import fr.neatmonster.nocheatplus.compat.blocks.LegacyBlocks;
 import fr.neatmonster.nocheatplus.compat.bukkit.BlockCacheBukkit;
 import fr.neatmonster.nocheatplus.compat.cbreflect.reflect.ReflectHelper;
 import fr.neatmonster.nocheatplus.compat.cbreflect.reflect.ReflectHelper.ReflectFailureException;
@@ -44,6 +45,9 @@ public class BlockCacheCBReflect extends BlockCacheBukkit {
 
     @Override
     public double[] fetchBounds(int x, int y, int z) {
+        final org.bukkit.Material mat = getType(x, y, z);
+        final double[] shape = LegacyBlocks.getShape(this, mat, x, y, z, true);
+        if (shape != null) return shape;
         try {
             return helper.nmsWorld_fetchBlockShape(this.nmsWorld, this.getType(x, y, z), x, y, z);
         }

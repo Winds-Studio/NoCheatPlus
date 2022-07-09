@@ -579,7 +579,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (data.isTeleportedPosition(event.getFrom())) {
             // Treat as ACK (!).
             // Adjust.
-            confirmSetBack(player, false, data, cc, pData);
+            confirmSetBack(player, false, data, cc, pData, event.getFrom());
             // Log.
             if (debug) debug(player, "Implicitly confirm set back with the start point of a move.");
             return false;
@@ -2012,7 +2012,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                                                          final IPlayerData pData) {
         if (data.isTeleportedPosition(to)) {
             // Set back.
-            confirmSetBack(player, true, data, cc, pData);
+            confirmSetBack(player, true, data, cc, pData, to);
             // Reset some more data.
             // TODO: Some more?
             data.reducePlayerMorePacketsData(1);
@@ -2046,10 +2046,11 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * @param cc
      */
     private void confirmSetBack(final Player player, final boolean fakeNews, final MovingData data, 
-                                final MovingConfig cc, final IPlayerData pData) {
+                                final MovingConfig cc, final IPlayerData pData, final Location fallbackTeleported) {
+        // TODO: Find the reason why it can be null even passed the precondition not null.
         final Location teleported = data.getTeleported();
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
-        moveInfo.set(player, teleported, null, cc.yOnGround);
+        moveInfo.set(player, teleported != null ? teleported : fallbackTeleported, null, cc.yOnGround);
         if (cc.loadChunksOnTeleport) {
             MovingUtil.ensureChunksLoaded(player, teleported, "teleport", data, cc, pData);
         }

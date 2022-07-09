@@ -22,7 +22,7 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.bukkit.BlockCacheBukkit;
-import fr.neatmonster.nocheatplus.compat.bukkit.MCAccessBukkitModern;
+import fr.neatmonster.nocheatplus.compat.bukkit.MCAccessBukkit;
 import fr.neatmonster.nocheatplus.compat.cbreflect.reflect.ReflectHelper;
 import fr.neatmonster.nocheatplus.compat.cbreflect.reflect.ReflectHelper.ReflectFailureException;
 import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
@@ -31,7 +31,7 @@ import fr.neatmonster.nocheatplus.logging.Streams;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 
-public class MCAccessCBReflect extends MCAccessBukkitModern {
+public class MCAccessCBReflect extends MCAccessBukkit {
 
     protected final ReflectHelper helper;
 
@@ -49,11 +49,11 @@ public class MCAccessCBReflect extends MCAccessBukkitModern {
             NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.INIT, "The Minecraft version could not be detected, Compat-CB-Reflect might or might not work.");
             this.knownSupportedVersion = false;
         }
-        else if (GenericVersion.compareVersions(mcVersion, "1.4.5") < 0) {
+        else if (GenericVersion.compareVersions(mcVersion, "1.5") < 0) {
             NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.INIT, "The Minecraft version seems to be older than what Compat-CB-Reflect can support.");
             this.knownSupportedVersion = false;
         }
-        else if (GenericVersion.compareVersions(mcVersion, "1.17.1") > 0) {
+        else if (GenericVersion.compareVersions(mcVersion, "1.12.2") > 0) {
             this.knownSupportedVersion = false;
             NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.INIT, "The Minecraft version seems to be more recent than the one Compat-CB-Reflect has been built with - this might work, but there could be incompatibilities.");
         } else {
@@ -70,8 +70,7 @@ public class MCAccessCBReflect extends MCAccessBukkitModern {
 
     @Override
     public String getMCVersion() {
-        // Potentially all :p.
-        return "1.4.5-1.17.1|?";
+        return "1.5-1.12.2|?";
     }
 
     @Override

@@ -14,6 +14,8 @@
  */
 package fr.neatmonster.nocheatplus.compat.cbreflect.reflect;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +57,7 @@ public class ReflectBlockSix implements IReflectBlock {
 
     /** (static) */
     public final Method nmsGetById;
+    public final Object nmsById;
 
     public final Method nmsGetMaterial;
     public final boolean useBlockPosition;
@@ -75,6 +78,11 @@ public class ReflectBlockSix implements IReflectBlock {
         final Class<?> clazz = Class.forName(base.nmsPackageName + ".Block");
         // byID (static)
         nmsGetById = ReflectionUtil.getMethod(clazz, "getById", int.class);
+
+        final Class<?> blockArray = Array.newInstance(clazz, 0).getClass();
+        final Field byIdField = ReflectionUtil.getField(clazz, "byId", blockArray);
+        nmsById = byIdField == null ? null : ReflectionUtil.get(byIdField, blockArray, null);
+
         // getMaterial
         nmsGetMaterial = ReflectionUtil.getMethodNoArgs(clazz, "getMaterial");
         // updateShape
@@ -215,6 +223,9 @@ public class ReflectBlockSix implements IReflectBlock {
     @SuppressWarnings("deprecation")
     @Override
     public Object nms_getByMaterial(final Material id) {
+        if (this.nmsById != null) {
+            return Array.get(nmsById, id.getId());
+        }
         if (this.nmsGetById == null) {
             fail();
         }
@@ -258,7 +269,7 @@ public class ReflectBlockSix implements IReflectBlock {
 
     @Override
     public boolean isFetchBoundsAvailable() {
-        return nmsGetById != null && nmsUpdateShape != null && nmsGetMinX != null;
+        return (nmsGetById != null || nmsById != null) && nmsUpdateShape != null && nmsGetMinX != null;
     }
 
 }

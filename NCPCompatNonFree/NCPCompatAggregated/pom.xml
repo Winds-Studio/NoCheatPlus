@@ -210,10 +210,14 @@
             </dependencies>
         </profile>
 
-        <!-- Legacy, unsupported
         <profile>
             <id>cblegacy</id>
             <dependencies>
+                <dependency>
+                    <groupId>fr.neatmonster</groupId>
+                    <artifactId>ncpcompatcb3100</artifactId>
+                    <version>1.1-SNAPSHOT</version>
+                </dependency>
                 <dependency>
                     <groupId>fr.neatmonster</groupId>
                     <artifactId>ncpcompatcb3043</artifactId>
@@ -259,14 +263,10 @@
                     <artifactId>ncpcompatcb2645</artifactId>
                     <version>1.1-SNAPSHOT</version>
                 </dependency>
+                <!-- Legacy, unsupported
                 <dependency>
                     <groupId>fr.neatmonster</groupId>
                     <artifactId>ncpcompatcb2602</artifactId>
-                    <version>1.1-SNAPSHOT</version>
-                </dependency>
-                <dependency>
-                    <groupId>fr.neatmonster</groupId>
-                    <artifactId>ncpcompatcb3100</artifactId>
                     <version>1.1-SNAPSHOT</version>
                 </dependency>
                 <dependency>
@@ -279,9 +279,9 @@
                     <artifactId>ncpcompatcb2512</artifactId>
                     <version>1.1-SNAPSHOT</version>
                 </dependency>
+                -->
             </dependencies>
         </profile>
-        -->
     </profiles>
 
 </project>
