@@ -54,9 +54,6 @@ public class BlockInteractData extends ACheckData {
     private boolean lastAllowUseBlock = false;
     private boolean lastAllowUseItem = false;
     private boolean lastIsCancelled = true;
-
-    // Data of the reach check.
-    public double reachDistance;
     
     // Data of the speed check.
     /** Last reset time. */

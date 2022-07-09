@@ -30,6 +30,8 @@ import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
+import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+
 
 /**
  * Check for common behavior from a client using the "Scaffold" cheat.
@@ -86,15 +88,15 @@ public class Scaffold extends Check {
         if (player.isSneaking()) {
             data.sneakTime = data.currentTick;
         }
-
         data.currentTick = TickTask.getTick();
 
         // Angle Check - Check if the player is looking at the block (Should already be covered by BlockInteract.Direction)
         if (cc.scaffoldAngle) {
             final Vector placedVector = new Vector(placedFace.getModX(), placedFace.getModY(), placedFace.getModZ());
-            float placedAngle = player.getLocation().getDirection().angle(placedVector);
-
-            if (placedAngle > MAX_ANGLE) cancel = violation("Angle", Math.min(Math.max(1, (int) (placedAngle - MAX_ANGLE) * 10), 10), player, data, pData);
+            float placedAngle = TrigUtil.angle(player.getLocation().getDirection(), placedVector);
+            if (placedAngle > MAX_ANGLE) {
+                cancel = violation("Angle", Math.min(Math.max(1, (int) (placedAngle - MAX_ANGLE) * 10), 10), player, data, pData);
+            }
         }
 
         // Time Check - A FastPlace check but for Scaffold type block placements. If all other sub-checks fail to detect the cheat this
@@ -196,8 +198,7 @@ public class Scaffold extends Check {
      * @return
      */
     private boolean violation(final String addTags, final int weight, final Player player,
-                             final BlockPlaceData data, final IPlayerData pData) {
-
+                              final BlockPlaceData data, final IPlayerData pData) {
         ViolationData vd = new ViolationData(this, player, data.scaffoldVL, weight, pData.getGenericInstance(BlockPlaceConfig.class).scaffoldActions);
         tags.add(addTags);
         if (vd.needsParameters()) vd.setParameter(ParameterName.TAGS, StringUtil.join(tags, "+"));

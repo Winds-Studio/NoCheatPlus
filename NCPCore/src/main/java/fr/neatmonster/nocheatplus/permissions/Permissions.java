@@ -114,7 +114,7 @@ public class Permissions {
     public static final RegisteredPermission  BLOCKPLACE_AGAINST_AIR       = add(BLOCKPLACE_AGAINST + ".air");
     public static final RegisteredPermission  BLOCKPLACE_AGAINST_LIQUIDS   = add(BLOCKPLACE_AGAINST + ".liquids");
     public static final RegisteredPermission  BLOCKPLACE_AUTOSIGN          = add(BLOCKPLACE + ".autosign");
-    public static final RegisteredPermission  BLOCKPLACE_BOATSANYWHERE     = add(BLOCKPLACE + ".boatsanywhere");
+    public static final RegisteredPermission  BLOCKPLACE_BOATSONWATERONLY  = add(BLOCKPLACE + ".boatsonwateronly");
     public static final RegisteredPermission  BLOCKPLACE_DIRECTION         = add(BLOCKPLACE + ".direction");
     public static final RegisteredPermission  BLOCKPLACE_FASTPLACE         = add(BLOCKPLACE + ".fastplace");
     public static final RegisteredPermission  BLOCKPLACE_NOSWING           = add(BLOCKPLACE + ".noswing");

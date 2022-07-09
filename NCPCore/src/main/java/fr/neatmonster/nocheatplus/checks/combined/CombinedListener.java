@@ -45,7 +45,7 @@ import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
  * This is registered before the FightListener.
  * Do note the registration order in fr.neatmonster.nocheatplus.NoCheatPlus.onEnable (within NCPPlugin).
  * 
- * @author mc_dev
+ * @author asofold
  *
  */
 public class CombinedListener extends CheckListener {
@@ -154,26 +154,6 @@ public class CombinedListener extends CheckListener {
         // Still invulnerable.
         event.setCancelled(true);
         counters.addPrimaryThread(idFakeInvulnerable, 1);
-    }
-
-    // TODO: Why do we need to feed improable for toggle sprinting exactly?
-    @EventHandler(priority = EventPriority.MONITOR) // HIGHEST)
-    public void onPlayerToggleSprintHighest(final PlayerToggleSprintEvent event) {
-        //    	// TODO: Check the un-cancelling.
-        //        // Some plugins cancel "sprinting", which makes no sense at all because it doesn't stop people from sprinting
-        //        // and rewards them by reducing their hunger bar as if they were walking instead of sprinting.
-        //        if (event.isCancelled() && event.isSprinting())
-        //            event.setCancelled(false);
-        // Feed the improbable.
-        Improbable.feed(event.getPlayer(), 0.35f, System.currentTimeMillis());
-    }
-    
-    // TODO: Why do we need to feed improable for toggle sneaking exactly?
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerToggleSneak(final PlayerToggleSneakEvent event){
-        // Check also in case of cancelled events.
-        // Feed the improbable.
-        Improbable.feed(event.getPlayer(), 0.35f, System.currentTimeMillis());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

@@ -550,6 +550,7 @@ public class SurvivalFly extends Check {
     /**
      * A check to prevent players from bed-flying.
      * (This increases VL and sets tag only. Setback is done in MovingListener).
+     * TODO: Move to packet-level, perhaps
      * 
      * @param player
      *            the player
@@ -734,7 +735,7 @@ public class SurvivalFly extends Check {
                                        final boolean fromOnGround, final boolean toOnGround) {
 
         // NOTE: About the old "infinte violation level" issue:
-        // Could be due to the sprinting attribute actually, since it does return Double.MAX_VALUE if it cannot be determined.
+        // Could be due to the attribute actually, since it does return Double.MAX_VALUE if it cannot be determined.
 
         /** Predicted speed (x) */
         double xDistance = lastMove.to.getX() - lastMove.from.getX();
@@ -834,6 +835,7 @@ public class SurvivalFly extends Check {
                 double movementSpeed = onGround ? speedAttribute * acceleration * ((double)data.walkSpeed / Magic.CB_DEFAULT_WALKSPEED) // Account for the /walkspeed command here.
                                                 : Magic.AIR_MOVEMENT_SPEED_ATTRIBUTE;
                 // Count in sprinting.
+                // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
                 if (sprinting) {
                     movementSpeed *= Magic.SPRINT_MULTIPLIER;
                     // Count in NCP base sprinting speed modifier
@@ -887,7 +889,7 @@ public class SurvivalFly extends Check {
                 waterInertia += (0.54600006D - waterInertia) * StriderLevel / 3.0;
                 acceleration += (speedAttribute * 1.0 - acceleration) * StriderLevel / 3.0; 
             }
-            // Account for dolphin's grace (More speed conservation[less friction], no change in the per-tick speed gain)
+            // Account for dolphin's grace (More speed conservation[less friction], no change in the per-tick speed)
             // (This overrides swimming AND depth strider friction)
             // Should note that this is the only reference about dolphin's grace in the code that I could find. 
             if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
@@ -903,7 +905,7 @@ public class SurvivalFly extends Check {
             zDistance *= waterInertia;
         }
         
-        // Generic speed bypass
+        // Global speed bypass modifier (can be combined with the other bypass modifiers)
         if (checkPermissions && pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SPEEDING, player)) {
             xDistance *= cc.survivalFlySpeedingSpeed / 100D;
             zDistance *= cc.survivalFlySpeedingSpeed / 100D;
@@ -929,8 +931,7 @@ public class SurvivalFly extends Check {
             data.isHackingRI = false;
             bufferUse = false;
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
-            // Feed the Improbable.
-            Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
+            Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
             tags.add("noslowpacket");
         }
         
@@ -945,7 +946,7 @@ public class SurvivalFly extends Check {
             // (Assume micro-gravity changes to be catched by vDistWeb)
             bufferUse = false;
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
-            Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
+            Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
             tags.add("nogravityweb");
         }
 
@@ -954,7 +955,8 @@ public class SurvivalFly extends Check {
         // Checks for micro y deltas when moving above liquid. //
         /////////////////////////////////////////////////////////
         if ((!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_WATERWALK, player))) {
-
+            
+            // TODO: With the new liquid (re)modeling, this one is deprecated and subject to removal.
             final Material blockUnder = from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() - 0.3), from.getBlockZ());
             final Material blockAbove = from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() + 0.1), from.getBlockZ());
             if (blockUnder != null && BlockProperties.isLiquid(blockUnder) && BlockProperties.isAir(blockAbove)) {
@@ -988,8 +990,7 @@ public class SurvivalFly extends Check {
                 && !Bridge1_13.isSwimming(player)) {
                 hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
                 bufferUse = false;
-                // Feed the Improbable.
-                Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
+                Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
                 tags.add("liquidwalk");
             }
         }
@@ -998,6 +999,25 @@ public class SurvivalFly extends Check {
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // The vDistSBLow subcheck: after taking a height difference, ensure setback distance did decrease properly. //
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // More context: when stepping up next to a block, legit clients will collide with ground with two moves (1 air->ground, 2 ground->air), while still ascending.
+        // After that, there will be a final 0.15 dist ascension, then the player will proceed to descend and land on the block.   
+        /*      
+         *        __
+         *       |  -_  _   _
+         *    _ _|[ ][ ][ ][ ][ ]
+         *  [ ][ ]
+         */
+        // Now, cheat clients that employ "legit" step modules, will jump with legit motion and then ignore the 0.15 distance mentioned above, which will make the cheater end up on ground faster (thus faster step up).
+        /*        ___ _  _   _
+         *    _ _|[ ][ ][ ][ ][ ]
+         *  [ ][ ]
+         */
+        // Normally, such abprut deceleration in air would be catched by vDistRel, and the lower jump by the low-jump detection,
+        // HOWEVER:
+        // 1) We have a couple of workarounds that allow players to decelerate unexpectedly upon landing on ground (only with the first move);
+        // 2) NCP's low-jump check relies on the in-air change of y direction (ascend->descend) to work, and as shown in the figure above, the player lands on the ground
+        // without having to descend first, so we never get to pick up the lower jump.
+        // Having said that, with NoCheatPlus' past-move-tracking system, we can attempt to judge ex-post if a player jumped unexpectedly
         if (cc.survivalFlyAccountingStep && !data.isVelocityJumpPhase() && data.hasSetBack() && !(thisMove.from.aboveStairs || lastMove.from.aboveStairs)
             && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_STEP, player))) {
             
@@ -1023,7 +1043,6 @@ public class SurvivalFly extends Check {
                     && thisMove.setBackYDistance < data.liftOffEnvelope.getMinJumpHeight(data.jumpAmplifier)) {
                     
                     // The player ended up on ground sooner than expected. 
-                    // However this low-jump/low-motion couldn't be catched by vDistAir because the method only runs if in air.
                     if (!lastMove.from.onGround && lastMove.to.onGround && toOnGround) { // from.onGround is ignored on purpose.
                         if (data.getOrUseVerticalVelocity(thisMove.yDistance) == null) {
                             // TODO: Redesign setback handling: allow queuing setbacks and use past setback locations, instead of invaliding hDistance.
@@ -1102,7 +1121,7 @@ public class SurvivalFly extends Check {
                     thisMove.allowjump = true;
                 }
             }
-            // The player didn't land on ground (toOnGround returned false). Ordinary jump
+            // The player didn't land on ground (toOnGround returned false for both cases). Ordinary jump
             else {
 
                 // Code duplication with the absolute limit below.
@@ -1290,7 +1309,6 @@ public class SurvivalFly extends Check {
                     tags.add("ychinc");
                 }
                 else {
-
                     // Moving upwards after falling without having touched the ground.
                     if (data.bunnyhopDelay < 9 && !((lastMove.touchedGround || lastMove.from.onGroundOrResetCond)
                         && lastMove.yDistance == 0D) && data.getOrUseVerticalVelocity(yDistance) == null) {
@@ -1305,7 +1323,8 @@ public class SurvivalFly extends Check {
                 tags.add("ychdec");
                 // Catch low jump between last ascending phase and current descend phase
                 // NOTE: this only checks jump height, not motion speed.
-                if (!data.sfLowJump && !data.sfNoLowJump && lastMove.toIsValid && lastMove.yDistance > 0.0) {                    
+                if (!data.sfLowJump && !data.sfNoLowJump && lastMove.toIsValid && lastMove.yDistance > 0.0
+                    && !data.isVelocityJumpPhase()) {                    
                     /** Only count it if the player has actually been jumping (higher than setback). */
                     final double setBackYDistance = from.getY() - data.getSetBackY();
                     /** Estimation of minimal jump height */
@@ -1364,11 +1383,8 @@ public class SurvivalFly extends Check {
                 // Here yDistance can be negative and positive.
                 data.vDistAcc.add((float) yDistance);
                 final double accAboveLimit = verticalAccounting(yDistance, data.vDistAcc, tags, "vacc" + (data.isVelocityJumpPhase() ? "dirty" : ""));
-
-                if (accAboveLimit > vDistanceAboveLimit) {
-                    if (data.getOrUseVerticalVelocity(yDistance) == null) {
-                        vDistanceAboveLimit = accAboveLimit;
-                    }
+                if (data.getOrUseVerticalVelocity(accAboveLimit) == null) {
+                    vDistanceAboveLimit = Math.max(vDistanceAboveLimit, accAboveLimit);
                 }         
             }
             // Just to exclude source of error, might be redundant.
@@ -1879,7 +1895,7 @@ public class SurvivalFly extends Check {
                 vAllowedDistance = data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) + jumpGainMargin; 
             }
             // Likewise webs, one can't ascend in berry bushes (demand immediate fall)
-            else  vAllowedDistance = 0.0;
+            else vAllowedDistance = 0.0;
             vDistanceAboveLimit = yDistance - vAllowedDistance;
         }
         // (Falling speed is static, however if falling from high enough places, it can depend on how fast one "dives" in.)

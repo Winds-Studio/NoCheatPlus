@@ -306,7 +306,7 @@ public abstract class ConfPaths {
     public static final String  BLOCKPLACE_SPEED_ACTIONS                 = BLOCKPLACE_SPEED + "actions";
 
     private static final String BLOCKPLACE_PREVENTMISC                   = BLOCKPLACE + "preventmisc.";
-    public static final String  BLOCKPLACE_PREVENTMISC_BOATSANYWHERE     = BLOCKPLACE_PREVENTMISC + "boatsanywhere";
+    public static final String  BLOCKPLACE_PREVENTMISC_BOATSONWATERONLY  = BLOCKPLACE_PREVENTMISC + "boatsonwateronly";
 
     public static final String  CHAT                                     = CHECKS + "chat.";
     public static final String  CHAT_ACTIVE                              = CHAT + SUB_ACTIVE;
@@ -877,6 +877,8 @@ public abstract class ConfPaths {
 
     // Deprecated paths (just removed).
     // TODO: Reduceredundant has been removed (implement or remove config).
+    @Deprecated
+    public static final String  BLOCKPLACE_PREVENTMISC_BOATSANYWHERE        = BLOCKPLACE_PREVENTMISC + "boatsanywhere";
     @Deprecated
     private static final String NET_FLYINGFREQUENCY_REDUNDANT               = NET_FLYINGFREQUENCY + "reduceredundant.";
     @Deprecated

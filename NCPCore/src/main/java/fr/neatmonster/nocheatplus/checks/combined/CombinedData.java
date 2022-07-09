@@ -42,7 +42,7 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     public final PenaltyTime timeFreeze = new PenaltyTime();
 
     // Improbable check
-    public final ActionFrequency improbableCount = new ActionFrequency(20, 3000);
+    public final ActionFrequency improbableCount = new ActionFrequency(20, 3000); // 20 buckets covering 3 seconds each (full time resolution of 1 minute)
 
     // General data
     // TODO: -> PlayerData (-> OfflinePlayerData)

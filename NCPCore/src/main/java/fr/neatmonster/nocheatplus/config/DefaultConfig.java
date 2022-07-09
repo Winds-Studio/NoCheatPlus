@@ -210,7 +210,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.BLOCKPLACE_SPEED_IMPROBABLE_WEIGHT, 0.3, 1154);
         set(ConfPaths.BLOCKPLACE_SPEED_ACTIONS, "cancel vl>100 log:bpspeed:6:7:i cancel vl>1000 log:bpspeed:3:5:if cancel", 1154);
         // Misc preventions
-        set(ConfPaths.BLOCKPLACE_PREVENTMISC_BOATSANYWHERE, true);
+        set(ConfPaths.BLOCKPLACE_PREVENTMISC_BOATSONWATERONLY, false);
 
 
         /* Chat */

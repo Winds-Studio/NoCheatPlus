@@ -57,9 +57,6 @@ public class BlockPlaceData extends ACheckData {
     // Data of the no swing check.
     public int noSwingCount = 0;
 
-    // Data of the reach check.
-    public double reachDistance;
-
     // Data of the speed check;
     public boolean speedLastRefused;
     public long speedLastTime;

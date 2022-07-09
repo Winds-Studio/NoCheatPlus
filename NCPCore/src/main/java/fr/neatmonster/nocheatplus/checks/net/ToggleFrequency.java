@@ -46,13 +46,12 @@ public class ToggleFrequency extends Check {
      * @return true, if successful
      */
     public boolean check(final Player player, final NetData data, final NetConfig cc, final IPlayerData pData) {
-        final boolean lag = pData.getCurrentWorldData().shouldAdjustToLag(type);
         boolean cancel = false;
         // (Additium to frequency is done in the listener for each toggle event)
         // Full time resolution
         final long actionFullTime = data.playerActionFreq.bucketDuration() * data.playerActionFreq.numberOfBuckets();
         /** Toggle action events counted */
-        final float fullActionScore = lag ? data.playerActionFreq.score(1f) / TickTask.getLag(actionFullTime, true) : data.playerActionFreq.score(1f);
+        final float fullActionScore = data.playerActionFreq.score(1f) / TickTask.getLag(actionFullTime);
         final double violation = fullActionScore > cc.toggleActionLimit ? fullActionScore - cc.toggleActionLimit : 0.0;
         if (violation > 0.0) {
             data.toggleFrequencyVL += violation;
