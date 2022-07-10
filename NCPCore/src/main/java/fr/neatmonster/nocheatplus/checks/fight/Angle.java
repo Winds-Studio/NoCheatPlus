@@ -155,22 +155,22 @@ public class Angle extends Check {
         final double n = (double) (data.angleHits.size() - 1);
 
         // Let's calculate the average move.
-        final double averageMove = deltaMove / n;
+        double averageMove = deltaMove / n;
         // Adjust to server-sided lag
         averageMove *= TickTask.getLag(maxTimeDiff, true);
 
         // And the average time elapsed.
-        final double averageTime = (double) deltaTime / n;
+        double averageTime = (double) deltaTime / n;
         // Adjust to server-sided lag
         averageTime *= TickTask.getLag(maxTimeDiff, true);
 
         // And the average yaw delta.
-        final double averageYaw = (double) deltaYaw / n;
+        double averageYaw = (double) deltaYaw / n;
         // Adjust to server-sided lag
         averageYaw /= TickTask.getLag(maxTimeDiff, true);
 
         // Average target switching.
-        final double averageSwitching = (double) deltaSwitchTarget / n;
+        double averageSwitching = (double) deltaSwitchTarget / n;
         // Adjust to server-sided lag
         averageSwitching /= TickTask.getLag(maxTimeDiff, true);
 

@@ -93,7 +93,7 @@ public class Scaffold extends Check {
         // Angle Check - Check if the player is looking at the block (Should already be covered by BlockInteract.Direction)
         if (cc.scaffoldAngle) {
             final Vector placedVector = new Vector(placedFace.getModX(), placedFace.getModY(), placedFace.getModZ());
-            float placedAngle = TrigUtil.angle(player.getLocation().getDirection(), placedVector);
+            double placedAngle = TrigUtil.angle(player.getLocation().getDirection(), placedVector);
             if (placedAngle > MAX_ANGLE) {
                 cancel = violation("Angle", Math.min(Math.max(1, (int) (placedAngle - MAX_ANGLE) * 10), 10), player, data, pData);
             }

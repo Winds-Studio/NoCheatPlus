@@ -670,7 +670,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.STRINGS + ".flyingfrequency", start + "is manipulating packets sent to the server to gain an unfair advantage" + end, 1154);
         set(ConfPaths.STRINGS + ".freach", start + "tried to hit an entity from a suspicious distance (Reach: &6[reachdistance]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".fselfhit", start + "tried to hit themselves" + end, 1154);
-        set(ConfPaths.STRINGS + ".fspeed", start + "tried to click [violations] times over the established [limit] CPS limit" + end, 1154);
         set(ConfPaths.STRINGS + ".godmode", start + "tried to ignore inflicted damage (Health: &7[health]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".gutenberg", start + "created a book with too many pages" + end, 785);
         set(ConfPaths.STRINGS + ".impossiblehit", start + "tried to hit an entity while performing another action (Tags: &6[tags]&7)" + end, 1154);
