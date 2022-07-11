@@ -29,8 +29,10 @@ public class InventoryData extends ACheckData {
     public double invMoveVL;
     public double fastClickVL;
     public double instantBowVL;
-    public double instantEatVL;
+    public double fastConsumeVL;
     public double gutenbergVL;
+
+
 
     // Data shared between the checks.
     /** Remember the last time an inventory click happened. Always updates with each click */
@@ -56,9 +58,9 @@ public class InventoryData extends ACheckData {
     public long instantBowInteract = 0;
     public long instantBowShoot;
 
-    // Data of the instant eat check.
-    public Material instantEatFood;
-    public long instantEatInteract;
+    // Data of the fastconsume check.
+    public Material fastConsumeFood;
+    public long fastConsumeInteract;
     
     // Data of the InventoryMove check.
     public long lastMoveEvent = 0;

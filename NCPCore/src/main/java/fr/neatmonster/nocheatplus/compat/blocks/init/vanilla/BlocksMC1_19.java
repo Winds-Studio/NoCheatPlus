@@ -42,7 +42,7 @@ public class BlocksMC1_19 implements BlockPropertiesSetup {
 
         //
         BlockProperties.setBlockProps("MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.5f, BlockProperties.secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1, 0.1)));
-        BlockFlags.setFlagsAs("MUD", Material.DIRT);
+        BlockFlags.setBlockFlags("MUD", BlockFlags.SOLID_GROUND);
         //
         BlockProperties.setBlockProps("PACKED_MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 1f, BlockProperties.secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.2, 0.15)));
         BlockFlags.setFlagsAs("PACKED_MUD", Material.DIRT);

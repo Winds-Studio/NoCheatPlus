@@ -166,6 +166,7 @@ public class DefaultConfig extends ConfigFile {
 
         /* BlockPlace */
         set(ConfPaths.BLOCKPLACE_ACTIVE, "default", 1144);
+        set(ConfPaths.BLOCKPLACE_BOATSONWATERONLY, false);
         // Against
         set(ConfPaths.BLOCKPLACE_AGAINST_CHECK, "default", 785);
         set(ConfPaths.BLOCKPLACE_AGAINST_ACTIONS, "cancel log:against:1:5:i vl>10 cancel log:against:0:2:if cmdc:kickagainst:0:10", 1154);
@@ -209,8 +210,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.BLOCKPLACE_SPEED_IMPROBABLE_FEEDONLY, true, 1154);
         set(ConfPaths.BLOCKPLACE_SPEED_IMPROBABLE_WEIGHT, 0.3, 1154);
         set(ConfPaths.BLOCKPLACE_SPEED_ACTIONS, "cancel vl>100 log:bpspeed:6:7:i cancel vl>1000 log:bpspeed:3:5:if cancel", 1154);
-        // Misc preventions
-        set(ConfPaths.BLOCKPLACE_PREVENTMISC_BOATSONWATERONLY, false);
 
 
         /* Chat */
@@ -401,9 +400,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.INVENTORY_INSTANTBOW_IMPROBABLE_FEEDONLY, false, 1085);
         set(ConfPaths.INVENTORY_INSTANTBOW_IMPROBABLE_WEIGHT, 0.6, 1085);
         set(ConfPaths.INVENTORY_INSTANTBOW_ACTIONS, "cancel vl>15 cancel log:instantbow:4:5:i vl>200 cancel log:instantbow:0:10:if cmdc:kickbow:2:10", 1154);
-        // InstantEat, legacy. Disabled since it seems to interfer with FastConsume somehow... 
-        set(ConfPaths.INVENTORY_INSTANTEAT_CHECK, false, 1154); 
-        set(ConfPaths.INVENTORY_INSTANTEAT_ACTIONS, "log:instanteat:2:5:i cancel", 1154);
         // FastConsume
         set(ConfPaths.INVENTORY_FASTCONSUME_CHECK, "default", 785);
         set(ConfPaths.INVENTORY_FASTCONSUME_DURATION, 1.4, 1154); // The actual consumption time needed would be 1.5s. Set to 1.4 for leniency
@@ -421,8 +417,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.INVENTORY_GUTENBERG_CHECK, "default", 785);
         set(ConfPaths.INVENTORY_GUTENBERG_PAGELIMIT, 50, 1154);
         set(ConfPaths.INVENTORY_GUTENBERG_ACTIONS, "cancel log:gutenberg:0:10:if cmdc:kickinvaliddata:0:5", 1154);
-        // Items
-        set(ConfPaths.INVENTORY_ITEMS_CHECK, "default", 785);
         // Open
         set(ConfPaths.INVENTORY_OPEN_CHECK, "default", 785);
         set(ConfPaths.INVENTORY_OPEN_CLOSE, true, 785);
@@ -675,7 +669,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.STRINGS + ".impossiblehit", start + "tried to hit an entity while performing another action (Tags: &6[tags]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".improbable", start + "is exhibiting an erratic behaviour (Check: &6[tags]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".instantbow", start + "tried to shoot an arrow too fast" + end, 1154);
-        set(ConfPaths.STRINGS + ".instanteat", start + "tried to consume an item too quickly (Food: &6[food]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".inventorymove", start + "tried to click in their inventory while performing another action (Tags: &6[tags]&7)" + end, 1154);
         set(ConfPaths.STRINGS + ".keepalive", start + "is spamming keep-alive packets to the server" + end, 1154);
         set(ConfPaths.STRINGS + ".kickagainst", kick + "Invalid block placements.", 1154);

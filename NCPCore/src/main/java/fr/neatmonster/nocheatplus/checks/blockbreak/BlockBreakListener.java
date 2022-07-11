@@ -35,7 +35,6 @@ import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractData;
 import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractListener;
-import fr.neatmonster.nocheatplus.checks.inventory.Items;
 import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
@@ -83,8 +82,6 @@ public class BlockBreakListener extends CheckListener {
     private AlmostBoolean isInstaBreak = AlmostBoolean.NO;
 
     private final Counters counters = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class);
-
-    private final int idCancelDIllegalItem = counters.registerKey("illegalitem");
 
     /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
     private final Location useLoc = new Location(null, 0, 0, 0);
@@ -136,14 +133,8 @@ public class BlockBreakListener extends CheckListener {
         final BlockBreakData data = pData.getGenericInstance(BlockBreakData.class);
         final BlockInteractData bdata = pData.getGenericInstance(BlockInteractData.class);
         boolean cancelled = false;
-
-        // Illegal enchantments hotfix check.
-        // TODO: Legacy / encapsulate fully there.
-        if (Items.checkIllegalEnchantmentsAllHands(player, pData)) {
-            event.setCancelled(true);
-            counters.addPrimaryThread(idCancelDIllegalItem, 1);
-        }
-        else if (MovingUtil.hasScheduledPlayerSetBack(player)) {
+        
+        if (MovingUtil.hasScheduledPlayerSetBack(player)) {
             event.setCancelled(true);
         }
 

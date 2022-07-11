@@ -119,7 +119,7 @@ public class CheckUtils {
         // Inventory.
         final InventoryData iData = pData.getGenericInstance(InventoryData.class);
         ref = Math.max(ref, iData.lastClickTime);
-        ref = Math.max(ref, iData.instantEatInteract);
+        ref = Math.max(ref, iData.fastConsumeInteract);
         // BlcokBreak/interact.
         final BlockBreakData bbData = pData.getGenericInstance(BlockBreakData.class);
         ref = Math.max(ref, bbData.frequencyBuckets.lastUpdate());

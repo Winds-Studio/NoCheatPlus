@@ -39,7 +39,6 @@ import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
-import fr.neatmonster.nocheatplus.checks.inventory.Items;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace;
@@ -178,12 +177,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         final FightConfig cc = pData.getGenericInstance(FightConfig.class);
         final MovingConfig mCc = pData.getGenericInstance(MovingConfig.class);
         final MovingData mData = pData.getGenericInstance(MovingData.class);
-
-        // Hotfix attempt for enchanted books.
-        // TODO: maybe a generalized version for the future...
-        if (Items.checkIllegalEnchantmentsAllHands(player, pData)) {
-            return true;
-        }
         /** Whether a check has requested to cancel the event */
         boolean cancelled = false;
         final boolean debug = pData.isDebugActive(checkType);

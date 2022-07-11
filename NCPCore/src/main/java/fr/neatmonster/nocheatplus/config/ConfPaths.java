@@ -248,6 +248,8 @@ public abstract class ConfPaths {
     public static final String  BLOCKPLACE                               = CHECKS + "blockplace.";
     public static final String  BLOCKPLACE_ACTIVE                        = BLOCKPLACE + SUB_ACTIVE;
 
+    public static final String  BLOCKPLACE_BOATSONWATERONLY              = BLOCKPLACE + "boatsonwateronly";
+ 
     private static final String BLOCKPLACE_AGAINST                       = BLOCKPLACE + "against.";
     public static final String  BLOCKPLACE_AGAINST_CHECK                 = BLOCKPLACE_AGAINST + SUB_ACTIVE;
     public static final String BLOCKPLACE_AGAINST_ACTIONS                = BLOCKPLACE_AGAINST + "actions";
@@ -304,9 +306,6 @@ public abstract class ConfPaths {
     public static final String  BLOCKPLACE_SPEED_IMPROBABLE_FEEDONLY     = BLOCKPLACE_SPEED_IMPROBABLE + "feedonly";
     public static final String  BLOCKPLACE_SPEED_IMPROBABLE_WEIGHT       = BLOCKPLACE_SPEED_IMPROBABLE + "weight";
     public static final String  BLOCKPLACE_SPEED_ACTIONS                 = BLOCKPLACE_SPEED + "actions";
-
-    private static final String BLOCKPLACE_PREVENTMISC                   = BLOCKPLACE + "preventmisc.";
-    public static final String  BLOCKPLACE_PREVENTMISC_BOATSONWATERONLY  = BLOCKPLACE_PREVENTMISC + "boatsonwateronly";
 
     public static final String  CHAT                                     = CHECKS + "chat.";
     public static final String  CHAT_ACTIVE                              = CHAT + SUB_ACTIVE;
@@ -574,15 +573,7 @@ public abstract class ConfPaths {
     private static final String INVENTORY_INSTANTBOW_IMPROBABLE          = INVENTORY_INSTANTBOW + "improbable.";
     public static final String  INVENTORY_INSTANTBOW_IMPROBABLE_FEEDONLY = INVENTORY_INSTANTBOW_IMPROBABLE + "feedonly";
     public static final String  INVENTORY_INSTANTBOW_IMPROBABLE_WEIGHT   = INVENTORY_INSTANTBOW_IMPROBABLE + "weight";
-
     public static final String  INVENTORY_INSTANTBOW_ACTIONS             = INVENTORY_INSTANTBOW + "actions";
-
-    private static final String INVENTORY_INSTANTEAT                     = INVENTORY + "instanteat.";
-    public static final String  INVENTORY_INSTANTEAT_CHECK               = INVENTORY_INSTANTEAT + SUB_ACTIVE;
-    public static final String  INVENTORY_INSTANTEAT_ACTIONS             = INVENTORY_INSTANTEAT + "actions";
-
-    private static final String INVENTORY_ITEMS                          = INVENTORY + "items.";
-    public static final String  INVENTORY_ITEMS_CHECK                    = INVENTORY_ITEMS + SUB_ACTIVE;
 
     private static final String INVENTORY_OPEN                           = INVENTORY + "open.";
     public static final  String INVENTORY_OPEN_CHECK                     = INVENTORY_OPEN + SUB_ACTIVE;
@@ -876,9 +867,19 @@ public abstract class ConfPaths {
     public static final String MOVING_SURVIVALFLY_HBUFMAX                = "checks.moving.survivalfly.hbufmax";
 
     // Deprecated paths (just removed).
-    // TODO: Reduceredundant has been removed (implement or remove config).
     @Deprecated
-    public static final String  BLOCKPLACE_PREVENTMISC_BOATSANYWHERE        = BLOCKPLACE_PREVENTMISC + "boatsanywhere";
+    // TODO: Reduceredundant has been removed (implement or remove config).
+    private static final String INVENTORY_ITEMS                          = INVENTORY + "items.";
+    @Deprecated
+    public static final String  INVENTORY_ITEMS_CHECK                    = INVENTORY_ITEMS + SUB_ACTIVE;
+    @Deprecated
+    private static final String INVENTORY_INSTANTEAT                     = INVENTORY + "instanteat.";
+    @Deprecated
+    public static final String  INVENTORY_INSTANTEAT_CHECK               = INVENTORY_INSTANTEAT + SUB_ACTIVE;
+    @Deprecated
+    public static final String  INVENTORY_INSTANTEAT_ACTIONS             = INVENTORY_INSTANTEAT + "actions";
+    @Deprecated
+    public static final String  BLOCKPLACE_PREVENTMISC_BOATSANYWHERE        = BLOCKPLACE + "boatsanywhere";
     @Deprecated
     private static final String NET_FLYINGFREQUENCY_REDUNDANT               = NET_FLYINGFREQUENCY + "reduceredundant.";
     @Deprecated

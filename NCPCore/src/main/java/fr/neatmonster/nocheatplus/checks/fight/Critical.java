@@ -89,7 +89,7 @@ public class Critical extends Check {
             // Check for fall distance with too little air time (might be redundant with the mismatch check below)
             if (Math.abs(ncpFallDistance - mcFallDistance) > cc.criticalFallDistLeniency 
                 && mcFallDistance <= cc.criticalFallDistance 
-                && mData.sfJumpPhase <= 1
+                && mData.sfJumpPhase <= mData.liftOffEnvelope.getMaxJumpPhase(mData.jumpAmplifier)
                 && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
                tags.add("fakejump");
                violation = true;

@@ -206,7 +206,7 @@ public class VehicleEnvelope extends Check {
         final Double cap = cc.vehicleEnvelopeHorizontalSpeedCap.get(type);
         final Double globalcap = cc.vehicleEnvelopeHorizontalSpeedCap.get(null);
         if (cap == null) {
-            if (MaterialUtil.isBoat(type)){
+            if (MaterialUtil.isBoat(type)) {
                 return getHDistCapBoats(thisMove, data, 1.0, globalcap);
             }
             return globalcap;

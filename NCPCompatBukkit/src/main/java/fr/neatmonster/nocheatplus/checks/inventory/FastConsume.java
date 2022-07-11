@@ -39,14 +39,14 @@ import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 
 /**
- * Quick replacement for InstantEat, partly reusing InstantEat data.<br>
+ * Replaces the former InstantEat check (pre 1.5). Will be disabled from 1.8 and higher versions.<br>
  * This check is added by fr.neatmonster.nocheatplus.compat.DefaultComponentFactory.
- * @author mc_dev
+ * @author asofold
  *
  */
-public class FastConsume extends Check implements Listener, INotifyReload {
+public class FastConsume extends Check implements Listener {
 
-    public static void testAvailability(){
+    public static void testAvailability() {
         if (!PlayerItemConsumeEvent.class.getSimpleName().equals("PlayerItemConsumeEvent")){
             throw new RuntimeException("This exception should not even get thrown.");
         }
@@ -57,17 +57,6 @@ public class FastConsume extends Check implements Listener, INotifyReload {
 
     public FastConsume() {
         super(CheckType.INVENTORY_FASTCONSUME);
-        // Overrides the instant-eat check.
-        disableInstantEat();
-    }
-
-    private void disableInstantEat() {
-        // TODO: Do this kind of thing via registries later on.
-        //ConfigManager.setForAllConfigs(ConfPaths.INVENTORY_INSTANTEAT_CHECK, false);
-        NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().overrideCheckActivation(
-                CheckType.INVENTORY_INSTANTEAT, AlmostBoolean.NO, 
-                OverrideType.PERMANENT, true);
-        StaticLog.logInfo("Inventory checks: FastConsume is available, disabled InstantEat.");
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -90,31 +79,39 @@ public class FastConsume extends Check implements Listener, INotifyReload {
             DataManager.getPlayerData(player).requestUpdateInventory();
         }
     }
-
-    private boolean check(final Player player, final ItemStack stack, 
-            final long time, final InventoryData data, final IPlayerData pData){
+    
+    /**
+     * Checks a player
+     * @param player
+     * @param stack
+     * @param time
+     * @param data
+     * @param pData
+     * @return True, if to cancel the event. In that case, the inventory will be updated as well.
+     */
+    private boolean check(final Player player, final ItemStack stack, final long time, final InventoryData data, final IPlayerData pData) {
         // Uses the instant-eat data for convenience.
         // Consistency checks...
-        if (stack == null){ // || stack.getType() != data.instantEatFood){
+        if (stack == null) { // || stack.getType() != data.fastConsumeFood){
             // TODO: Strict version should prevent other material (?).
             return false;
         }
-        final long ref = data.instantEatInteract == 0 ? 0 : Math.max(data.instantEatInteract, data.lastClickTime);
-        if (time < ref){
+        final long ref = data.fastConsumeInteract == 0 ? 0 : Math.max(data.fastConsumeInteract, data.lastClickTime);
+        if (time < ref) {
             // Time ran backwards.
-            data.instantEatInteract = data.lastClickTime = time;
+            data.fastConsumeInteract = data.lastClickTime = time;
             return false;
         }
         // Check exceptions.
         final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
         final Material mat = stack == null ? null : stack.getType();
-        if (mat != null){
-            if (cc.fastConsumeWhitelist){
-                if (!cc.fastConsumeItems.contains(mat)){
+        if (mat != null) {
+            if (cc.fastConsumeWhitelist) {
+                if (!cc.fastConsumeItems.contains(mat)) {
                     return false;
                 }
             }
-            else if (cc.fastConsumeItems.contains(mat)){
+            else if (cc.fastConsumeItems.contains(mat)) {
                 return false;
             }
         }
@@ -122,18 +119,18 @@ public class FastConsume extends Check implements Listener, INotifyReload {
         final long timeSpent = ref == 0 ? 0 : (time - ref); // Not interact = instant.
         final long expectedDuration = cc.fastConsumeDuration;
         boolean cancel = false;
-        if (timeSpent < expectedDuration){
+        if (timeSpent < expectedDuration) {
             // TODO: Might have to do a specialized check for lag spikes here instead.
             final float lag = TickTask.getLag(expectedDuration, true);
-            if (timeSpent * lag < expectedDuration){
+            if (timeSpent * lag < expectedDuration) {
                 final double difference = (expectedDuration - timeSpent * lag) / 100.0;
-                data.instantEatVL += difference;
-                final ViolationData vd = new ViolationData(this, player, data.instantEatVL, difference, cc.fastConsumeActions);
+                data.fastConsumeVL += difference;
+                final ViolationData vd = new ViolationData(this, player, data.fastConsumeVL, difference, cc.fastConsumeActions);
                 vd.setParameter(ParameterName.FOOD, "" + mat);
-                if (data.instantEatFood != mat){
-                    vd.setParameter(ParameterName.TAGS, "inconsistent(" + data.instantEatFood + ")");
+                if (data.fastConsumeFood != mat) {
+                    vd.setParameter(ParameterName.TAGS, "inconsistent(" + data.fastConsumeFood + ")");
                 }
-                else{
+                else {
                     vd.setParameter(ParameterName.TAGS, "");
                 }
                 if (executeActions(vd).willCancel()){
@@ -141,29 +138,23 @@ public class FastConsume extends Check implements Listener, INotifyReload {
                 }
             }
         }
-        else{
-            data.instantEatVL *= 0.6; 
+        else {
+            data.fastConsumeVL *= 0.6; 
         }
         // Reset interaction.
         if (cancel) {
             // Fake interaction to prevent violation loops with false positives.
             final ItemStack actualStack = InventoryUtil.getFirstConsumableItemInHand(player);
-            data.instantEatFood = actualStack == null ? null : actualStack.getType();
+            data.fastConsumeFood = actualStack == null ? null : actualStack.getType();
             // TODO: Allows some abuse: 1. try instantly eat (cancelled) 2. consume item directly when needed.
         }
         else  {
             if (pData.isDebugActive(type)) {
-                debug(player, "PlayerItemConsumeEvent, reset fastconsume: " + data.instantEatFood);
+                debug(player, "PlayerItemConsumeEvent, reset fastconsume: " + data.fastConsumeFood);
             }
-            data.instantEatFood = null;
+            data.fastConsumeFood = null;
         }
-        data.instantEatInteract = time;
+        data.fastConsumeInteract = time;
         return cancel;
     }
-
-    @Override
-    public void onReload() {
-        disableInstantEat();
-    }
-
 }

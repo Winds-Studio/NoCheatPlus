@@ -61,10 +61,8 @@ public class InventoryConfig extends ACheckConfig {
     public final float instantBowImprobableWeight;
     public final ActionList instantBowActions;
 
-    public final ActionList instantEatActions;
-
-    public final boolean openClose;
-    public final boolean openCancelOther;
+    public final boolean	openClose;
+    public final boolean	openCancelOther;
     
     public final boolean invMoveDisableCreative;
     public final double invMoveHdistDivisor;
@@ -103,10 +101,6 @@ public class InventoryConfig extends ACheckConfig {
             NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().overrideCheckActivation(
                     CheckType.INVENTORY_FASTCONSUME, AlmostBoolean.NO, 
                     OverrideType.PERMANENT, true);
-            // Just in case they disable fastconsume in the config and switch to default (instanteat)
-            NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().overrideCheckActivation(
-                    CheckType.INVENTORY_INSTANTEAT, AlmostBoolean.NO, 
-                    OverrideType.PERMANENT, true);
             NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().overrideCheckActivation(
                     CheckType.INVENTORY_INSTANTBOW, AlmostBoolean.NO, 
                     OverrideType.PERMANENT, true);
@@ -125,8 +119,6 @@ public class InventoryConfig extends ACheckConfig {
         instantBowImprobableFeedOnly = data.getBoolean(ConfPaths.INVENTORY_INSTANTBOW_IMPROBABLE_FEEDONLY);
         instantBowImprobableWeight = (float) data.getDouble(ConfPaths.INVENTORY_INSTANTBOW_IMPROBABLE_WEIGHT);
         instantBowActions = data.getOptimizedActionList(ConfPaths.INVENTORY_INSTANTBOW_ACTIONS, Permissions.INVENTORY_INSTANTBOW);
-
-        instantEatActions = data.getOptimizedActionList(ConfPaths.INVENTORY_INSTANTEAT_ACTIONS, Permissions.INVENTORY_INSTANTEAT);
 
         openClose = data.getBoolean(ConfPaths.INVENTORY_OPEN_CLOSE);
         openCancelOther = data.getBoolean(ConfPaths.INVENTORY_OPEN_CANCELOTHER);
