@@ -43,7 +43,7 @@ import com.comphenix.protocol.reflect.StructureModifier;
 import com.comphenix.protocol.wrappers.EnumWrappers.PlayerDigType;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
-import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
@@ -122,7 +122,7 @@ public class UseItemAdapter extends BaseAdapter {
     private static void onItemConsume(final PlayerItemConsumeEvent e){
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.isUsingItem = false;        
     }
 
@@ -130,7 +130,7 @@ public class UseItemAdapter extends BaseAdapter {
         if (e.isCancelled()) return;
         final Player p = (Player) e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.isUsingItem = false;        
     }
 
@@ -140,7 +140,7 @@ public class UseItemAdapter extends BaseAdapter {
         }
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Reset
         data.offHandUse = false;
         if (!data.mightUseItem) {
@@ -209,7 +209,7 @@ public class UseItemAdapter extends BaseAdapter {
     private static void onChangeSlot(final PlayerItemHeldEvent e) {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         //if (data.changeslot) {
         //    p.getInventory().setHeldItemSlot(data.olditemslot);
         //    data.changeslot = false;
@@ -229,7 +229,7 @@ public class UseItemAdapter extends BaseAdapter {
     private void handleBlockPlacePacket(PacketEvent event) {
         final Player p = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         final PacketContainer packet = event.getPacket();
         final StructureModifier<Integer> ints = packet.getIntegers();
         // Legacy: pre 1.9
@@ -255,7 +255,7 @@ public class UseItemAdapter extends BaseAdapter {
             StaticLog.logWarning("Failed to fetch player data with " + event.getPacketType() + " for: " + p.toString());
             return;
         }
-        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         PlayerDigType digtype = event.getPacket().getPlayerDigTypes().read(0);
         // DROP_ALL_ITEMS when dead?
         if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) data.isUsingItem = false;

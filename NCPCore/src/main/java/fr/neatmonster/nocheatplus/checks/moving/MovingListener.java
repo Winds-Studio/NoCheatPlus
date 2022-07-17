@@ -64,6 +64,7 @@ import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedConfig;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
+import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
 import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.ModelFlying;
@@ -171,8 +172,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     /** Auxiliary functionality. */
     private final AuxMoving aux = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(AuxMoving.class);
 
-    private IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
-
     private final BlockChangeTracker blockChangeTracker;
 
     /** Statistics / debugging counters. */
@@ -258,7 +257,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
 
     /**
-     * We listen to this event to prevent player from flying by sending bed leaving packets.
+     * We listen to this event to remember upon exit if the player had been in a bed.
      * 
      * @param event
      *            the event
@@ -580,7 +579,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Treat as ACK (!).
             // Adjust.
             confirmSetBack(player, false, data, cc, pData, event.getFrom());
-            // Log.
             if (debug) debug(player, "Implicitly confirm set back with the start point of a move.");
             return false;
         }
@@ -1345,6 +1343,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     /**
      * Check for extremely large moves. Initial intention is to prevent cheaters
      * from creating extreme load. SurvivalFly or CreativeFly is needed.
+     * On violations, also request an Improbable checking.
      * 
      * @param player
      * @param from
@@ -1356,7 +1355,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     @SuppressWarnings("unused")
     private Location checkExtremeMove(final Player player, final PlayerLocation from, final PlayerLocation to, 
                                       final MovingData data, final MovingConfig cc) {
-        // TODO: Find out why only CreativeFly does actually trigger.
         // TODO: Recent Minecraft versions allow a lot of unhealthy moves. Observed so far:
         // - Riptide + gliding (+ firework !?)
         // - Really high levitation levels
@@ -1406,6 +1404,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
 
         if (violation > 0.0) {
+            Improbable.check(player, (float)violation, System.currentTimeMillis(), "extreme.move", DataManager.getPlayerData(player));
             // Ensure a set back location is present.
             if (!data.hasSetBack()) data.setSetBack(from);
             // Process violation as sub check of the appropriate fly check.
@@ -1743,9 +1742,10 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final Player player = event.getEntity();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         data.clearMostMovingCheckData();
         data.setSetBack(player.getLocation(useLoc)); // TODO: Monitor this change (!).
-        data.isUsingItem = false;
+        cData.isUsingItem = false;
         // Log location.
         if (pData.isDebugActive(checkType)) debug(player, "Death: " + player.getLocation(useLoc));
         useLoc.setWorld(null);
@@ -2800,10 +2800,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final double speed = mcAccess.getFasterMovementAmplifier(player);
         final double strider = BridgeEnchant.getDepthStriderLevel(player);
         if (BuildParameters.debugLevel > 0) {
-            try{
-                // TODO: Check backwards compatibility (1.4.2). Remove try-catch
-                builder.append("\n(walkspeed=" + player.getWalkSpeed() + " flyspeed=" + player.getFlySpeed() + ")");
-            } catch (Throwable t) {}
+            builder.append("\n(walkspeed=" + player.getWalkSpeed() + " flyspeed=" + player.getFlySpeed() + ")");
             if (player.isSprinting()) {
                 builder.append("(sprinting)");
             }

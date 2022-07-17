@@ -26,6 +26,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
@@ -87,6 +88,7 @@ public class InspectCommand extends BaseCommand {
         final StringBuilder builder = new StringBuilder(256);
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData mData = pData.getGenericInstance(MovingData.class);
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final MovingConfig mCC = pData.getGenericInstance(MovingConfig.class);
         final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
 
@@ -146,7 +148,7 @@ public class InspectCommand extends BaseCommand {
             builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is sprinting.");
         }
 
-        if (mData.isUsingItem) {
+        if (cData.isUsingItem) {
             builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is using an item."); // TODO: Which item?
         }
 

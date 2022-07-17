@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
@@ -241,7 +242,7 @@ public class MovingUtil {
         /** A player is considered as sneaking if they are touching the ground */
         boolean sneakingOnGround = onGround && sneaking;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.19") >= 0;
+        final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
         
         // Apply pushing speed
         if (ServerIsAtLeast1_9 && CollisionUtil.isCollidingWithEntities(player, true)) {
@@ -426,7 +427,7 @@ public class MovingUtil {
      */
     public double[] getMovementDirectionFactors(final Player player, final IPlayerData pData, final boolean left, final boolean right, 
                                                 final boolean forward, final boolean backwards, final boolean sneaking, final boolean checkPermissions, 
-                                                final MovingData data, final Collection<String> tags, final MovingConfig cc) {
+                                                final CombinedData data, final Collection<String> tags, final MovingConfig cc) {
 
         double moveStrafe = right ? -1.0 : left ? 1.0 : 0.0;
         double moveForward = forward ? 1.0 : backwards ? -1.0 : 0.0;

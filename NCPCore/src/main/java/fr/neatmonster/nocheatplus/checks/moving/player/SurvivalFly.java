@@ -29,6 +29,7 @@ import fr.neatmonster.nocheatplus.actions.ParameterName;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
@@ -672,16 +673,6 @@ public class SurvivalFly extends Check {
                 // TODO: Is the air block wich the slime block is pushed onto really in? 
                 if (from.matchBlockChange(blockChangeTracker, data.blockChangeRef, Direction.Y_POS, Math.min(yDistance, 1.0))) {
                     if (yDistance > 1.0) {
-                        //                        // TODO: Push of box off-center has the same effect.
-                        //                        final BlockChangeEntry entry = blockChangeTracker.getBlockChangeEntryMatchFlags(data.blockChangeRef, 
-                        //                                tick, from.getWorld().getUID(), from.getBlockX(), from.getBlockY() - 1, from.getBlockZ(),
-                        //                                Direction.Y_POS, BlockFlags.F_BOUNCE25);
-                        //                        if (entry != null) {
-                        //                            data.blockChangeRef.updateSpan(entry);
-                        //                            data.prependVerticalVelocity(new SimpleEntry(tick, 0.5015, 3)); // TODO: HACK
-                        //                            tags.add("past_bounce");
-                        //                        }
-                        //                        else 
                         if (to.getY() - to.getBlockY() >= 0.015) {
                             // Exclude ordinary cases for this condition.
                             return null;
@@ -692,24 +683,6 @@ public class SurvivalFly extends Check {
                     return new double[]{maxDistYPos, 0.0};
                 }
             }
-            // (No else.)
-            //            if (yDistance <= 1.55) {
-            //                // TODO: Edges ca. 0.5 (or 2x 0.5).
-            //                // TODO: Center ca. 1.5. With falling height, values increase slightly.
-            //                // Simplified: Always allow 1.5 or less with being pushed up by slime.
-            //                // TODO: 
-            //                if (from.matchBlockChangeMatchResultingFlags(
-            //                        blockChangeTracker, data.blockChangeRef, Direction.Y_POS, 
-            //                        Math.min(yDistance, 0.415), // Special limit.
-            //                        BlockFlags.F_BOUNCE25)) {
-            //                    tags.add("blkmv_y_pos_bounce");
-            //                    final double maxDistYPos = yDistance; //1.0 - (from.getY() - from.getBlockY()); // TODO: Margin ?
-            //                    // TODO: Set bounce effect or something !?
-            //                    // TODO: Bounce effect instead ?
-            //                    data.addVerticalVelocity(new SimpleEntry(tick, Math.max(0.515, yDistance - 0.5), 2));
-            //                    return new double[]{maxDistYPos, 0.0};
-            //                }
-            //            }
         }
         // Push (/pull) down.
         else if (yDistance < 0.0 && yDistance >= -1.0) {
@@ -746,6 +719,7 @@ public class SurvivalFly extends Check {
         boolean allowHop = true;
         /** Always set to false, unless the double bunnyhop case applies */
         boolean doubleHop = false;
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final double minJumpGain = data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier);
         final boolean headObstructed = thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed;
         final PlayerMoveData pastMove2 = data.playerMoves.getSecondPastMove();
@@ -767,7 +741,7 @@ public class SurvivalFly extends Check {
         //////////////////////////////////////////////////
         // After hop checks (bunnfly)                   //
         //////////////////////////////////////////////////
-        // (NCP mechanic, not vanilla. We decide when players can can bunnyhop)
+        // (NCP mechanic, not vanilla. We decide when players can can bunnyhop because we use our own collision system for on ground judgement)
         // Check if this bunnyfly phase is to be prolonged or reset earlier.
         if (data.bunnyhopDelay > 0) {
             allowHop = false;
@@ -822,6 +796,7 @@ public class SurvivalFly extends Check {
         //////////////////////////////////////////////////////////////
         // Estimate the horizontal speed (per-move distance check)  //                      
         //////////////////////////////////////////////////////////////
+        // Maybe only check from().
         if (!from.isInWater() && !to.isInWater()) {
             
             // Normal move 
@@ -850,7 +825,8 @@ public class SurvivalFly extends Check {
                     data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY; 
                     thisMove.bunnyHop = true;
                     tags.add("bunnyhop");
-                    // TODO: Could request an Improbable update here, perhaps.
+                    // Keep up the Improbable, but don't feed anything.
+                    Improbable.update(System.currentTimeMillis(), pData);
                 }
                 MovingUtil.updateHorizontalSpeed(player, 0.98, 0.98, movementSpeed, xDistance, zDistance, from);
                 MovingUtil.applySpeedModifiers(player, pData, from, data, to, sneaking, xDistance, zDistance, onGround, tags, checkPermissions, mcAccess.getHandle().getWidth(player));
@@ -916,8 +892,11 @@ public class SurvivalFly extends Check {
 
         // Finally, throw a violation if speed is higher than estimated.
         // TODO: Workarounds? Could be needed...
+        player.sendMessage("Current speed: " + StringUtil.fdec3.format(thisMove.hDistance));
+        player.sendMessage("Allowed speed: " + StringUtil.fdec3.format(thisMove.hAllowedDistance));
         if (thisMove.hDistance > thisMove.hAllowedDistance) {
             //hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance - thisMove.hAllowedDistance);
+            player.sendMessage("VL: " + StringUtil.fdec3.format(thisMove.hDistance - thisMove.hAllowedDistance));
             tags.add("hspeed");
         }
 
@@ -927,8 +906,8 @@ public class SurvivalFly extends Check {
         //////////////////////////////////////////////////////
         // Check for no slow down cheats.                   //
         //////////////////////////////////////////////////////
-        if (data.isHackingRI && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player))) {
-            data.isHackingRI = false;
+        if (cData.isHackingRI && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player))) {
+            cData.isHackingRI = false;
             bufferUse = false;
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
             Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
@@ -1050,7 +1029,7 @@ public class SurvivalFly extends Check {
                             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
                             bufferUse = false;
                             // Feed the Improbable.
-                            Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
+                            Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
                             tags.add("lowvdistsb");
                         }
                     }
@@ -1350,8 +1329,8 @@ public class SurvivalFly extends Check {
                                 vDistanceAboveLimit = Math.max(vDistanceAboveLimit, Math.abs(minJumpHeight - setBackYDistance));
                                 // Set a flag to tell us that from here, this whole descending phase is due to a lowjump
                                 data.sfLowJump = true;
-                                // Feed the Improbable.
-                                Improbable.feed(player, (float) cc.yOnGround, System.currentTimeMillis());
+                                // This will cost quite a bit for the player :)
+                                Improbable.feed(player, (float)(minJumpHeight - setBackYDistance), System.currentTimeMillis());
                             }
                         }
                     }
@@ -1466,18 +1445,17 @@ public class SurvivalFly extends Check {
                                        final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
                                        final MovingData data, final MovingConfig cc, final IPlayerData pData, final int tick, 
                                        boolean useBlockChangeTracker, final boolean fromOnGround, final boolean toOnGround) {
-
-
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         // 1: Attempt to release the item upon a NoSlow Violation, if set so in the configuration.
         if (cc.survivalFlyResetItem && hDistanceAboveLimit > 0.0 && data.sfHorizontalBuffer <= 0.5 && tags.contains("usingitem")) {
             tags.add("itemreset");
             // Handle through nms
             if (mcAccess.getHandle().resetActiveItem(player)) {
-                data.isUsingItem = false;
+                cData.isUsingItem = false;
                 pData.requestUpdateInventory();
             }
             // Off hand (non nms)
-            else if (Bridge1_9.hasGetItemInOffHand() && data.offHandUse) {
+            else if (Bridge1_9.hasGetItemInOffHand() && cData.offHandUse) {
                 ItemStack stack = Bridge1_9.getItemInOffHand(player);
                 if (stack != null) {
                     if (ServerIsAtLeast1_13) {
@@ -1485,16 +1463,16 @@ public class SurvivalFly extends Check {
                             // Does nothing
                         }
                         // False positive
-                        else data.isUsingItem = false;
+                        else cData.isUsingItem = false;
                     } 
                     else {
                         player.getInventory().setItemInOffHand(stack);
-                        data.isUsingItem = false;
+                        cData.isUsingItem = false;
                     }
                 }
             }
             // Main hand (non nms)
-            else if (!data.offHandUse) {
+            else if (!cData.offHandUse) {
                 ItemStack stack = Bridge1_9.getItemInMainHand(player);
                 if (ServerIsAtLeast1_13) {
                     if (player.isHandRaised()) {
@@ -1505,16 +1483,16 @@ public class SurvivalFly extends Check {
                         // Does nothing
                     }
                     // False positive
-                    else data.isUsingItem = false;
+                    else cData.isUsingItem = false;
                 } 
                 else {
                     if (stack != null) {
                         Bridge1_9.setItemInMainHand(player, stack);
                     }
                 }
-                data.isUsingItem = false;
+                cData.isUsingItem = false;
             }
-            if (!data.isUsingItem) {
+            if (!cData.isUsingItem) {
                 double[] estimationRes = hDistChecks(from, to, pData, player, data, thisMove, lastMove, cc, sprinting, false, tick, useBlockChangeTracker, fromOnGround, toOnGround);
                 hAllowedDistance = estimationRes[0];
                 hDistanceAboveLimit = estimationRes[1];

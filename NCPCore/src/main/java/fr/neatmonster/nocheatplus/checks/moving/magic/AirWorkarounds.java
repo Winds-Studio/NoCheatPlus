@@ -51,6 +51,7 @@ public class AirWorkarounds {
      *  && Math.abs(yDistDiffEx) < 5.0 * Magic.GRAVITY_MAX 
      *  && data.ws.use(WRPT.W_M_SF_FASTFALL_1)
      *  
+     * 
      *  // REASON: With the LiquidEnvelope precondition, this will never be applied. Also the lack of any documentation makes it harder to debug. 
      *  // 1: Not documented (!)
      *  || !data.liftOffEnvelope.name().startsWith("LIMIT") && lastMove.yDistance < Magic.GRAVITY_MAX + Magic.GRAVITY_SPAN 
@@ -58,16 +59,21 @@ public class AirWorkarounds {
      *  && yDistance > 0.4 * Magic.GRAVITY_ODD && yDistance - lastMove.yDistance < -Magic.GRAVITY_ODD / 2.0
      *  && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_NOT_NORMAL_ENVELOPE_2)
      * 
+     * 
      *  // REASON: Not documented. Ignore it.
      *  // 1: (damaged in liquid) ? -> Why would vDistAir run in liquid tho.
+     *  // Note: Seems related to lava,jumping on lower levels
      *  || lastMove.yDistance < 0.2 && lastMove.yDistance >= 0.0 && yDistance > -0.2 && yDistance < 2.0 * Magic.GRAVITY_MIN
      *  && data.ws.use(WRPT.W_M_SF_ODDLIQUID_9)
      * 
+     * 
      *  // REASON: Not documented. Ignore it.
      *  // 1: (Could be reset condition?)
+     *  // Note: Seems related to lava,jumping on lower levels
      *  || lastMove.yDistance > 0.4 * Magic.GRAVITY_ODD && lastMove.yDistance < Magic.GRAVITY_MIN && yDistance == 0.0
      *  && data.ws.use(WRPT.W_M_SF_ODDLIQUID_10)
      *  
+     * 
      *  // REASON: This is what the block change tracker is for, why isn't it working here?
      *  // 0: 1.13+ specific: breaking a block below too fast.
      *  // TODO: Confine more.
@@ -81,15 +87,15 @@ public class AirWorkarounds {
      *       )
      *   && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_4)
      *  
+     * 
      *  // REASON: This is what the block change tracker is for, why isn't it working here?
      *  // 1.13+ specific: breaking a block below too fast.
-                // TODO: Confine by ground conditions
-                || Bridge1_13.hasIsSwimming() // && lastMove.touchedGround
-                && (
-                    data.sfJumpPhase == 3 && lastMove.yDistance < -0.139 && yDistance > -0.1 && yDistance < 0.005
-                   || yDistance < -0.288 && yDistance > -0.32 && lastMove.yDistance > -0.1 && lastMove.yDistance < 0.005
-                ) 
-                && data.ws.use(WRPT.W_M_SF_FASTFALL_6)
+     *  // TODO: Confine by ground conditions
+     *  || Bridge1_13.hasIsSwimming() // && lastMove.touchedGround
+     *  && (
+     *      data.sfJumpPhase == 3 && lastMove.yDistance < -0.139 && yDistance > -0.1 && yDistance < 0.005
+     *      || yDistance < -0.288 && yDistance > -0.32 && lastMove.yDistance > -0.1 && lastMove.yDistance < 0.005
+     *  ) && data.ws.use(WRPT.W_M_SF_FASTFALL_6)
      * 
      */
 

@@ -39,7 +39,7 @@ public class NetData extends ACheckData {
     private final Lock lock = new ReentrantLock();
 
     // AttackFrequency
-    public ActionFrequency attackFrequencySeconds = new ActionFrequency(16, 500);
+    public ActionFrequency attackFrequencySeconds = new ActionFrequency(16, 500); //16 buckets each with 500ms duration = 8 seconds
 
     // FlyingFrequency
     /** All flying packets, use System.currentTimeMillis() for time. */

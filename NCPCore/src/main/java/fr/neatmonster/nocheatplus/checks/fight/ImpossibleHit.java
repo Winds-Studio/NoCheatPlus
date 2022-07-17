@@ -24,6 +24,7 @@ import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractData;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
@@ -59,7 +60,7 @@ public class ImpossibleHit extends Check {
         boolean cancel = false;
         boolean violation = false;
         List<String> tags = new LinkedList<String>();
-        final MovingData mData = pData.getGenericInstance(MovingData.class);
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final BlockInteractData biData = pData.getGenericInstance(BlockInteractData.class);
         
         // Meta check: Fight.direction passed, blockinteract.direction failed ->
@@ -78,7 +79,7 @@ public class ImpossibleHit extends Check {
             tags.add("inventoryopen");
         }
         // Blocking/Using item and attacking
-        else if ((mData.isUsingItem || player.isBlocking()) && !resetActiveItem) {
+        else if ((cData.isUsingItem || player.isBlocking()) && !resetActiveItem) {
             violation = true;
             tags.add("using/blocking");
         }

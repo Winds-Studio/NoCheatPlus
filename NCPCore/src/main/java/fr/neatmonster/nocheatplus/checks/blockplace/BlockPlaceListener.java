@@ -448,9 +448,15 @@ public class BlockPlaceListener extends CheckListener {
             }
         }
     }
-
+    
+    /**
+     * Check if the boat can be placed on ground
+     * 
+     * @param player
+     * @param event
+     * @param pData
+     */
     private void checkBoatPlaceResult(final Player player, final PlayerInteractEvent event, final IPlayerData pData) {
-        // Check if the boat can be placed on ground
         final Block block = event.getClickedBlock();
         final Material mat = block.getType();
         if (BlockProperties.isWater(mat)) {
@@ -472,6 +478,8 @@ public class BlockPlaceListener extends CheckListener {
             event.setUseItemInHand(Result.DENY);
             event.setUseInteractedBlock(previousUseBlock == Result.DEFAULT ? Result.ALLOW : previousUseBlock);
             counters.addPrimaryThread(idBoatsOnWaterOnly, 1);
+            // Attempt to refresh the inventory in order to workaround possible ghost items.
+            pData.requestUpdateInventory();
         }
     }
 

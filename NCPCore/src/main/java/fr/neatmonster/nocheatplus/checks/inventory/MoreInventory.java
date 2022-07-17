@@ -20,6 +20,7 @@ import org.bukkit.inventory.Inventory;
 
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 
@@ -27,7 +28,7 @@ import fr.neatmonster.nocheatplus.players.IPlayerData;
 * A check meant to prevent players from exploiting the 4 default crafting slot to get more storage space.
 *
 */
-public class MoreInventory extends Check{
+public class MoreInventory extends Check {
 
   /**
     * Instanties a new MoreInventory check
@@ -46,12 +47,12 @@ public class MoreInventory extends Check{
     * @author xaw3ep
     * @return true if succesful
     */
-    public boolean check(final Player player, final MovingData mData, final IPlayerData pData, final InventoryType type, 
+    public boolean check(final Player player, final CombinedData cData, final IPlayerData pData, final InventoryType type, 
     	                 final Inventory inv, final boolean PoYdiff) {
         
         // TODO: bring in the moving subcheck in invMove.
         if (type == InventoryType.CRAFTING 
-            && (player.isSprinting() || PoYdiff || player.isBlocking() || player.isSneaking() || mData.isUsingItem)) {
+            && (player.isSprinting() || PoYdiff || player.isBlocking() || player.isSneaking() || cData.isUsingItem)) {
             return true;
         }
         return false;

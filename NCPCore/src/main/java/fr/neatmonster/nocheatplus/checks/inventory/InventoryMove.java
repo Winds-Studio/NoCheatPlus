@@ -26,6 +26,7 @@ import fr.neatmonster.nocheatplus.actions.ParameterName;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
@@ -40,14 +41,12 @@ import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 
 /**
  * InventoryMove listens for clicks in inventory happening at the same time of certain actions.
- * (No packet is sent for players opening their inventory)
  */
 public class InventoryMove extends Check {
 
 
    /**
     * Instanties a new InventoryMove check
-    *
     */
     public InventoryMove() {
         super(CheckType.INVENTORY_INVENTORYMOVE);
@@ -62,20 +61,15 @@ public class InventoryMove extends Check {
     * @param cc
     * @param type
     * @return true if successful
-    *
     */
     public boolean check(final Player player, final InventoryData data, final IPlayerData pData, final InventoryConfig cc, final SlotType type) {
         
         boolean cancel = false;
         boolean violation = false;
         List<String> tags = new LinkedList<String>();
-        // NOTES: 1) NoCheatPlus provides a base speed at which players can move without taking into account any mechanic:
-        //        the idea is that if the base speed does not equal to the finally allowed speed then the player is being moved by friction or other means.
-        //        2) Important: MC allows players to swim (and keep the status) when on ground, but this is not *consistently* reflected back to the server 
-        //        (while still allowing them to move at swimming speed) instead, isSprinting() will return. Observed in both Spigot and PaperMC around MC 1.13/14
-        //        -> Seems fixed in latest versions (opening an inventory will end the swimming phase, if on ground)
         // Shortcuts:
         final MovingData mData = pData.getGenericInstance(MovingData.class);
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = mData.playerMoves.getFirstPastMove();
         final PlayerMoveData pastMove3 = mData.playerMoves.getThirdPastMove();
@@ -102,7 +96,7 @@ public class InventoryMove extends Check {
     
         // Clicking while using/consuming an item
         // Note: Why was player#isBlocking removed again? Can't remember...
-        if (mData.isUsingItem && !isMerchant) { 
+        if (cData.isUsingItem && !isMerchant) { 
             tags.add("usingitem");
             violation = true;
         }

@@ -61,8 +61,8 @@ public class InventoryConfig extends ACheckConfig {
     public final float instantBowImprobableWeight;
     public final ActionList instantBowActions;
 
-    public final boolean	openClose;
-    public final boolean	openCancelOther;
+    public final boolean openClose;
+    public final boolean openCancelOther;
     
     public final boolean invMoveDisableCreative;
     public final double invMoveHdistDivisor;

@@ -60,6 +60,11 @@ public class Critical extends Check {
      * 
      * @param player
      *            the player
+     * @param loc
+     * @param data
+     * @param cc
+     * @param pData
+     * @param penaltyList
      * @return true, if successful
      */
     public boolean check(final Player player, final Location loc, final FightData data, final FightConfig cc, 
@@ -75,7 +80,7 @@ public class Critical extends Check {
         final double ncpFallDistance = mData.noFallFallDistance;
         final double realisticFallDistance = MovingUtil.getRealisticFallDistance(player, thisMove.from.getY(), thisMove.to.getY(), mData, pData);
 
-        // Check if the hit was a critical hit (very small fall-distance, not on ladder, not in vehicle, and without blindness effect).
+        // Check if the hit was a critical hit (fall-distance, not on ladder, not in vehicle, and without blindness effect).
         if (mcFallDistance > 0.0 && !player.isInsideVehicle() && !player.hasPotionEffect(PotionEffectType.BLINDNESS)) {
 
             if (pData.isDebugActive(type)) {
@@ -86,9 +91,16 @@ public class Critical extends Check {
                 ); // + ", packet onGround: " + packet.onGround); 
             }
 
-            // Check for fall distance with too little air time (might be redundant with the mismatch check below)
+            // Check for fall distance with too little air time (this should catch all remaining cheats)
+            // TODO: Maybe check jump motion and setback y distance too
+            //  if (mData.sfJumpPhase <= mData.liftOffEnvelope.getMaxJumpPhase(mData.jumpAmplifier)
+            //      && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
+            //      violation = true;
+            //      tags.add("fakejump");
+            //  }
             if (Math.abs(ncpFallDistance - mcFallDistance) > cc.criticalFallDistLeniency 
                 && mcFallDistance <= cc.criticalFallDistance 
+                // A full jump from ground requires more than 6 phases/events.
                 && mData.sfJumpPhase <= mData.liftOffEnvelope.getMaxJumpPhase(mData.jumpAmplifier)
                 && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
                tags.add("fakejump");
@@ -99,20 +111,21 @@ public class Critical extends Check {
                 tags.add("lowjump");
                 violation = true;
             }
-            // Player is on ground with server-side fall distance; we are going to force a violation here :)
-            // (Might want to skip the fall distance comparison part. Just checking if the player has fall distance present while on ground should suffice.)
+            // Always invalidate critical hits if the player is judged to be on ground with server-sided fall distance
+            // (Might want to skip the fall distance difference part. Just checking if the player has fall distance present while on ground should suffice.)
             else if (Math.abs(ncpFallDistance - mcFallDistance) > 1e-5 && BlockProperties.isOnGround(player, loc, mCC.yOnGround) 
                     && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
-                tags.add("falldist_mismatch");
+                tags.add("fakefall");
                 violation = true;
             }
-            // Prenvet players from performing critical hits in mediums where they are not possible.
+            // Unlike liquid, in these media players can fake critical hits. Invalidate them, always.
             else if ((thisMove.from.inBerryBush || thisMove.from.inWeb 
-                    || thisMove.from.inPowderSnow) && mData.insideMediumCount > 1) { // mcFallDistance > 0.0 is checked above.
+                    || thisMove.from.inPowderSnow) && mData.insideMediumCount > 1) { 
+                // mcFallDistance > 0.0 is checked above.
                 tags.add("fakecrit(" + (thisMove.from.inWeb ? "web" : thisMove.from.inBerryBush ? "berry bush" : "powder snow") + ")");
                 violation = true;
                 // (Cannot seem to fake in liquid)
-            }         
+            }  
 
             // Handle violations
             if (violation) {

@@ -38,6 +38,8 @@ import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
  * Each sub-check should cover areas that one sub-check may not cover.
  * If the cheat does not flag any other sub-checks, the time sub-check
  * Should enforce realistic time between block placements.
+ * 
+ * @author CaptainObvious0
  */
 public class Scaffold extends Check {
 

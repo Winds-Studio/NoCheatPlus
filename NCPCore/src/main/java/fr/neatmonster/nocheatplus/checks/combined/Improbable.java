@@ -48,6 +48,25 @@ public class Improbable extends Check implements IDisableListener {
     }
 
     /**
+     * Update time references only, no feeding and no violation.
+     * @param player
+     * @param now
+     * @param pData
+     */
+    public static final void update(final long now, final IPlayerData pData) {
+        pData.getGenericInstance(CombinedData.class).improbableCount.update(now);
+    }
+
+    /**
+     * Update time references only, no feeding and no violation (convenience method).
+     * @param player
+     * @param now
+     */
+    public static final void update(final Player player, final long now) {
+        update(now, DataManager.getPlayerData(player));
+    }
+
+    /**
      * Feed the check but no violations processing (convenience method).
      * @param player
      * @param weight
@@ -88,28 +107,18 @@ public class Improbable extends Check implements IDisableListener {
      * 
      */
     private boolean checkImprobable(final Player player, final float weight, final long now, final String tags, final IPlayerData pData) {
-        // Random/Unlikely note about a potential, future approach to the Improbable check
+    	// TODO: Other concepts for Improbable checking
         // 1) Let ALL checks *feed* the Improbable check 
-        // 2) Then let server administrators perform an on-demand *check*, instead of having selected checks requesting Improbable checkings. (i.e.: /ncp test Improbable [player] [time-frame to check improbable behaviour for])
-        // 3) Return a percentage, indicating how likely the player is to be cheating ("[player] showed improbable behaviour over the last [specified time-window] hour(s)/minute(s) (Perc.: [percentage]").
-        // 3) Introduce some kind of resetting mechanic, which are likely going to be needed, otherwise Improbable can collect too much data
-        //    (i.e.: - Reset all fed amount anyway after a custom amount of hours;
-        //           - If the returned % is lower than 50, reward the player by reducing the fed amount;
-        //           - Reduce data when players are reaching high violation levels in other checks anyway, because
-        //             improbable wouldn't be needed much in that case, clearly (i.e.: triggering EXTREME_MOVE)...;
-        //           - Relax data on certain events (i.e.: teleports and portals)
-        //           - Always reduce data with stuff that we know to be 100% legit 
-        //             (would need some kind of restriction against abuses. i.e.: click 50 times a second, then pause for some minutes, rinse and repeat.)
-        //           - Scale data according to lag factor, like the current implementation does
-        // Certainly, such implementation would benefit from having a good variety of checks
-
+    	// THEN
+    	// 2) Automatically check every custom amount of minutes/hours.
+        
         if (!pData.isCheckActive(type, player)) {
             return false;
         }
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         final CombinedConfig cc = pData.getGenericInstance(CombinedConfig.class);
         data.improbableCount.add(now, weight);
-        /** Score of the first 3 seconds */
+        /** Score of the first 3 seconds (a bucket lasts 3 secs)*/
         final float shortTerm = data.improbableCount.bucketScore(0);
         double violation = 0.0;
         boolean violated = false;
@@ -123,13 +132,13 @@ public class Improbable extends Check implements IDisableListener {
             }
         }
         /** Sum score of all buckets, no weight */
-        final double full = data.improbableCount.score(1.0f);
-        if (full > cc.improbableLevel) {
+        final double fullTerm = data.improbableCount.score(1.0f);
+        if (fullTerm > cc.improbableLevel) {
             /** Full window lag factor, 1 minute */
             final float lag = pData.getCurrentWorldData().shouldAdjustToLag(type) ? TickTask.getLag(data.improbableCount.bucketDuration() * data.improbableCount.numberOfBuckets(), true) : 1f;
             // Re-check with lag adaptation.
-            if (full / lag > cc.improbableLevel) {
-                violation += full / lag;
+            if (fullTerm / lag > cc.improbableLevel) {
+                violation += fullTerm / lag;
                 violated = true;
             }
         }
@@ -141,7 +150,7 @@ public class Improbable extends Check implements IDisableListener {
             if (tags != null && !tags.isEmpty()) vd.setParameter(ParameterName.TAGS, tags);
             cancel = executeActions(vd).willCancel();
         }
-        else data.improbableVL *= 0.95;
+        else data.improbableVL *= 0.8;
         return cancel;
     }
 

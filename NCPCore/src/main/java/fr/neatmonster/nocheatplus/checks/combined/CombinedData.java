@@ -44,6 +44,19 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     // Improbable check
     public final ActionFrequency improbableCount = new ActionFrequency(20, 3000); // 20 buckets covering 3 seconds each (full time resolution of 1 minute)
 
+    // *----------No slowdown related data----------*
+    // TODO:Would make more sense to move into Net or Combined data
+    /** Whether the player is using an item */
+    public boolean isUsingItem = false;
+    /** Whether the player use the item on left hand */
+    public boolean offHandUse = false;
+    /** Pre check condition */
+    public boolean mightUseItem = false;
+    /** TODO: */
+    public long releaseItemTime = 0;
+    /** Detection flag */
+    public boolean isHackingRI = false;
+
     // General data
     // TODO: -> PlayerData (-> OfflinePlayerData)
     public String lastWorld = "";

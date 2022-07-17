@@ -139,18 +139,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public double lastFrictionVertical = 0.0;
     /** Used during processing, no resetting necessary.*/
     public double nextFrictionVertical = 0.0;
-    
-    // *----------No slowdown related data----------*
-    /** Whether the player is using an item */
-    public boolean isUsingItem = false;
-    /** Whether the player use the item on left hand */
-    public boolean offHandUse = false;
-    /** Pre check condition */
-    public boolean mightUseItem = false;
-    /** TODO: */
-    public long releaseItemTime = 0;
-    /** Detection flag */
-    public boolean isHackingRI = false;
 
     // *----------Move / Vehicle move tracking----------*
     /** Keep track of currently processed (if) and past moves for player moving. Stored moves can be altered by modifying the int. */
@@ -257,7 +245,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public final ActionAccumulator vDistAcc = new ActionAccumulator(3, 3); // 3 buckets with max capacity of 3 events
     /** Workarounds (AirWorkarounds,LiquidWorkarounds). */
     public final WorkaroundSet ws;
-    /** Bed-flying flag */
+    /** Will be set to true on BedEnterEvent, then checked for on BedLeaveEvent */
     public boolean wasInBed = false;
 
     // *----------Data of the vehicles checks----------*
