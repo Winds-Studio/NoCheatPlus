@@ -68,6 +68,7 @@ public class Moving extends Check {
         
         // TODO: This will trigger if the client is waiting for chunks to load (Slow fall, on join or after a teleport)
         boolean cancel = false;
+        tags.clear();
         if (packetData.hasPos) {
             final MovingData mData = pData.getGenericInstance(MovingData.class);
             /** Actual Location on the server */

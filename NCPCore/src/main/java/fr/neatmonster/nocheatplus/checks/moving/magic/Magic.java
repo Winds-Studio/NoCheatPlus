@@ -37,7 +37,7 @@ public class Magic {
     public static final double HORIZONTAL_INERTIA = 0.91;
     public static final double BUNNYHOP_ACCEL_BOOST = 0.2;
     public static final int BUNNYHOP_MAX_DELAY = 10;
-    public static final double CLIMBABLE_MAX_HORIZONTAL_SPEED = 0.15000000596046448;
+    public static final double CLIMBABLE_MAX_HORIZONTAL_SPEED = 0.15200000596046448;
     public static final double AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02;
     public static final double LIQUID_BASE_ACCELERATION = 0.02;
     public static final double HORIZONTAL_SWIMMING_INERTIA = 0.9;
@@ -50,8 +50,12 @@ public class Magic {
     public static final double SNEAK_STEP_DISTANCE = 0.05;
     public static final double LAVA_HORIZONTAL_INERTIA = 0.5;
     public static final double MIN_MOVEMENT_DISTANCE = 0.003;
-    public static final double BASE_ACCELERATION = 0.21600002;
-    public static final double LEGACY_BASE_ACCELERATION = 0.16277136;
+    public static final double BASE_MOVEMENT_SPEED = 0.21600002;
+    public static final double LEGACY_BASE_MOVEMENT_SPEED = 0.16277136;
+    public static final double BUNNYHOP_JUMP_BONUS = 0.291924;
+    public static final double SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13;
+    public static final double SLIDE_SPEED_THROTTLE = 0.05;
+    public static final double MIN_SLIDE_FALLING_SPEED = 0.08;
 
 
     // Gravity.
@@ -151,35 +155,36 @@ public class Magic {
     public static final double CHUNK_LOAD_MARGIN_MIN = 3.0;
 
     /**
-     * Test if this move was a bunnyhop (sprint-jump)
+     * Test if this move is a bunnyhop (sprint-jump)
      * 
      * @param data
-     * @param fromPastOnGround
+     * @param fromOnGroundOrLostGround This is tested for only if regular thisMove.from.onGround returns false.
      * @param sprinting
-     * @param allowHop Set to false if data.bunnyhopDelay is active.
      * @param doubleHop Special hop case.
      * @return true if is bunnyhop.
      * 
      */
-    public static boolean isBunnyhop(final MovingData data, final boolean fromPastOnGround, boolean sprinting, boolean allowHop, boolean doubleHop) {
+    public static boolean isBunnyhop(final MovingData data, final boolean fromOnGroundOrLostGround, boolean sprinting, boolean doubleHop) {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-
-        if (!allowHop || data.sfLowJump) {
+        
+        // Ensure the mechanic is not exploited to hop faster, if lowjumping
+        if (data.sfLowJump) {
             return false;
         }
 
         return 
-                // This mechanic is applied only if the player is sprinting (We check for low-jumping to prevent abuse.)
+                // This mechanic is applied only if the player is sprinting
                 sprinting && lastMove.toIsValid
-                // Normal jumping. Demand the player to hit the jumping envelope.
-                && thisMove.yDistance > data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
+                // 0: Motion speed speed condition. Demand the player to hit the jumping envelope.
+                && thisMove.yDistance > LiftOffEnvelope.NORMAL.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
+                // 0: Ground conditions
                 && (
-                    // Ordinary/obvious lift-off.
+                    // 1: Ordinary/obvious lift-off.
                     data.sfJumpPhase == 0 && thisMove.from.onGround
-                    // Do allow hopping if a past on ground status is found or this (legitimate) on ground phase was lost 
-                    || data.sfJumpPhase == 1 && ((thisMove.touchedGroundWorkaround || fromPastOnGround) && !lastMove.bunnyHop)
-                    // Double bunny 
+                    // 1: Do allow hopping if a past on ground status is found or this (legitimate) on ground phase was lost 
+                    || data.sfJumpPhase == 1 && fromOnGroundOrLostGround && !lastMove.bunnyHop
+                    // 1: Special case: double bunny 
                     || doubleHop 
                 )
             ;

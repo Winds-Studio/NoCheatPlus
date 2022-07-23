@@ -533,10 +533,10 @@ public class BlockProperties {
         if (isBlueIce(blockBelow)) {
             friction = 0.989D;
         }
-        if (isIce(blockBelow)) {
+        else if (isIce(blockBelow)) {
             friction = 0.98D;
         }
-        if (isSlime(blockBelow)) {
+        else if (isSlime(blockBelow)) {
             friction = 0.8D;
         }
         blockCache.cleanup();
@@ -563,10 +563,11 @@ public class BlockProperties {
             pLoc.cleanup();
             return speedFactor;
         }
+        
         if (pLoc.isOnHoneyBlock()) {
             speedFactor = 0.4D;
         }
-        if (pLoc.isAboveSoulSand()) {
+        else if (pLoc.isInOrAboveSoulSand()) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
             if (BridgeEnchant.hasSoulSpeed(player)) {
@@ -595,19 +596,19 @@ public class BlockProperties {
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
-        double stuckInfactor = 1.0D;
+        double stuckInFactor = 1.0D;
         if (pLoc.isInWeb()) {
-            stuckInfactor = 0.25D;
+            stuckInFactor = 0.25D;
         }
-        if (pLoc.isInBerryBush()) {
-            stuckInfactor = 0.800000011920929D;
+        else if (pLoc.isInBerryBush()) {
+            stuckInFactor = 0.800000011920929D;
         }
-        if (pLoc.isInPowderSnow()) {
-            stuckInfactor = 0.8999999761581421D;
+        else if (pLoc.isInPowderSnow()) {
+            stuckInFactor = 0.8999999761581421D;
         }
         blockCache.cleanup();
         pLoc.cleanup();
-        return stuckInfactor;
+        return stuckInFactor;
     }
 
     /**

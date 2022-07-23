@@ -924,7 +924,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      *
      * @return true, if is on soul sand
      */
-    public boolean isAboveSoulSand() {
+    public boolean isInOrAboveSoulSand() {
         if (isInSoulSand()) {
             aboveSoulSand = true;
         }
@@ -1597,7 +1597,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         this.onIce = other.isOnIce();
         this.onBlueIce = other.isOnBlueIce();
         this.inSoulSand = other.isInSoulSand();
-        this.aboveSoulSand = other.isAboveSoulSand();
+        this.aboveSoulSand = other.isInOrAboveSoulSand();
         this.inPowderSnow = other.isInPowderSnow();
         this.onClimbable = other.isOnClimbable();
         this.onBouncyBlock = other.isOnBouncyBlock();

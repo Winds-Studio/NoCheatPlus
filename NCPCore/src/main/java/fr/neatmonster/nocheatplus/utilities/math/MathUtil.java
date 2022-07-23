@@ -54,13 +54,13 @@ public class MathUtil {
    }
 
    /**
-    * Test if the input value is in range between a minimum and maximum threshold
+    * Test if the input value is between a minimum and maximum threshold
     * @param inputValue The value to test
     * @param minThreshold Exclusive
     * @param maxThreshold Exclusive
     * @return True if the value is between the thresholds, false otherwise
     */
-   public static boolean inRange(double inputValue, double maxThreshold, double minThreshold) {
+   public static boolean between(double minThreshold, double inputValue, double maxThreshold) {
       return inputValue > minThreshold && inputValue < maxThreshold;
    }
     
@@ -81,7 +81,7 @@ public class MathUtil {
     * Convenience method to calculate horizontal distance
     * @param xDistance
     * @param zDistance
-    * @return the distance
+    * @return the 2d distance
     */
    public static double dist(double xDistance, double zDistance) {
       return Math.sqrt(xDistance * xDistance + zDistance * zDistance);
@@ -120,19 +120,34 @@ public class MathUtil {
    
    /**
     * Maximum of the absolute value of two numbers.
-    * (From Mth.java)
-    * @param var0
-    * @param var2
+    * @param a
+    * @param b
     * @return Maximum absolute value between the two inputs.
     */
-   public static double absMax(double var0, double var2) {
-      if (var0 < 0.0D) {
-         var0 = -var0;
-      }
+   public static double absMax(double a, double b) {
+	   return Math.max(Math.abs(a), Math.abs(b));
+   }
 
-      if (var2 < 0.0D) {
-         var2 = -var2;
-      }
-      return var0 > var2 ? var0 : var2;
+   /**
+    * Maximum value of three doubles
+    * @param a
+    * @param b
+    * @param c
+    * @return The highest number
+    */
+   public static double max3(double a, double b, double c) {
+      return Math.max(a, Math.max(b, c));
+   }
+
+   /**
+    * Maximum value of four doubles
+    * @param a
+    * @param b
+    * @param c
+    * @param d
+    * @return The highest number
+    */
+   public static double max4(double a, double b, double c, double d) {
+      return Math.max(a, Math.max(b, Math.max(c, d)));
    }
 }

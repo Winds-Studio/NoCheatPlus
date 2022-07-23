@@ -78,7 +78,9 @@ public class LostGround {
 
             // Descending.
             final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-            if (yDistance <= 0.0 && lastMove.toIsValid) {
+            from.collectBlockFlags(cc.sfStepHeight);
+            if (yDistance <= 0.0 && lastMove.toIsValid
+                && (from.getBlockFlags() & BlockFlags.F_STAIRS) != 0) {
                 // Lost ground while falling onto/over edges of blocks.
                 if (yDistance < 0.0 && hDistance <= 1.5 && lastMove.yDistance < 0.0 && yDistance > lastMove.yDistance && !to.isOnGround()) {
                     // TODO: yDistance <= 0 might be better.

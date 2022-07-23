@@ -148,7 +148,7 @@ public class MovingUtil {
         if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
            return false;
         } 
-        if (thisMove.yDistance >= -0.08D) {
+        if (thisMove.yDistance >= -Magic.MIN_SLIDE_FALLING_SPEED) {
            return false;
         } 
         double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
@@ -156,104 +156,78 @@ public class MovingUtil {
         double var7 = 0.4375D + (width / 2.0F);
         return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
     }
-
-
-    /**
-     * Set slide-movement speed (only horizontal for now)
-     * @param thisMove
-     * @param xDistance
-     * @param zDistance
-     */
-    public static void doSlideMovement(final PlayerMoveData thisMove, double xDistance, double zDistance) {
-        if (thisMove.yDistance < -0.13D) {
-            double mult = -0.05D / thisMove.yDistance;
-            xDistance *= mult;
-            zDistance *= mult;
-            // var1.setDeltaMovement(new Vec3(var2.x * var3, -0.05D, var2.z * var3));
-            //} else {
-            //.  var1.setDeltaMovement(new Vec3(var2.x, -0.05D, var2.z));
-            // }
-        }
-    }
-
+    
 
     /** 
-     * Calculate the new speed to apply to the player
+     * Calculate the new speed to apply to the player.
      * Note that:
      *     - Sprint multiplier is contained within "movementFactor"
      *     - Sneak multiplier is contained within "strafe" and "forward"
      * This is likely because Sneaking was implemented long before Sprinting
-     * 
-     * @param strafe
-     * @param forward
      * @param movementSpeedFactor Calculated movement speed attribute factor to update hDistance with.
-     * @param xOldDistance xDistance to update
-     * @param zOldDistance zDistance to update
      * @param from
      * @return 
      */ 
-    public static void updateHorizontalSpeed(Player player, double strafe, double forward, double movementSpeedFactor, double xOldDistance, double zOldDistance, final PlayerLocation from) {
-        // TODO: Add a method to know if the player is moving: RIGHT, LEFT, FORWARD, BACKWARDS (possibly with an enum class? i.e.: MovementDirection.LEFT, MovementDirection.RIGHT etc...) 
-        // TODO: Also need to ensure that players cannot evade yaw checks by sending looking-direction packets or smoothing methods...
-        double distanceSq = strafe * strafe + forward * forward;        
-        if (distanceSq >= 1.0E-4) {
-            
-            double distance = Math.sqrt(distanceSq);
-            if (distance < 1.0) {
-                distance = 1.0;
-            }
-            distance = movementSpeedFactor / distance;
-            strafe = strafe * distance;
-            forward = forward * distance;
-            double sinYaw = TrigUtil.sin(from.getYaw() * Math.PI / 180.0); 
-            double cosYaw = TrigUtil.cos(from.getYaw() * Math.PI / 180.0);
-            // Add the newly calculated speed
-            xOldDistance += (strafe * cosYaw - forward * sinYaw);
-            zOldDistance += (forward * cosYaw + strafe * sinYaw);
+    public static double getInputForce(Player player, double movementSpeedFactor, final PlayerLocation from, final IPlayerData pData, 
+                                       final MovingConfig cc, final CombinedData cData, final boolean sneaking, boolean checkPermissions,
+                                       final Collection<String> tags) {
+        /** This represents the strafe and forward value before being passed to the travel() method */
+        // (In the code, those are represented by "xxa" and "zza", we don't use both values because we check the 2D distance, not axis separatetly)
+        double inputForce = 0.98;
+        // From KeyboardInput.java
+        if (sneaking && !Bridge1_13.isSwimming(player) && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+            tags.add("sneaking");
+            inputForce *= Magic.SNEAK_MULTIPLIER;
+            // Account for NCP base speed modifiers.
+            inputForce *= cc.survivalFlySneakingSpeed / 100D;
         }
+        // From LocalPlayer.java.aiStep()
+        if ((cData.isUsingItem || player.isBlocking()) && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+            tags.add("usingitem");
+            inputForce *= Magic.USING_ITEM_MULTIPLIER;
+            // Account for NCP base speed modifiers.
+            inputForce *= cc.survivalFlyBlockingSpeed / 100D;
+        } 
+        
+        // (This would be strafe * strafe + forward * forward, so we can just square the input force and multiply it by two)
+        double distance = Math.max(1.0, Math.sqrt(MathUtil.square(inputForce) * 2));
+        inputForce *= movementSpeedFactor / distance;
+        return Math.sqrt(2 * MathUtil.square(inputForce));
     }
 
 
     /**
-     * Apply all horizontal speed modifiers from status (ex.: sneaking) and media (ex.: webs)
+     * Apply speed modifiers that apply in any media (water,lava,no medium)
      * @param player
-     * @param pData
      * @param from
      * @param data
      * @param to
      * @param sneaking
-     * @param xDistance xDistance to apply modifiers to 
-     * @param zDistance zDistance to apply modifiers to
-     * @param onGround Accounts for ALL oddities (lost ground, past block activity etc)
+     * @param hDistance
+     * @param fromOnGroundOrLostGround Accounts for ALL oddities (lost ground, past block activity etc)
      * @param tags
-     * @param checkPermissions
      * @param width
      * @return 
      */
-    public static void applySpeedModifiers(final Player player, final IPlayerData pData, final PlayerLocation from, final MovingData data, 
-                                           final PlayerLocation to, final boolean sneaking, double xDistance, double zDistance, final boolean onGround,
-                                           final Collection<String> tags, boolean checkPermissions, final double width) {
-
-        // TODO: Stairs speed (how the fuck do they work with the auto-jump being able to boost speed?)  
-        // TODO: Fluid pushing (!)
-        // TODO: Review the slide mechanic further
+    public static void applyGlobalSpeedModifiers(final Player player, final PlayerLocation from, final MovingData data, 
+                                                 final PlayerLocation to, final boolean sneaking, double hDistance, final boolean fromOnGroundOrLostGround,
+                                                 final Collection<String> tags) {
         // TODO: Anything else?
-
-        /** A player is considered as sneaking if they are touching the ground */
-        boolean sneakingOnGround = onGround && sneaking;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
         
         // Apply pushing speed
         if (ServerIsAtLeast1_9 && CollisionUtil.isCollidingWithEntities(player, true)) {
-
             // Likely a better way to do this...
             // (Does it need to be done for each entity actually?)
+            // (here, the game would also subtract speed to the pushing entity)
             for (Entity entity : player.getNearbyEntities(0.15, 0.2, 0.15)) {
                 final Location eLoc = entity.getLocation(useLoc);
                 double xDistToEntity = eLoc.getX() - from.getX();
                 double zDistToEntity = eLoc.getZ() - from.getZ();
                 double absDist = MathUtil.absMax(xDistToEntity, zDistToEntity);
+                // Cleanup
+                useLoc.setWorld(null);
                 if (absDist >= 0.009999999776482582D) {
                     absDist = Math.sqrt(absDist);
                     xDistToEntity /= absDist;
@@ -263,198 +237,24 @@ public class MovingUtil {
                     zDistToEntity *= var8;
                     xDistToEntity *= 0.05000000074505806D;
                     zDistToEntity *= 0.05000000074505806D;
-                    // Cleanup
-                    useLoc.setWorld(null);
                     // Add the distance
-                    xDistance += xDistToEntity;
-                    zDistance += zDistToEntity;
+                    hDistance += MathUtil.dist(xDistToEntity, zDistToEntity);
+                    tags.add("hpush");
                 }
             }
         }
-        
-        // Blocks that the player can get into all work the same:
-        // The game uses a "makeStuckInBlock" method where speed is first slowed down then reset every tick.
-        // See PowderSnowBlock.java as reference or WebBlock.java (1.18.2)
-        boolean isInWeb = false;
-        if (from.isInWeb() || to.isInWeb()) {
-            tags.add("hweb");
-            isInWeb = true;
-        }
-        
-        boolean isInBerryBush = false;
-        if (from.isInBerryBush() || to.isInBerryBush()) {
-            tags.add("hbush");
-            isInBerryBush = true;
-        }
-        
-        boolean isInPowderSnow = false;
-        if (from.isInPowderSnow() || to.isInPowderSnow()) {
-            tags.add("hsnow");
-            isInPowderSnow = true;
-        }
-
-        // Slowdown and reset speed every tick
-        if (isInWeb) {
-            // Slowdown
-            xDistance *= data.lastStuckInBlockHorizontal; 
-            zDistance *= data.lastStuckInBlockHorizontal; 
-            // Reset and start again.
-            isInWeb = false; 
-            xDistance = 0.0;
-            zDistance = 0.0;
-        }
-         
-        // Slowdown and reset speed every tick
-        if (isInBerryBush) {
-            // Slowdown
-            xDistance *= data.lastStuckInBlockHorizontal; 
-            zDistance *= data.lastStuckInBlockHorizontal; 
-            // Reset and start again.
-            isInBerryBush = false;
-            xDistance = 0.0;
-            zDistance = 0.0;
-        }
-        
-        // Slowdown and reset speed every tick
-        if (isInPowderSnow) {
-            // Slowdown
-            xDistance *= data.lastStuckInBlockHorizontal;
-            zDistance *= data.lastStuckInBlockHorizontal;
-            // Reset and start again
-            isInPowderSnow = false;
-            xDistance = 0.0;
-            zDistance = 0.0;
-        }
-        
-        // From HoneyBlock.java
-        // (This one might be totally wrong not 100% sure how the game applies both modifiers)
-        if (from.isOnHoneyBlock() || to.isOnHoneyBlock()) {
-            tags.add("hhoneyblock");
-            xDistance *= data.lastBlockSpeedHorizontal;
-            zDistance *= data.lastBlockSpeedHorizontal; 
-            if (isSlidingDown(from, width, thisMove, player)) {
-                doSlideMovement(thisMove, xDistance, zDistance);
-            }
-        }
-
-        // If sneaking, the game moves the player by steps to check if they reach an edge to back them off.
-        // From Player.java.maybeBackOffFromEdge()
-        if (sneakingOnGround && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
-            double step = Magic.SNEAK_STEP_DISTANCE; 
-            
-            // Check for furthest ground under player in the X axis (from initial position)
-            while (xDistance != 0.0D && !from.isGroundCoveredByCurrentDistance(xDistance, 1.0, 0.0)) {
-                if (xDistance < step && xDistance >= -step) {
-                    xDistance = 0.0D;
-                }
-                else if (xDistance > 0.0D) {
-                    xDistance -= step;
-                }
-                else xDistance += step;   
-            }
-            // Check for furthest ground under player in the Z axis (from initial position)
-            while (zDistance != 0.0D && !from.isGroundCoveredByCurrentDistance(0.0, 1.0, zDistance)) {
-                if (zDistance < step && zDistance >= -step) {
-                    zDistance = 0.0D;
-                }
-                else if (zDistance > 0.0D) {
-                    zDistance -= step;
-                }
-                else zDistance += step;
-            }
-            //Calculate definitive dX and dZ based on the previous limits.
-            while (xDistance != 0.0D && zDistance != 0.0D && !from.isGroundCoveredByCurrentDistance(xDistance, 1.0, zDistance)) {
-                if (xDistance < step && xDistance >= -step) {
-                    xDistance = 0.0D;
-                }   
-                else if (xDistance > 0.0D) {
-                    xDistance -= step;
-                }
-                else xDistance += step;
                         
-                if (zDistance < step && zDistance >= -step) {
-                    zDistance = 0.0D;
-                }
-                else if (zDistance > 0.0D) {
-                    zDistance -= step;
-                }
-                else zDistance += step;
-            }
-        }
-                
-        // TODO: Collisions cannot be ignored since they can modify the player speed.
-        // However such could be quite a tedious job to do as we'd need to replicate the exact
-        // collision system...
-        
         // From BlockSlime.java
-        if (from.isOnSlimeBlock() || to.isOnSlimeBlock()) {
-            if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking && onGround) {
+        // (Ground check is already included)
+        if (from.isOnSlimeBlock()) {
+            if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking) {
                 double mult = 0.4D + Math.abs(thisMove.yDistance) * 0.2D;
-                xDistance *= mult;
-                zDistance *= mult;
+                hDistance *= mult;
                 tags.add("hslimeblock");
             }
         }
-        
-        // Soulspeed is included in playerSpeedAttribute (!)
-        // From Blocks.java
-        if (from.isInSoulSand() || to.isInSoulSand()) {
-            xDistance *= data.lastBlockSpeedHorizontal; 
-            zDistance *= data.lastBlockSpeedHorizontal; 
-            tags.add("hsoulsand");
-        }
     }
-
-
-    /**
-     * @See: KeyboardInput.java (1.18.2)
-     * Get the movement direction factors:
-     * moveStrafing and moveForward represent relative movement.
-     * The sneaking multiplier as well as the blocking multiplier gets applied here.
-     * 
-     * @param player
-     * @param pData
-     * @param left Movement direction(s)...
-     * @param right
-     * @param forward
-     * @param backwards
-     * @param sneaking
-     * @param checkPermissions If permissions should be checked before applying sneaking or blocking speed (performance)
-     * @param data
-     * @param tags
-     * @param cc
-     * @return the factors
-     */
-    public double[] getMovementDirectionFactors(final Player player, final IPlayerData pData, final boolean left, final boolean right, 
-                                                final boolean forward, final boolean backwards, final boolean sneaking, final boolean checkPermissions, 
-                                                final CombinedData data, final Collection<String> tags, final MovingConfig cc) {
-
-        double moveStrafe = right ? -1.0 : left ? 1.0 : 0.0;
-        double moveForward = forward ? 1.0 : backwards ? -1.0 : 0.0;
-        moveStrafe *= 0.98;
-        moveForward *= 0.98;
-        // From KeyboardInput.java
-        if (sneaking && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
-            tags.add("sneaking");
-            moveStrafe *= Magic.SNEAK_MULTIPLIER;
-            moveForward *= Magic.SNEAK_MULTIPLIER;
-            // Account for NCP base speed modifiers.
-            moveStrafe *= cc.survivalFlySneakingSpeed / 100D;
-            moveForward *= cc.survivalFlySneakingSpeed / 100D;
-        }
-        
-        // From LocalPlayer.java.aiStep()
-        if ((data.isUsingItem || player.isBlocking()) && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
-            tags.add("usingitem");
-            moveStrafe *= Magic.USING_ITEM_MULTIPLIER;
-            moveForward *= Magic.USING_ITEM_MULTIPLIER;
-            // Account for NCP base speed modifiers.
-            moveStrafe *= cc.survivalFlyBlockingSpeed / 100D;
-            moveForward *= cc.survivalFlyBlockingSpeed / 100D;
-        } 
-        return new double[]{moveStrafe, moveForward};
-    }
-
+    
 
     /** 
      * Collect the F_STICKY block flag. Clear NoFall's data upon side collision.

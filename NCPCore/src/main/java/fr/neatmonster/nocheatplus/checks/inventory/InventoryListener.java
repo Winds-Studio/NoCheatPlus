@@ -597,7 +597,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
      *            the event
      */
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onEntityPortal(final EntityPortalEnterEvent event) 
+    public void onEntityPortal(final EntityPortalEnterEvent event) {
         // Check passengers flat for now.
         final Entity entity = event.getEntity();
         if (entity instanceof Player) {

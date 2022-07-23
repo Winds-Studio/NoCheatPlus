@@ -123,18 +123,12 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public final BlockChangeReference blockChangeRef = new BlockChangeReference();
     
     // *----------Speed/Friction factors (hor/ver)----------*
-    /** NMS horizontal friction factor */
-    public double lastFrictionHorizontal = 0.0;
-    /** NMS horizontal speed factor for stuck-in blocks (webs, berries, powder snow) */
-    public double lastStuckInBlockHorizontal = 0.0;  
-    /** NMS horizontal speed factor by block (honey and soulsand) */
-    public double lastBlockSpeedHorizontal = 0.0;
-    /** Used during processing, no resetting necessary.*/
-    public double nextFrictionHorizontal = 0.0;
-    /** Used during processing, no resetting necessary.*/
-    public double nextStuckInBlockHorizontal = 0.0; 
-    /** Used during processing, no resetting necessary.*/
-    public double nextBlockSpeedHorizontal = 0.0;
+    /** Horizontal friction factor from NMS.*/
+    public double horizontalFrictionFactor = 0.0;
+    /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/
+    public double stuckInBlockMultiplier = 0.0; 
+    /** Single block-speed multiplier.*/
+    public double blockSpeedMultiplier = 0.0;
     /** Rough friction factor estimate, 0.0 is the reset value (maximum with lift-off/burst speed is used). */
     public double lastFrictionVertical = 0.0;
     /** Used during processing, no resetting necessary.*/
@@ -359,7 +353,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
         vehicleConsistency = MoveConsistency.INCONSISTENT;
-        lastFrictionHorizontal = lastBlockSpeedHorizontal = lastStuckInBlockHorizontal = lastFrictionVertical = 0.0;
         verticalBounce = null;
         blockChangeRef.valid = false;
         liqtick = 0;
@@ -394,7 +387,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         insideBubbleStreamCount = 0;
         removeAllPlayerSpeedModifiers();
         vehicleConsistency = MoveConsistency.INCONSISTENT; // Not entirely sure here.
-        lastFrictionHorizontal = lastBlockSpeedHorizontal = lastStuckInBlockHorizontal = lastFrictionVertical = 0.0;
         verticalBounce = null;
         timeSinceSetBack = 0;
         lastSetBackHash = setBack == null ? 0 : setBack.hashCode();
@@ -433,9 +425,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * @param player
      */
     public void adjustMediumProperties(final Location loc, final MovingConfig cc, final Player player, final PlayerMoveData thisMove) {
-        nextFrictionHorizontal = BlockProperties.getBlockFrictionFactor(player, loc, cc.yOnGround);
-        nextStuckInBlockHorizontal = BlockProperties.getStuckInBlockSpeedFactor(player, loc, cc.yOnGround);
-        nextBlockSpeedHorizontal = BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround);
+        horizontalFrictionFactor = BlockProperties.getBlockFrictionFactor(player, loc, cc.yOnGround);
+        stuckInBlockMultiplier = BlockProperties.getStuckInBlockSpeedFactor(player, loc, cc.yOnGround);
+        blockSpeedMultiplier = BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround);
         nextFrictionVertical = BlockProperties.getVerticalFrictionFactorByBlock(thisMove);
     }
 
@@ -508,7 +500,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         sfLowJump = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
-        lastFrictionHorizontal = lastBlockSpeedHorizontal = lastStuckInBlockHorizontal = lastFrictionVertical = 0.0;
         verticalBounce = null;
         blockChangeRef.valid = false;
         // TODO: other buffers ?
