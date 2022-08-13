@@ -57,17 +57,6 @@ public class ModelFlying {
     private boolean gravity = true;
     /** Default ground moving mechanics (jump, lost ground). */
     private boolean ground = true;
-    /**
-     * Allow an extra amount to ascend speed, scaling with the levitation effect
-     * level.
-     */
-    private boolean scaleLevitationEffect = false;
-    
-    /**
-     * Allow an extra amount to ascend speed, scaling with the slowfalling effect
-     * level.
-     */
-    private boolean scaleSlowfallingEffect = false;
 
      /**
      * Allow an extra amount to ascend speed, scaling with the riptiding effect
@@ -115,8 +104,6 @@ public class ModelFlying {
         applyModifiers(config.getBoolean(prefix + ConfPaths.SUB_MODIFIERS, defaults.getApplyModifiers()));
         gravity(config.getBoolean(prefix + ConfPaths.SUB_VERTICAL_GRAVITY, defaults.getGravity()));
         ground(config.getBoolean(prefix + ConfPaths.SUB_GROUND, defaults.getGround()));
-        scaleLevitationEffect(defaults.getScaleLevitationEffect()); // Config?
-        scaleSlowfallingEffect(defaults.getScaleSlowfallingEffect());
         scaleRiptidingEffect(defaults.getScaleRiptidingEffect());
     }
 
@@ -137,8 +124,6 @@ public class ModelFlying {
         applyModifiers(defaults.getApplyModifiers());
         gravity(defaults.getGravity());
         ground(defaults.getGround());
-        scaleLevitationEffect(defaults.getScaleLevitationEffect());
-        scaleSlowfallingEffect(defaults.getScaleSlowfallingEffect());
         scaleRiptidingEffect(defaults.getScaleRiptidingEffect());
     }
 
@@ -204,14 +189,6 @@ public class ModelFlying {
         return ground;
     }
 
-    public boolean getScaleLevitationEffect() {
-        return scaleLevitationEffect;
-    }
-    
-    public boolean getScaleSlowfallingEffect() {
-        return scaleSlowfallingEffect;
-    }
-
     public boolean getScaleRiptidingEffect() {
         return scaleRiptidingEffect;
     }
@@ -265,19 +242,7 @@ public class ModelFlying {
         return this;
     }
 
-    public ModelFlying scaleLevitationEffect(boolean scaleLevitationEffect) {
-        checkLocked();
-        this.scaleLevitationEffect = scaleLevitationEffect;
-        return this;
-    }
-
-    public ModelFlying scaleSlowfallingEffect(final boolean scaleSlowfallingEffect) {
-        checkLocked();
-        this.scaleSlowfallingEffect = scaleSlowfallingEffect;
-        return this;
-    }
-
-    public ModelFlying scaleRiptidingEffect(final boolean scaleRiptidingEffect) {
+    public ModelFlying scaleRiptidingEffect(boolean scaleRiptidingEffect) {
         checkLocked();
         this.scaleRiptidingEffect = scaleRiptidingEffect;
         return this;

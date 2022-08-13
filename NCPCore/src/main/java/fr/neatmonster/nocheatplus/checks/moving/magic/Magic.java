@@ -45,7 +45,7 @@ public class Magic {
     public static final double DOLPHIN_GRACE_INERTIA = 0.96;
     public static final double STRIDER_OFF_GROUND_PENALTY_MULTIPLIER = 0.5;
     public static final double SNEAK_MULTIPLIER = 0.3;
-    public static final double SPRINT_MULTIPLIER = 1.3;
+    public static final double SPRINT_MULTIPLIER = 1.3f;
     public static final double USING_ITEM_MULTIPLIER = 0.2;
     public static final double SNEAK_STEP_DISTANCE = 0.05;
     public static final double LAVA_HORIZONTAL_INERTIA = 0.5;
@@ -60,13 +60,13 @@ public class Magic {
 
     // Gravity.
     public static final double GRAVITY_MAX = 0.0834;
-    public static final double GRAVITY_DEFAULT = 0.08;
+    public static final double DEFAULT_GRAVITY = 0.08;
     public static final double GRAVITY_MIN = 0.0624; 
     public static final double GRAVITY_ODD = 0.05;
     /** Assumed minimal average decrease per move, suitable for regarding 3 moves. */
     public static final float GRAVITY_VACC = (float) (GRAVITY_MIN * 0.6); // 0.03744
     public static final double GRAVITY_SPAN = GRAVITY_MAX - GRAVITY_MIN; // 0.021
-    public static final double SLOWFALL_GRAVITY = 0.01;
+    public static final double SLOW_FALL_GRAVITY = 0.0097; // This is actually 0.01
 
     // Friction factor by medium (move inside of).
     public static final double FRICTION_MEDIUM_AIR = 0.98;
@@ -102,10 +102,7 @@ public class Magic {
     public static final double climbSpeedDescend       = 0.151;
     public static final double snowClimbSpeedAscend    = 0.177;
     public static final double snowClimbSpeedDescend   = 0.118;
-    public static final double webSpeedDescendH        = -0.062;
-    public static final double webSpeedDescendDefault  = -0.032;
-    public static final double bushSpeedAscend         = 0.315;
-    public static final double bushSpeedDescend        = -0.09;
+    public static final double bushSpeedDescend        = 0.09;
     public static final double bubbleStreamDescend     = 0.49; // from wiki.
     public static final double bubbleStreamAscend      = 0.9; // 1.1 from wiki. Wiki is too fast 
     /**
@@ -160,11 +157,10 @@ public class Magic {
      * @param data
      * @param fromOnGroundOrLostGround This is tested for only if regular thisMove.from.onGround returns false.
      * @param sprinting
-     * @param doubleHop Special hop case.
      * @return true if is bunnyhop.
      * 
      */
-    public static boolean isBunnyhop(final MovingData data, final boolean fromOnGroundOrLostGround, boolean sprinting, boolean doubleHop) {
+    public static boolean isBunnyhop(final MovingData data, final boolean fromOnGroundOrLostGround, boolean sprinting) {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         
@@ -176,16 +172,14 @@ public class Magic {
         return 
                 // This mechanic is applied only if the player is sprinting
                 sprinting && lastMove.toIsValid
-                // 0: Motion speed speed condition. Demand the player to hit the jumping envelope.
-                && thisMove.yDistance > LiftOffEnvelope.NORMAL.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
+                // 0: Motion speed condition. Demand the player to hit the jumping envelope.
+                && thisMove.yDistance > data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
                 // 0: Ground conditions
                 && (
                     // 1: Ordinary/obvious lift-off.
                     data.sfJumpPhase == 0 && thisMove.from.onGround
                     // 1: Do allow hopping if a past on ground status is found or this (legitimate) on ground phase was lost 
-                    || data.sfJumpPhase == 1 && fromOnGroundOrLostGround && !lastMove.bunnyHop
-                    // 1: Special case: double bunny 
-                    || doubleHop 
+                    || data.sfJumpPhase <= 1 && fromOnGroundOrLostGround && !lastMove.bunnyHop
                 )
             ;
     }
@@ -257,44 +251,6 @@ public class Magic {
         return off <= maxOff && Math.abs(thisMove.yDistance - lastMove.yDistance) <= off * decreaseByOff;
     }
     
-   /**
-    * Test (using the past move tracking) if the player has jumped at least 1 block up.
-    * No tight checking.
-    * @param data
-    * @param currentLoc
-    *             From/To location
-    * @param limit
-    *             How many past moves should be tracked
-    * @return 
-    */
-    public static boolean jumpedUpSlope(final MovingData data, final PlayerLocation loc, int limit) {
-        limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-
-        // Don't care about jump potions.
-        if (data.jumpAmplifier != 0.0){
-            return false;
-        }
-            
-        for (int i = 0; i < limit; i++) {
-            final PlayerMoveData pastMove = data.playerMoves.getPastMove(i);
-            // Stairs are for now skipped, need to fix on ground logic.
-            if (!pastMove.toIsValid || thisMove.from.aboveStairs) {
-                return false;
-            }
-            // this move is on ground
-            else if (loc.isOnGround()
-                    // Sufficient (absolute) height difference
-                    && (loc.getY() - pastMove.to.getY()) < data.liftOffEnvelope.getMaxJumpHeight(data.jumpAmplifier)
-                    && (loc.getY() - pastMove.to.getY()) >= 0.90 // (needed to prevent regular jumps from being seen as as slope)
-                    // Past moves were on ground
-                    && pastMove.touchedGround && !pastMove.touchedGroundWorkaround) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
     /**
      * Simplistic check for past lift off states done via the past move tracking.
      * Does not check if players may be able to lift off at all (i.e: in liquid)
@@ -311,6 +267,17 @@ public class Magic {
         }
         return false;
     }
+    
+    public static boolean recentlyInBubbleStream(int limit, MovingData data) {
+    	limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
+        for (int i = 0; i < limit; i++) {
+            final PlayerMoveData pastMove = data.playerMoves.getPastMove(i);
+            if (pastMove.from.inBubbleStream && !data.playerMoves.getCurrentMove().from.inBubbleStream) {
+                return true;
+            }
+        }
+        return false;
+	}
 
     /**
      * Test for a specific move in-air -> water, then water -> in-air.
@@ -361,7 +328,8 @@ public class Magic {
         return false;
     }
 
-    /* Fully in-air move.
+    /* 
+     * Fully in-air move.
      * 
      * @param thisMove
      *            Not strictly the latest move in MovingData.
@@ -407,7 +375,7 @@ public class Magic {
      * @param thisMove
      * @return
      */
-    static boolean resetCond(final PlayerMoveData thisMove) {
+    public static boolean resetCond(final PlayerMoveData thisMove) {
         return thisMove.from.resetCond || thisMove.to.resetCond;
     }
 

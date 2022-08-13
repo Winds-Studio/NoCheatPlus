@@ -22,10 +22,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -34,7 +36,7 @@ import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 
 /**
  * Various bridge methods not enough for an own class.
- * @author mc_dev
+ * @author asofold
  *
  */
 public class BridgeMisc {
@@ -42,13 +44,71 @@ public class BridgeMisc {
     private static GameMode getSpectatorGameMode() {
         try {
             return GameMode.SPECTATOR;
-        } catch (Throwable t) {}
+        } 
+        catch (Throwable t) {}
         return null;
     }
 
     public static final GameMode GAME_MODE_SPECTATOR = getSpectatorGameMode();
 
     private static final Method Bukkit_getOnlinePlayers = ReflectionUtil.getMethodNoArgs(Bukkit.class, "getOnlinePlayers");
+
+    private static final boolean hasIsFrozen = ReflectionUtil.getMethodNoArgs(LivingEntity.class, "isFrozen", boolean.class) != null;
+
+    private static final boolean hasGravityMethod = ReflectionUtil.getMethodNoArgs(LivingEntity.class, "hasGravity", boolean.class) != null;
+
+    public static boolean hasGravity(final LivingEntity entity) {
+        return hasGravityMethod ? entity.hasGravity() : true;
+    }
+
+    public static boolean hasIsFrozen() {
+        return hasIsFrozen;
+    }
+
+    public static int getFreezeSeconds(final Player player) {
+        if (!hasIsFrozen()) return 0;
+        // Capped at 140ticks (=7s)
+        return Math.min(7, (player.getFreezeTicks() / 20));
+    }
+
+    /**
+     * Test if the player has any piece of leather armor on 
+     * which will prevent freezing.
+     * 
+     * @param player
+     * @return
+     */
+    public static boolean isImmuneToFreezing(final Player player) {
+        if (!hasIsFrozen()) {
+            return false;
+        }
+        final PlayerInventory inv = player.getInventory();
+        final ItemStack[] contents = inv.getArmorContents();
+        for (int i = 0; i < contents.length; i++){
+            final ItemStack armor = contents[i];
+            if (armor != null && armor.getType().toString().startsWith("LEATHER")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Test if the player is equipped with leather boots<br>
+     * Meant for checking if the player can stand on top of powder snow.
+     * 
+     * @param player
+     * @return
+     */
+    public static boolean hasLeatherBootsOn(final Player player) {
+        if (!hasIsFrozen()) {
+            return false;
+        }
+        else {
+            final ItemStack boots = player.getInventory().getBoots();
+            return boots != null && boots.getType() == Material.LEATHER_BOOTS;
+        }
+    }
 
     /**
      * Correction of position: Used for ordinary setting back. <br>
@@ -64,15 +124,9 @@ public class BridgeMisc {
         Object source;
         try {
             source = projectile.getClass().getMethod("getShooter").invoke(projectile);
-        } catch (IllegalArgumentException e) {
-            return null;
-        } catch (SecurityException e) {
-            return null;
-        } catch (IllegalAccessException e) {
-            return null;
-        } catch (InvocationTargetException e) {
-            return null;
-        } catch (NoSuchMethodException e) {
+        } 
+        catch (IllegalArgumentException | SecurityException | IllegalAccessException 
+                | InvocationTargetException | NoSuchMethodException ignored) {
             return null;
         }
         if (source instanceof Player) {

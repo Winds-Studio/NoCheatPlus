@@ -482,7 +482,7 @@ public abstract class ConfPaths {
     public static final String  FIGHT_CRITICAL_CHECK                     = FIGHT_CRITICAL + SUB_ACTIVE;
     // TODO: Deprecate or rename (->falldistancemin)?
     public static final String  FIGHT_CRITICAL_FALLDISTANCE              = FIGHT_CRITICAL + "falldistance";
-     public static final String  FIGHT_CRITICAL_FALLDISTLENIENCY         = FIGHT_CRITICAL + "falldistleniency";
+    public static final String  FIGHT_CRITICAL_FALLDISTLENIENCY          = FIGHT_CRITICAL + "falldistleniency";
     public static final String  FIGHT_CRITICAL_ACTIONS                   = FIGHT_CRITICAL + "actions";
 
     private static final String FIGHT_DIRECTION                          = FIGHT + "direction.";
@@ -1032,7 +1032,7 @@ public abstract class ConfPaths {
         final List<ManyMoved> multiEntries = new LinkedList<ManyMoved>();
 
         // Add entries.
-        final List<String> cfModels = Arrays.asList("creative", "spectator", "survival", "adventure", "elytra", "levitation", "slowfalling", "riptiding");
+        final List<String> cfModels = Arrays.asList("creative", "spectator", "survival", "adventure", "elytra", "levitation", "riptiding");
         multiEntries.add(new ManyMoved(MOVING_CREATIVEFLY_MODEL, cfModels, "horizontalspeed", SUB_HORIZONTAL_SPEED));
         multiEntries.add(new ManyMoved(MOVING_CREATIVEFLY_MODEL, cfModels, "modsprint", SUB_HORIZONTAL_MODSPRINT));
         multiEntries.add(new ManyMoved(MOVING_CREATIVEFLY_MODEL, cfModels, "maxheight", SUB_VERTICAL_MAXHEIGHT));

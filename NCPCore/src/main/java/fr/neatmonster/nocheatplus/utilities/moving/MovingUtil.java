@@ -98,10 +98,10 @@ public class MovingUtil {
         final GameMode gameMode = player.getGameMode();
         final double yDistance = data.playerMoves.getCurrentMove().yDistance;
         final boolean toOnground = toLocation != null && toLocation.getWorld() != null && toLocation.isOnGround();
-        // (Full activation check - use permission caching for performance rather.)
 
         return  
                 // Sf is active (duh..)
+                // (Full activation check - use permission caching for performance rather.)
                 pData.isCheckActive(CheckType.MOVING_SURVIVALFLY, player) 
                 // Spectator is handled by Cf
                 && gameMode != BridgeMisc.GAME_MODE_SPECTATOR
@@ -114,22 +114,38 @@ public class MovingUtil {
                     !Bridge1_9.isGlidingWithElytra(player) 
                     || !isGlidingWithElytraValid(player, fromLocation, data, cc)
                 )
-                // Levitation is handled by Cf, unless the player is in liquid which is handled by Sf.
-                && (
-                    Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) 
-                    || fromLocation.isInLiquid() // Can't levitate if in liquid.
-                    // Moving up or down will mess with vDistRel detection due to erratic movement (players will fast/slow fall/ascend depending on the level)
-                    // so we only check if the move is fully on ground to prevent (too simple) speeding
-                    || Bridge1_9.getLevitationAmplifier(player) >= 128 && fromLocation.isOnGround() && toOnground && yDistance == 0.0
-                )
-                // Actual slowfalling is handled by Cf. Moving up or from/to ground is handled by Sf.
-                && (
-                    Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))
-                    || (fromLocation.isOnGround() || yDistance > 0.0 || toOnground)
-                )
                 // Riptiding is handled by Cf.
                 && !Bridge1_13.isRiptiding(player)
             ;
+    }
+
+
+    /**
+     * Get vertical velocity that's behind this motion.
+     * @param lasthDistance
+     * @param yDistance
+     * @param radPitch pitch in Radians (elytra)
+     * @param squaredCos squared of cos(radPitch) (elytra)
+     * @param levitation 
+     * @param speed (elytra)
+     * @param up (elytra)
+     * @return baseV.
+     */
+    public static double getBaseV(double lasthDistance, double yDistance, float radPitch, double squaredCos, double levitation, double speed, boolean up) { 
+
+        double baseV = yDistance;
+        if (levitation >= 0.0) {
+            baseV /= Magic.FRICTION_MEDIUM_AIR;
+            return (baseV - 0.01 * levitation) / 0.8 + 0.221;
+        } 
+        if (radPitch < 0.0 && !up) {
+            baseV -= lasthDistance * -Math.sin(radPitch) * 0.128;
+        }
+        if (baseV < 0.0) {
+            baseV /= (1.0 - (0.1 * squaredCos));
+        }
+        baseV -= speed * (-1.0 + squaredCos * 0.75);
+        return baseV;
     }
 
 
@@ -142,13 +158,21 @@ public class MovingUtil {
      * @return if the player is sliding on the honey block.
      */
     public static boolean isSlidingDown(final PlayerLocation from, final double width, final PlayerMoveData thisMove, final Player player) {
+    	from.collectBlockFlags(0.95);
+    	if ((from.getBlockFlags() & BlockFlags.F_STICKY) == 0) {
+    		// Way too far from the block.
+    		return false;
+    	}
         if (thisMove.touchedGround) {
+           // Not sliding, clearly.
            return false;
         } 
         if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
+           // Too far from the block.
            return false;
         } 
-        if (thisMove.yDistance >= -Magic.MIN_SLIDE_FALLING_SPEED) {
+        if (thisMove.yDistance >= -Magic.DEFAULT_GRAVITY) {
+           // Minimum speed.
            return false;
         } 
         double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
@@ -159,16 +183,24 @@ public class MovingUtil {
     
 
     /** 
-     * Calculate the new speed to apply to the player.
+     * Calculate this movement's force based on the player's horizontal input
+     * Always assume the maximum. (We currently do not distinguish the direction (right/left/backwards/forward))
      * Note that:
-     *     - Sprint multiplier is contained within "movementFactor"
-     *     - Sneak multiplier is contained within "strafe" and "forward"
+     *     - Sprint multiplier is contained within "movementSpeedFactor"
+     *     - Sneak multiplier is contained within "strafe" and "forward" (which are represented both by inputForce here)
      * This is likely because Sneaking was implemented long before Sprinting
-     * @param movementSpeedFactor Calculated movement speed attribute factor to update hDistance with.
+     * @param player
+     * @param movementSpeedFactor Movement speed attribute factor to update hDistance with.
      * @param from
+     * @param pData
+     * @param cc
+     * @param cData
+     * @param sneaking
+     * @param checkPermissions If bypass permissions should be checked to further increase performance a little bit.
+     * @param tags
      * @return 
      */ 
-    public static double getInputForce(Player player, double movementSpeedFactor, final PlayerLocation from, final IPlayerData pData, 
+    public static double getInputForce(final Player player, double movementSpeedFactor, final PlayerLocation from, final IPlayerData pData, 
                                        final MovingConfig cc, final CombinedData cData, final boolean sneaking, boolean checkPermissions,
                                        final Collection<String> tags) {
         /** This represents the strafe and forward value before being passed to the travel() method */
@@ -192,7 +224,7 @@ public class MovingUtil {
         // (This would be strafe * strafe + forward * forward, so we can just square the input force and multiply it by two)
         double distance = Math.max(1.0, Math.sqrt(MathUtil.square(inputForce) * 2));
         inputForce *= movementSpeedFactor / distance;
-        return Math.sqrt(2 * MathUtil.square(inputForce));
+        return Math.sqrt(MathUtil.square(inputForce) * 2);
     }
 
 
@@ -204,19 +236,20 @@ public class MovingUtil {
      * @param to
      * @param sneaking
      * @param hDistance
-     * @param fromOnGroundOrLostGround Accounts for ALL oddities (lost ground, past block activity etc)
+     * @param onGround Accounts for ALL oddities (lost ground, past block activity etc)
      * @param tags
      * @param width
      * @return 
      */
     public static void applyGlobalSpeedModifiers(final Player player, final PlayerLocation from, final MovingData data, 
-                                                 final PlayerLocation to, final boolean sneaking, double hDistance, final boolean fromOnGroundOrLostGround,
+                                                 final PlayerLocation to, final boolean sneaking, double hDistance, final boolean onGround,
                                                  final Collection<String> tags) {
         // TODO: Anything else?
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
         
         // Apply pushing speed
+        // From Entity.java.push()
         if (ServerIsAtLeast1_9 && CollisionUtil.isCollidingWithEntities(player, true)) {
             // Likely a better way to do this...
             // (Does it need to be done for each entity actually?)

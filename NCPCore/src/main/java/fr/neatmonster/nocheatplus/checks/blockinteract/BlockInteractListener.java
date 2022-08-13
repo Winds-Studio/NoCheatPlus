@@ -188,7 +188,7 @@ public class BlockInteractListener extends CheckListener {
             data.resetLastBlock();
             blockChecks = false;
         } 
-        else data.setLastBlock(block, action);
+        else data.setLastBlock(block, action, event.getClickedBlock());
         final BlockFace face = event.getBlockFace();
         final ItemStack stack;
         switch (action) {

@@ -109,7 +109,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     Boolean passableBox = null;
     
     /** Is the player above soul sand (into included) */
-    Boolean aboveSoulSand = null;
+    Boolean inOrAboveSoulSand = null;
 
     /** Is the player above stairs?. */
     Boolean aboveStairs = null;
@@ -702,14 +702,14 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Checks if the player is in a liquid.
+     * Checks if the player is in liquid.
      * 
-     * @return true, if the player is in a liquid
+     * @return true, if the player is in iquid
      */
     public boolean isInLiquid() {
-        // TODO: optimize (check liquid first and only if liquid check further)
-        if (!isInWaterLogged() && blockFlags != null && (blockFlags.longValue() & BlockFlags.F_LIQUID) == 0) return false;
-        // TODO: This should check for F_LIQUID too, Use a method that returns all found flags (!).
+        if (!isInWaterLogged() && blockFlags != null && (blockFlags.longValue() & BlockFlags.F_LIQUID) == 0) {
+        	return false;
+        }
         return isInWater() || isInLava();
     }
 
@@ -769,7 +769,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
     /**
      * Reset condition for flying checks (sf + nofall): liquids, web, climbable, powder snow, berry bushes.
-     * (not on-ground, though).
+     * Does not check for ground (!)
      *
      * @return true, if is reset cond
      */
@@ -830,11 +830,11 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInPowderSnow() {
         if (inPowderSnow == null) {
-            if (blockFlags == null || (blockFlags & BlockFlags.F_POWDERSNOW) != 0L) {
-                inPowderSnow = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_POWDERSNOW) != 0;
-            }
+            if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_POWDERSNOW) == 0) {
+            	inPowderSnow = false;
+            } 
             else {
-                inPowderSnow = false;
+                inPowderSnow = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_POWDERSNOW) != 0;;
             }
         }
         return inPowderSnow;
@@ -902,7 +902,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check the location is in soul sand.
+     * Check if the location is in soul sand.
      *
      * @return true, if is on soul sand
      */
@@ -920,22 +920,22 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check the location is above soul sand.
+     * Check if the location is above soul sand.
      *
      * @return true, if is on soul sand
      */
     public boolean isInOrAboveSoulSand() {
         if (isInSoulSand()) {
-            aboveSoulSand = true;
+        	inOrAboveSoulSand = true;
         }
         else {
-            aboveSoulSand = isOnGround() && BlockProperties.collides(blockCache, minX, minY - yOnGround, minZ, maxX, maxY, maxZ, BlockFlags.F_SOULSAND);
+        	inOrAboveSoulSand = isOnGround() && BlockProperties.collides(blockCache, minX, minY - yOnGround, minZ, maxX, maxY, maxZ, BlockFlags.F_SOULSAND);
         }
-        return aboveSoulSand;
+        return inOrAboveSoulSand;
     }
 
     /**
-     * Check the location is on slime only regarding the center. Currently
+     * Check if the location is on slime only regarding the center. Currently
      * demands to be on ground as well.
      *
      * @return true, if is on slime block
@@ -955,7 +955,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check the location is on a bouncy block only regarding the center. Currently
+     * Check if the location is on a bouncy block only regarding the center. Currently
      * demands to be on ground as well.
      *
      * @return true, if is on a bouncy block
@@ -974,7 +974,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check the location is on honey block.
+     * Check if the location is on honey block.
      *
      * @return true, if is on honey block
      */
@@ -992,30 +992,26 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check the location is a bubblestream
+     * Check if the location is in bubblestream
      *
      * @return true, if is an bubblestream
      */
     public boolean isInBubbleStream() {
-        if (inBubblestream == null) {
-            if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_BUBBLECOLUMN) == 0) {
-                inBubblestream = false;
-            } 
-            else {
-                inBubblestream = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_BUBBLECOLUMN);
-            }
-        }
-        return inBubblestream;
+    	if (inBubblestream == null) {
+    	    inBubblestream = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_BUBBLECOLUMN)
+    	    		        && !isDraggedByBubbleStream();
+    	}
+    	return inBubblestream;
+     
     }
 
     /**
-     * Check the location is in bubblestram and the player is dragged by it
+     * Check the if the player is in a bubblestream with drag value
      *
-     * @return true, if is an bubblestream
+     * @return true, if is dragged by a bubble stream.
      */
     public boolean isDraggedByBubbleStream() {
-        if (!isInBubbleStream()) return false; // not even in a column, skip checking for drag.
-        return BlockProperties.isDraggableBubbleStream(world, blockCache, minX, minY, minZ, maxX, maxY, maxZ);
+        return BlockProperties.isBubbleColumnDrag(world, blockCache, minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /**
@@ -1597,7 +1593,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         this.onIce = other.isOnIce();
         this.onBlueIce = other.isOnBlueIce();
         this.inSoulSand = other.isInSoulSand();
-        this.aboveSoulSand = other.isInOrAboveSoulSand();
+        this.inOrAboveSoulSand = other.isInOrAboveSoulSand();
         this.inPowderSnow = other.isInPowderSnow();
         this.onClimbable = other.isOnClimbable();
         this.onBouncyBlock = other.isOnBouncyBlock();
@@ -1673,7 +1669,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
         // Reset cached values.
         node = nodeBelow = null;
-        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand = aboveSoulSand = onHoneyBlock = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable = passableBox = inBubblestream = null;
+        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand = inOrAboveSoulSand = onHoneyBlock = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable = passableBox = inBubblestream = null;
         onGroundMinY = Double.MAX_VALUE;
         notOnGroundMaxY = Double.MIN_VALUE;
         blockFlags = null;

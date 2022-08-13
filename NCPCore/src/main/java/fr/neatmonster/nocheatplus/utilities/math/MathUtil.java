@@ -15,8 +15,8 @@
 package fr.neatmonster.nocheatplus.utilities.math;
 
 /**
- * Auxiliary static methods for dealing with math. 
- * Some methods are directly from NMS/client-code (See Mth.java)
+ * Auxiliary static methods for dealing with math.<br>
+ * Some methods are directly from NMS
  */
 public class MathUtil {
    
@@ -55,13 +55,24 @@ public class MathUtil {
 
    /**
     * Test if the input value is between a minimum and maximum threshold
-    * @param inputValue The value to test
     * @param minThreshold Exclusive
+    * @param inputValue The value to test
     * @param maxThreshold Exclusive
     * @return True if the value is between the thresholds, false otherwise
     */
    public static boolean between(double minThreshold, double inputValue, double maxThreshold) {
       return inputValue > minThreshold && inputValue < maxThreshold;
+   }
+   
+   /**
+    * Test if the input value is between a minimum and maximum threshold
+    * @param minThreshold Inclusive
+    * @param inputValue The value to test
+    * @param maxThreshold Inclusive
+    * @return True if the value is between or equal the thresholds, false otherwise
+    */
+   public static boolean inRange(double minThreshold, double inputValue, double maxThreshold) {
+      return inputValue >= minThreshold && inputValue <= maxThreshold;
    }
     
    /**
@@ -103,8 +114,8 @@ public class MathUtil {
     * @param b The subtrahend (Must be a float)
     * @return True, if the difference is smaller than 1.0E-5F
     */
-   public static boolean equal(float var0, float var1) {
-      return Math.abs(var1 - var0) < 1.0E-5;
+   public static boolean equal(float a, float b) {
+      return Math.abs(a - b) < 1.0E-5;
    }
    
    /**
@@ -114,8 +125,8 @@ public class MathUtil {
     * @param b The subtrahend (Must be a double)
     * @return True, if the difference is smaller than 9.999999747378752E-6D
     */
-   public static boolean equal(double var0, double var2) {
-      return Math.abs(var2 - var0) < 9.999999747378752E-6D;
+   public static boolean equal(double a, double b) {
+      return Math.abs(a - b) < 9.999999747378752E-6D;
    }
    
    /**
@@ -129,7 +140,7 @@ public class MathUtil {
    }
 
    /**
-    * Maximum value of three doubles
+    * Maximum value of three numbers
     * @param a
     * @param b
     * @param c
@@ -138,16 +149,58 @@ public class MathUtil {
    public static double max3(double a, double b, double c) {
       return Math.max(a, Math.max(b, c));
    }
+   
+   /**
+    * Test if the player's distance is smaller than estimated<br>
+    * (this is for falling only, the smaller, the faster)
+    * @param yDistance Must be negative
+    * @param refDist
+    */
+   public static boolean tooFastFall(final double yDistance, final double refDist) {
+      if (yDistance > 0.0) {
+         return false;
+      }
+      // Moving down faster than expected.
+      return yDistance < refDist && yDistance - refDist <= 0.0;
+   }
 
    /**
-    * Maximum value of four doubles
-    * @param a
-    * @param b
-    * @param c
-    * @param d
-    * @return The highest number
+    * Test if the player's distance is bigger than estimated<br> 
+    * (this is for falling only: the bigger, the slower)
+    * @param yDistance Must be negative
+    * @param refDist
     */
-   public static double max4(double a, double b, double c, double d) {
-      return Math.max(a, Math.max(b, Math.max(c, d)));
+   public static boolean tooSlowFall(final double yDistance, final double refDist) {
+      if (yDistance > 0.0) {
+         return false;
+      }
+      // Moving down slower than expected.
+      return yDistance > refDist && yDistance - refDist <= 0.0;
+   }
+
+   /**
+    * Test if the player's distance is less than estimated
+    * @param yDistance Must be positive
+    * @param refDist
+    */
+   public static boolean tooShortMove(final double yDistance, final double refDist) {
+      if (yDistance < 0.0) {
+         return false;
+      }
+      // Moving up, but less than expected.
+      return yDistance - refDist <= 0.0 && yDistance >= 0.0; 
+   }
+
+   /**
+    * Test if the player's distance is bigger than estimated.
+    * @param yDistance Must be positive.
+    * @param refDist
+    */
+   public static boolean tooBigMove(final double yDistance, final double refDist) {
+      if (yDistance < 0.0) {
+         return false;
+      }
+      // Moving up more than expected.
+      return yDistance - refDist > 0.0;
    }
 }

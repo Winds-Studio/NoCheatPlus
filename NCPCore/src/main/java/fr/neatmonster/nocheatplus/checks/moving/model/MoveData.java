@@ -50,12 +50,11 @@ public class MoveData {
      */
     public boolean toIsValid = false; // Must initialize.
 
+
     /////////////////////////////////////////////////////////////////////
     // Only set if a move end-point is set, i.e. toIsValid set to true.
     /////////////////////////////////////////////////////////////////////
-
     // Coordinates and distances.
-
     /**
      * End point of a move.
      */
@@ -68,32 +67,28 @@ public class MoveData {
     public double yDistance;
 
     /**
-     * The horizontal distance covered by a move. Note the sign for moving up or
-     * down. Only valid if toIsValid is set to true.
+     * The horizontal distance covered by a move. Only valid if toIsValid is set to true.
      */
     public double hDistance;
 
     /** Total distance squared. Only valid if toIsValid is set to true. */
     public double distanceSquared;
 
+
     //////////////////////////////////////////////////////////
     // Reset with set, could be lazily set during checking.
     //////////////////////////////////////////////////////////
-
     // Properties involving the environment.
-
     /**
      * Head is obstructed for a living entity, or can't/couldn't move up due to
      * being blocked somehow. Should expect descending next move, if in air.
      * <br>
-     * Set at the beginning of SurvivalFly.check, if either end-point is not on
-     * ground. (Not sure if used for vehicles.)
+     * Set in the moving listener.
      */
     public boolean headObstructed;
 
     /**
-     * Player is moving downstream in flowing liquid (horizontal rather). Set in
-     * SurvivalFly.check.
+     * Player is moving downstream in flowing liquid (horizontal rather). Set in the moving listener
      */
     public boolean downStream;
    
@@ -115,6 +110,9 @@ public class MoveData {
      * exclusively.
      */
     public boolean touchedGroundWorkaround;
+    
+    
+    // Meta stuff
     /**
      * Set if strict elytra active on a move.
      */

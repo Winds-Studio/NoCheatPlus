@@ -82,8 +82,7 @@ public class LiquidWorkarounds {
             if (lastMove.toIsValid) {
 
                 // Launched in liquid by a bubble column with space bar kept pressed.
-                // (This is called after having used up all velocity and this move does not fit in the friction envelope)
-                if (data.insideBubbleStreamCount > 0 && yDistance > 0.0 && lastMove.yDistance > 0.0
+                if (Magic.recentlyInBubbleStream(20, data) && yDistance > 0.0 && lastMove.yDistance > 0.0
                     && !data.isVelocityJumpPhase() && yDistance < lastMove.yDistance * data.lastFrictionVertical
                     && yDistance < Magic.bubbleStreamAscend) {
                     return yDistance;

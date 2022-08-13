@@ -117,8 +117,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Temporary snow fix flag */
     // TODO: remove.
     public boolean snowFix = false;
-    /** Count how long a player has been inside a bubble stream */
-    public int insideBubbleStreamCount = 0;
     /** Last used block change id (BlockChangeTracker). */
     public final BlockChangeReference blockChangeRef = new BlockChangeReference();
     
@@ -129,8 +127,12 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public double stuckInBlockMultiplier = 0.0; 
     /** Single block-speed multiplier.*/
     public double blockSpeedMultiplier = 0.0;
-    /** Rough friction factor estimate, 0.0 is the reset value (maximum with lift-off/burst speed is used). */
+    /** Ordinary vertical friction factor (lava, water, air) */
     public double lastFrictionVertical = 0.0;
+    /** Stuck-in-block vertical speed factor */
+    public double nextBlockFrictionVertical = 0.0;
+    /** Stuck-in-block vertical speed factor */
+    public double lastBlockFrictionVertical = 0.0;
     /** Used during processing, no resetting necessary.*/
     public double nextFrictionVertical = 0.0;
 
@@ -141,7 +143,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         public PlayerMoveData call() throws Exception {
             return new PlayerMoveData();
         }
-    }, 16); 
+    }, 18); 
     /** Keep track of currently processed (if) and past moves for vehicle moving. Stored moves can be altered by modifying the int. */
     // TODO: There may be need to store such data with vehicles, or detect tandem abuse in a different way.
     public final MoveTrace <VehicleMoveData> vehicleMoves = new MoveTrace<VehicleMoveData>(new Callable<VehicleMoveData>() {
@@ -195,13 +197,13 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     // *----------Data of the MorePackets check----------*
     /** Packet frequency count. */
     public final ActionFrequency morePacketsFreq;
-    /** Burst count. */
+    /** Burst  count. */
     public final ActionFrequency morePacketsBurstFreq;
     /** Setback for MP. */
     private Location morePacketsSetback = null;
 
     // *----------Data of the NoFall check----------*
-    /** Our calculated fall distance */
+    /** The fall distance calculated by NCP */
     public float noFallFallDistance = 0;
     /** Last y coordinate from when the player was on ground. */
     public double noFallMaxY = 0;
@@ -215,17 +217,17 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public int sfVLMoveCount = 0;
     /** The current horizontal buffer value. Horizontal moving VLs get compensated with emptying the buffer. */
     public double sfHorizontalBuffer = 0.0;
-    /** Count how long the player has been in the air, resets when landing on ground. */
+    /** Count in air events for this jumping phase, resets when landing on ground, with set-backs and similar. */
     public int sfJumpPhase = 0;
     /** Count how many times in a row yDistance has been zero, only for in-air moves, updated on not cancelled moves (aimed at in-air workarounds) */
     public int sfZeroVdistRepeat = 0;
     /** "Dirty" flag, for receiving velocity and similar while in air. */
     private boolean sfDirty = false;
-    /** Indicate low jumping descending phase (likely cheating). */
+    /** Indicates that this descending phase is due to a low-jump (likely cheating). */
     public boolean sfLowJump = false;
     /** Hacky way to indicate that this movement cannot be a lowjump. */
     public boolean sfNoLowJump = false; 
-    /** Basic envelope constraints for lifting off ground. */
+    /** Basic envelope constraints/presets for lifting off ground. */
     public LiftOffEnvelope liftOffEnvelope = defaultLiftOffEnvelope;
     /** Count how many moves have been made inside a medium (other than air). */
     public int insideMediumCount = 0;
@@ -239,7 +241,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public final ActionAccumulator vDistAcc = new ActionAccumulator(3, 3); // 3 buckets with max capacity of 3 events
     /** Workarounds (AirWorkarounds,LiquidWorkarounds). */
     public final WorkaroundSet ws;
-    /** Will be set to true on BedEnterEvent, then checked for on BedLeaveEvent */
+    /** Will be set to true on BedEnterEvent, then checked for on BedLeaveEvent. */
     public boolean wasInBed = false;
 
     // *----------Data of the vehicles checks----------*
@@ -356,7 +358,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         verticalBounce = null;
         blockChangeRef.valid = false;
         liqtick = 0;
-        insideBubbleStreamCount = 0;
+        lastFrictionVertical = lastBlockFrictionVertical = 0.0;
     }
 
 
@@ -384,11 +386,11 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         sfLowJump = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
-        insideBubbleStreamCount = 0;
         removeAllPlayerSpeedModifiers();
         vehicleConsistency = MoveConsistency.INCONSISTENT; // Not entirely sure here.
         verticalBounce = null;
         timeSinceSetBack = 0;
+        lastFrictionVertical = lastBlockFrictionVertical = 0.0;
         lastSetBackHash = setBack == null ? 0 : setBack.hashCode();
         // Reset to setBack.
         resetPlayerPositions(setBack);
@@ -428,7 +430,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         horizontalFrictionFactor = BlockProperties.getBlockFrictionFactor(player, loc, cc.yOnGround);
         stuckInBlockMultiplier = BlockProperties.getStuckInBlockSpeedFactor(player, loc, cc.yOnGround);
         blockSpeedMultiplier = BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround);
-        nextFrictionVertical = BlockProperties.getVerticalFrictionFactorByBlock(thisMove);
+        nextFrictionVertical = BlockProperties.getVerticalFrictionFactor(player, loc, cc.yOnGround);
+        nextBlockFrictionVertical = BlockProperties.getVerticalFrictionFactorByBlock(player, loc, cc.yOnGround);
     }
 
 
@@ -502,6 +505,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         insideMediumCount = 0;
         verticalBounce = null;
         blockChangeRef.valid = false;
+        lastFrictionVertical = lastBlockFrictionVertical = 0.0;
         // TODO: other buffers ?
         // No reset of vehicleConsistency.
     }

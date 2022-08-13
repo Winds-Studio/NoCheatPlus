@@ -49,6 +49,7 @@ public class BlockInteractData extends ACheckData {
     private int lastY, lastZ;
     /** null for air */
     private Material lastType = null;
+    private Block lastBlock = null;
     private int lastTick;
     private Action lastAction = null;
     private boolean lastAllowUseBlock = false;
@@ -88,14 +89,16 @@ public class BlockInteractData extends ACheckData {
      * 
      * @param block
      * @param action
+     * @param rightClickedBlock
      */
-    public void setLastBlock(final Block block, final Action action) {
+    public void setLastBlock(final Block block, final Action action, final Block rightClickedBlock) {
         lastTick = TickTask.getTick();
         lastAction = action;
         lastX = block.getX();
         lastY = block.getY();
         lastZ = block.getZ();
         lastType = block.getType();
+        lastBlock = rightClickedBlock;
         if (lastType == Material.AIR) {
             lastType = null;
         }
@@ -111,6 +114,7 @@ public class BlockInteractData extends ACheckData {
         lastAction = null;
         lastX = Integer.MAX_VALUE;
         lastType = null;
+        lastBlock = null;
         lastAllowUseBlock = false;
         lastAllowUseItem = false;
         lastIsCancelled = true;
@@ -225,6 +229,15 @@ public class BlockInteractData extends ACheckData {
      */
     public Material getLastType() {
         return lastType;
+    }
+
+    /**
+     * Return the block last interacted with.
+     * 
+     * @return
+     */
+    public Block getLastBlock() {
+        return lastBlock;
     }
 
     /**

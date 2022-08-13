@@ -56,8 +56,6 @@ public class MovingConfig extends ACheckConfig {
 
     // Model flying ids.
     public static final String ID_JETPACK_ELYTRA = "jetpack.elytra";
-    public static final String ID_POTION_LEVITATION = "potion.levitation";
-    public static final String ID_POTION_SLOWFALLING = "potion.slowfalling";
     public static final String ID_EFFECT_RIPTIDING = "effect.riptiding";
 
     // INSTANCE
@@ -66,8 +64,6 @@ public class MovingConfig extends ACheckConfig {
 
     private final Map<GameMode, ModelFlying> flyingModelGameMode = new HashMap<GameMode, ModelFlying>();
     private final ModelFlying flyingModelElytra;
-    private final ModelFlying flyingModelLevitation;
-    private final ModelFlying flyingModelSlowfalling;
     private final ModelFlying flyingModelRiptiding;
     public final ActionList creativeFlyActions;
 
@@ -208,12 +204,6 @@ public class MovingConfig extends ACheckConfig {
             flyingModelGameMode.put(gameMode, new ModelFlying("gamemode." + gameMode.name().toLowerCase(), config, 
                     ConfPaths.MOVING_CREATIVEFLY_MODEL + (gameMode.name().toLowerCase()) + ".", defaultModel).lock());
         }
-        flyingModelLevitation = new ModelFlying(ID_POTION_LEVITATION, config, ConfPaths.MOVING_CREATIVEFLY_MODEL + "levitation.", 
-                                                new ModelFlying(null, defaultModel).scaleLevitationEffect(true).lock());
-
-        flyingModelSlowfalling = new ModelFlying(ID_POTION_SLOWFALLING, config, ConfPaths.MOVING_CREATIVEFLY_MODEL + "slowfalling.", 
-                                                new ModelFlying(null, defaultModel).scaleSlowfallingEffect(true).lock());
-
         flyingModelRiptiding = new ModelFlying(ID_EFFECT_RIPTIDING, config, ConfPaths.MOVING_CREATIVEFLY_MODEL + "riptiding.", 
                                                new ModelFlying(null, defaultModel).scaleRiptidingEffect(true).lock());
 
@@ -374,7 +364,6 @@ public class MovingConfig extends ACheckConfig {
         final GameMode gameMode = player.getGameMode();
         final ModelFlying modelGameMode = flyingModelGameMode.get(gameMode);
         final boolean isGlidingWithElytra = Bridge1_9.isGlidingWithElytra(player) && MovingUtil.isGlidingWithElytraValid(player, fromLocation, data, cc);
-        final double levitationLevel = Bridge1_9.getLevitationAmplifier(player);
         final long now = System.currentTimeMillis();
         final boolean RiptidePhase = Bridge1_13.isRiptiding(player) || data.timeRiptiding + 1500 > now;
         switch(gameMode) {
@@ -398,21 +387,6 @@ public class MovingConfig extends ACheckConfig {
         // Elytra.
         if (isGlidingWithElytra && !RiptidePhase) { // Defensive: don't demand isGliding.
             return flyingModelElytra;
-        }
-        // Levitation.
-        if (gameMode != GameMode.CREATIVE && !Double.isInfinite(levitationLevel) 
-            && !RiptidePhase
-            && !fromLocation.isInLiquid()
-            // According to minecraft wiki:
-            // Levitation level over 127 = fall down at a fast or slow rate, depending on the value.
-            // Using /effect minecraft:levitation 255 makes the player fly exclusively horizontally.
-            && !(levitationLevel >= 128)) {
-            return flyingModelLevitation;
-        }
-        // Slow Falling
-        if (gameMode != GameMode.CREATIVE && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) 
-            && !RiptidePhase) { 
-            return flyingModelSlowfalling;
         }
         // Riptiding
         // TODO: Put on top priority, add data.timeRiptiding too, remove redundant

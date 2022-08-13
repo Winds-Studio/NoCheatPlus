@@ -34,12 +34,10 @@ public class WRPT extends SimpleWorkaroundRegistry {
     ///////////////////////
     // Workaround ids.
     ///////////////////////
-
     // MOVING_SURVIVALFLY
-
     // (vEnvHacks)
     // TODO: The use once thing could be shared by several spots (e.g. all double-0 top of slope).
-    /**  Workaround: One time use max of jump phase twice zero dist. */
+    /** Workaround: One time use max of jump phase twice zero dist. */
     // TODO: This might be changed to (or extended with addition of) use once within air jump phase.
     public static final String W_M_SF_SLIME_JP_2X0 = "m.sf.slime.jp.2x0"; // hum. sha-1 instead?
     /** Zero vdist after negative vdist, "early" jump phase, cobweb. venvHacks */
@@ -47,6 +45,7 @@ public class WRPT extends SimpleWorkaroundRegistry {
     public static final String W_M_SF_WEB_0V2 = "m.sf.web.0v2";
     public static final String W_M_SF_WEB_MICROGRAVITY1 = "m.sf.web.microgravity1";
     public static final String W_M_SF_WEB_MICROGRAVITY2 = "m.sf.web.microgravity2";
+    public static final String W_M_SF_SLOW_WEB = "m.sf.web.slowfall";
 
     // oddSlope
     public static final String W_M_SF_SLOPE1 = "m.sf.slope1";
@@ -92,6 +91,8 @@ public class WRPT extends SimpleWorkaroundRegistry {
     // Sf-related not categorized.
     public static final String W_M_SF_OUT_OF_ENVELOPE_NODATA1 = "m.sf.out.of.envelope.nodata1";
     public static final String W_M_SF_OUT_OF_ENVELOPE_NODATA2 = "m.sf.out.of.envelope.nodata2";
+    public static final String W_M_SF_OUT_OF_ENVELOPE_NODATA3 = "m.sf.out.of.envelope.nodata3";
+    public static final String W_M_SF_OUT_OF_ENVELOPE_NODATA4 = "m.sf.out.of.envelope.nodata4";
     public static final String W_M_SF_ACCEPTED_ENV = "m.sf.accepted.env";
 
     // oddFriction
@@ -110,6 +111,7 @@ public class WRPT extends SimpleWorkaroundRegistry {
     public static final String W_M_SF_FASTFALL_4 = "m.sf.fastfall.4";
     public static final String W_M_SF_FASTFALL_5 = "m.sf.fastfall.5";
     public static final String W_M_SF_FASTFALL_6 = "m.sf.fastfall.6";
+    public static final String W_M_SF_FASTFALL_7 = "m.sf.fastfall.7";
 
     // Bigger move than expected yDistDiffEx > 0.0
     public static final String W_M_SF_OUT_OF_ENVELOPE_1 = "m.sf.out.of.envelope.1";
@@ -134,10 +136,12 @@ public class WRPT extends SimpleWorkaroundRegistry {
     /** Just a counter for back to surface for in-water moves (water-water). */
     public static final String W_M_V_ENV_INWATER_BTS = "m.v.env.inwater.bts";
 
+    
+    
+    
     ///////////////////////
     // Group ids.
     ///////////////////////
-
     // MOVING_SURVIVALFLY
     /**
      * Group: Reset when not in air jump phase. Both used for players and
@@ -145,14 +149,19 @@ public class WRPT extends SimpleWorkaroundRegistry {
      */
     public static final String G_RESET_NOTINAIR = "reset.notinair";
 
+    
+    
+    
     ///////////////////////
     // WorkaroundSet ids.
     ///////////////////////
-
     // MOVING
     /** WorkaroundSet: for use in MovingData. */
     public static final String WS_MOVING = "moving";
 
+    
+    
+    
     public WRPT() {
         // Fill in blueprints, groups, workaround sets.
 
@@ -160,11 +169,15 @@ public class WRPT extends SimpleWorkaroundRegistry {
         final Collection<IWorkaround> ws_moving = new LinkedList<IWorkaround>();
 
         // MOVING_SURVIVALFLY
-
         // Reset once on ground or reset-condition.
         final WorkaroundCountDown[] resetNotInAir = new WorkaroundCountDown[] {
                 new WorkaroundCountDown(W_M_SF_SLIME_JP_2X0, 1),
                 new WorkaroundCountDown(W_M_V_ENV_INAIR_SKIP, 1),
+                new WorkaroundCountDown(W_M_SF_ODDGRAVITY_3, 1),
+                new WorkaroundCountDown(W_M_SF_ODDLIQUID_13, 1),
+                new WorkaroundCountDown(W_M_SF_ODDLIQUID_7, 1),
+                new WorkaroundCountDown(W_M_SF_ODDLIQUID_5, 4),
+                new WorkaroundCountDown(W_M_SF_ODDLIQUID_12, 1),
         };
         ws_moving.addAll(Arrays.asList(resetNotInAir));
         setWorkaroundBluePrint(resetNotInAir);
@@ -178,6 +191,7 @@ public class WRPT extends SimpleWorkaroundRegistry {
                 W_M_SF_WEB_0V2,
                 W_M_SF_WEB_MICROGRAVITY1,
                 W_M_SF_WEB_MICROGRAVITY2,
+                W_M_SF_SLOW_WEB,
                 // Slope
                 W_M_SF_SLOPE1,
                 W_M_SF_SLOPE2,
@@ -231,6 +245,7 @@ public class WRPT extends SimpleWorkaroundRegistry {
                 W_M_SF_FASTFALL_4,
                 W_M_SF_FASTFALL_5,
                 W_M_SF_FASTFALL_6,
+                W_M_SF_FASTFALL_7,
                 // Shortmove
                 W_M_SF_SHORTMOVE_1,
                 W_M_SF_SHORTMOVE_2,
@@ -244,6 +259,8 @@ public class WRPT extends SimpleWorkaroundRegistry {
                 // Misc. Sf-related
                 W_M_SF_OUT_OF_ENVELOPE_NODATA1,
                 W_M_SF_OUT_OF_ENVELOPE_NODATA2,
+                W_M_SF_OUT_OF_ENVELOPE_NODATA3,
+                W_M_SF_OUT_OF_ENVELOPE_NODATA4,
                 W_M_SF_ACCEPTED_ENV,
                 // Vehicle
                 W_M_V_ENV_INWATER_BTS
@@ -259,5 +276,4 @@ public class WRPT extends SimpleWorkaroundRegistry {
 
         // TODO: Command to log global and for players.
     }
-
 }

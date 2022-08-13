@@ -24,9 +24,9 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.compat.Bridge1_17;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
+import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
@@ -34,10 +34,13 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+
 
 
 /**
  * Lost ground workarounds.
+ * @See <a href="https://bugs.mojang.com/browse/MC-90024">Mojang's issue tracker</a> 
  * 
  * @author asofold
  *
@@ -67,6 +70,7 @@ public class LostGround {
         // Temporary let it here
         // TODO: Remove :)
         data.snowFix = (from.getBlockFlags() & BlockFlags.F_HEIGHT_8_INC) != 0;
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         if (yDistance >= -0.7 && yDistance <= Math.max(cc.sfStepHeight, LiftOffEnvelope.NORMAL.getMaxJumpGain(data.jumpAmplifier) + 0.174)) { // Where does this magic come from!?
 
             // Ascending
@@ -77,10 +81,10 @@ public class LostGround {
             }
 
             // Descending.
-            final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-            from.collectBlockFlags(cc.sfStepHeight);
-            if (yDistance <= 0.0 && lastMove.toIsValid
-                && (from.getBlockFlags() & BlockFlags.F_STAIRS) != 0) {
+            // Alright, this is needed for other blocks as well, not just stairs.
+            // Context: there still seem to be rare lost ground cases when landing on the edge of blocks
+            // Unfortunately, such cases are REALLY rare, and were observed while testing other stuff, making it nearly impossible to reproduce at will: I can't manage to pin them down.
+            if (yDistance <= 0.0 && lastMove.toIsValid) {
                 // Lost ground while falling onto/over edges of blocks.
                 if (yDistance < 0.0 && hDistance <= 1.5 && lastMove.yDistance < 0.0 && yDistance > lastMove.yDistance && !to.isOnGround()) {
                     // TODO: yDistance <= 0 might be better.
@@ -160,16 +164,17 @@ public class LostGround {
                 if (setBackYDistance > 1.0 && setBackYDistance <= 1.5 
                     && setBackYMargin < 0.6 && data.bunnyhopDelay > 0 
                     && yDistance > from.getyOnGround() && lastMove.yDistance <= Magic.GRAVITY_MAX
-                    && yDistance < Magic.GRAVITY_MIN) {
+                    && (yDistance < Magic.GRAVITY_MIN || yDistance <= data.liftOffEnvelope.getMaxJumpGain(0.0) / 1.52)
+                    ) {
                     
                     to.collectBlockFlags();
                     // (Doesn't seem to be a problem with carpets)
                     if ((to.getBlockFlags() & BlockFlags.F_ATTACHED_LOW2_SNEW) != 0
                         && (to.getBlockFlags() & BlockFlags.F_HEIGHT150) != 0) {
                         
-                        // Missing the trapdoor by 0.003
-                        // No need to add another horizontal margin because the box already reaches the block, just not vertically.
-                        if (to.isOnGround(0.003, 0.0, 0.0)) {
+                        // Missing the trapdoor by 0.009
+                        // No need to add another horizontal margin because the box already covers the block, just not vertically.
+                        if (to.isOnGround(0.009, 0.0, 0.0)) {
                             // Setbacksafe: matter of taste.
                             // With false, in case of a cheating attempt, the player will be setbacked on the ground instead of the trapdoor.
                             return applyLostGround(player, from, false, thisMove, data, "trapfence", tags);
@@ -260,7 +265,7 @@ public class LostGround {
     private static boolean noobTowerStillCommon(final PlayerLocation to, final double yDistance) {
         // TODO: Block recently placed underneath (xz box with 0.025 down, Direction.NONE).
         return yDistance < Magic.Y_ON_GROUND_DEFAULT && to.getY() - to.getBlockY() < Magic.Y_ON_GROUND_DEFAULT
-               && to.isOnGround(Magic.Y_ON_GROUND_DEFAULT, Bridge1_17.hasLeatherBootsOn(to.getPlayer()) ? 0 : BlockFlags.F_POWDERSNOW);
+               && to.isOnGround(Magic.Y_ON_GROUND_DEFAULT, BridgeMisc.hasLeatherBootsOn(to.getPlayer()) ? 0 : BlockFlags.F_POWDERSNOW);
     }
 
 
@@ -435,6 +440,8 @@ public class LostGround {
         data.sfJumpPhase = 0;
         data.jumpAmplifier = MovingUtil.getJumpAmplifier(player, mcAccess);
         data.clearAccounting();
+        // Update medium properties as well (mainly for the speed check)
+        data.adjustMediumProperties(player.getLocation(), DataManager.getPlayerData(player).getGenericInstance(MovingConfig.class), player, data.playerMoves.getCurrentMove());
         // Tell NoFall that we assume the player to have been on ground somehow.
         thisMove.touchedGround = true;
         thisMove.touchedGroundWorkaround = true;

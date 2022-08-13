@@ -42,8 +42,6 @@ import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 
-
-
 public class EntityActionAdapter extends BaseAdapter {
     
     private final ToggleFrequency toggleFrequency = new ToggleFrequency();
@@ -102,7 +100,7 @@ public class EntityActionAdapter extends BaseAdapter {
         boolean cancel = false;
         if (!cancel && pData.isCheckActive(CheckType.NET_TOGGLEFREQUENCY, player)
             && toggleFrequency.check(player, data, pData.getGenericInstance(NetConfig.class), pData)
-             && !pData.hasBypass(CheckType.NET_TOGGLEFREQUENCY, player)) {
+            && !pData.hasBypass(CheckType.NET_TOGGLEFREQUENCY, player)) {
             cancel = true;
         }
         

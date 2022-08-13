@@ -41,9 +41,9 @@ public enum LiftOffEnvelope {
     // NOTE: Jump height: 0.3 would trigger false positives. While 0.45 is too much
     HALF_JUMP(0.21, 0.4, 0.21, 4, true), 
     /** Nearly ordinary jumping gain (meant for berry bushes)*/
-    BERRY_JUMP(0.31, 0.5, 0.31, 0, true), 
+    BERRY_JUMP(0.315, 0.5, 0.315, 0, true), 
     /** Special liftoff handling for powder snow: jump height is equal to lift-off speed. */
-    POWDER_SNOW(0.63, 0.63, 0.63, 0, true)
+    POWDER_SNOW(0.63, 0.63, 0.5, 0, true)
     ;
 
     private double maxJumpGain;
@@ -64,7 +64,7 @@ public enum LiftOffEnvelope {
      * Minimal distance expected with lift-off.
      * 
      * @param jumpAmplifier
-     * @return The minimum yDistance players can achieve for this envelope
+     * @return The minimum yDistance players can achieve for this envelope with lift-off
      */
     public double getMinJumpGain(double jumpAmplifier) {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
@@ -90,7 +90,7 @@ public enum LiftOffEnvelope {
      * Maximum distance expected with lift-off.
      * 
      * @param jumpAmplifier
-     * @return The maximum yDistance players can achieve for this envelope
+     * @return The maximum yDistance players can achieve for this envelope with lift-off
      */
     public double getMaxJumpGain(double jumpAmplifier) {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
@@ -139,8 +139,7 @@ public enum LiftOffEnvelope {
     }
     
     /**
-     * How many in-air events players can achieve before losing 
-     * altitude.
+     * How many in-air events players can achieve before losing altitude.
      * 
      * @param jumpAmplifier
      * @return The maximum jump phase for this envelope.

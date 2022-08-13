@@ -133,7 +133,7 @@ public class MovingFlying extends BaseAdapter {
         try {
             if (event.isPlayerTemporary()) return;
         } 
-        catch(NoSuchMethodError e) {
+        catch (NoSuchMethodError e) {
             if (event.getPlayer() == null) {
                 return;
             }

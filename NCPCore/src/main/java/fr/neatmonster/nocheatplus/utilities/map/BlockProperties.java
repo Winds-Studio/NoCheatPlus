@@ -43,7 +43,6 @@ import org.bukkit.potion.PotionEffectType;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
-import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -483,33 +482,56 @@ public class BlockProperties {
 
     /**
      * NMS friction factors library for vertical motion
+     * This only concerns media (liquid and air, later gliding as well.)
      * @param player
      * @param location
      * @param yOnGround
      */
-    public static final double getVerticalFrictionFactorByBlock(final PlayerMoveData thisMove) {
-      
-        double friction = 0.0;
-        if (thisMove.from.inBerryBush || thisMove.to.inBerryBush) {
-            friction = 0.75D;
+    public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround) {
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        pLoc.set(location, player, yOnGround);
+        double friction = 1.0;
+        if (pLoc.isInWater()) {
+            friction = Magic.FRICTION_MEDIUM_WATER;// 0.800000011920929;
         }
-        else if (thisMove.from.inPowderSnow || thisMove.to.inPowderSnow) {
-            friction = 1.5D;
+        else if (pLoc.isInLava()) {
+            friction = Magic.FRICTION_MEDIUM_LAVA;
+            // friction = 0.800000011920929;
         }
-        else if (thisMove.from.inLiquid || thisMove.to.inLiquid) {
-            // TODO: Exact conditions ?!
-            if (thisMove.from.inLava || thisMove.to.inLava) {
-                friction = Magic.FRICTION_MEDIUM_LAVA;
-            }
-            else friction = Magic.FRICTION_MEDIUM_WATER;
+        else {
+            friction = Magic.FRICTION_MEDIUM_AIR;
         }
-        else if (thisMove.to.onClimbable) {
-            friction = 0.0;
+        blockCache.cleanup();
+        pLoc.cleanup();
+        return friction;
+    }
+
+    /**
+     * NMS friction factors library for vertical motion
+     * This concerns single blocks
+     * @param player
+     * @param location
+     * @param yOnGround
+     */
+    public static final double getVerticalFrictionFactorByBlock(final Player player, final Location location, final double yOnGround) {
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        pLoc.set(location, player, yOnGround);
+        double friction = 1.0;
+        if (pLoc.isInBerryBush()) {
+            friction = 0.75;
         }
-        else if (thisMove.from.inWeb || thisMove.to.inWeb) {
-            friction = 0.05000000074505806D;
+        else if (pLoc.isInPowderSnow()) {
+            friction = 1.5;
         }
-        else friction = Magic.FRICTION_MEDIUM_AIR;
+        else if (pLoc.isInWeb()) {
+            friction = 0.05000000074505806;
+        }
+        blockCache.cleanup();
+        pLoc.cleanup();
         return friction;
     }
 
@@ -719,6 +741,17 @@ public class BlockProperties {
      */
     public static final boolean isClimbable(final Material mat) {
         return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_CLIMBABLE) != 0;
+    }
+    
+    /**
+     * Checks if is cobweb.
+     *
+     * @param mat
+     *            the mat.
+     * @return true, if is cobweb
+     */
+    public static final boolean isCobweb(final Material mat) {
+    	return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_COBWEB) != 0;
     }
 
     /**
@@ -3707,9 +3740,9 @@ public class BlockProperties {
      *            the max z
      * @return true, if successful
      */
-    public static final boolean isDraggableBubbleStream(final World world, final BlockCache access, 
-                                                        final double minX, final double minY, final double minZ, 
-                                                        final double maxX, final double maxY, final double maxZ) {
+    public static final boolean isBubbleColumnDrag(final World world, final BlockCache access, 
+                                                   final double minX, final double minY, final double minZ, 
+                                                   final double maxX, final double maxY, final double maxZ) {
         if (!Bridge1_13.hasIsSwimming()) return false;
         final int iMinX = Location.locToBlock(minX);
         final int iMaxX = Location.locToBlock(maxX);
@@ -4333,7 +4366,8 @@ public class BlockProperties {
         }
 
         // Check passable workaround without checking ignore flag.
-        if (isPassableWorkaround(access, x, y + 1, z, minX - x, minY - (y + 1), minZ - z, nodeAbove, maxX - minX, maxY - minY, maxZ - minZ,
+        if (isPassableWorkaround(access, x, y + 1, z, minX - x, minY - (y + 1), minZ - z, 
+                                 nodeAbove, maxX - minX, maxY - minY, maxZ - minZ,
                                  minX, minY, minZ, maxX, maxY, maxZ, 1.0)) {
             return AlmostBoolean.YES;
         }
@@ -4456,7 +4490,8 @@ public class BlockProperties {
                     // reverse direction.
                     return true;
                 }
-            } else if (dX < 0) {
+            } 
+            else if (dX < 0) {
                 if (data < 7 && BlockProperties.isLiquid(access.getType(x - 1, y, z)) && access.getData(x - 1, y, z) > data) {
                     return true;
                 }
@@ -4465,6 +4500,7 @@ public class BlockProperties {
                     return true;
                 }
             }
+
             if (dZ > 0) {
                 if (data < 7 && BlockProperties.isLiquid(access.getType(x, y, z + 1)) && access.getData(x, y, z + 1) > data) {
                     return true;
@@ -4687,6 +4723,7 @@ public class BlockProperties {
             maxX = dX * dT + oX + blockX;
             minX = oX + blockX;
         }
+
         final double minY, maxY;
         if (dY < 0.0) {
             minY = dY * dT + oY + blockY;
@@ -4696,6 +4733,7 @@ public class BlockProperties {
             maxY = dY * dT + oY + blockY;
             minY = oY + blockY;
         }
+
         final double minZ, maxZ;
         if (dZ < 0.0) {
             minZ = dZ * dT + oZ + blockZ;

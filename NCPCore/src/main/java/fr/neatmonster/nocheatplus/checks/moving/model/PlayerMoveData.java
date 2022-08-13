@@ -29,6 +29,14 @@ public class PlayerMoveData extends MoveData {
     //////////////////////////////////////////////////////////
 
     // Properties of the player.
+	/** Whether this move has the levitation effect active */
+	public boolean hasLevitation;
+	
+	/** Whether this move has the slowfall effect active */
+	public boolean hasSlowfall;
+	
+	/** Whether this movement is influenced by gravity */
+	public boolean hasGravity;
 
     /**
      * Typical maximum walk speed, accounting for player capabilities. Set in
@@ -37,12 +45,12 @@ public class PlayerMoveData extends MoveData {
     public double walkSpeed;
     
     /**
-     * Traveled vertical setback distance, set in Survivalfly.check
+     * The distance covered by a move from the setback point to the to.getY() point
      */
     public double setBackYDistance;
 
-    // Bounds set by checks.
 
+    // Bounds set by checks.
     /**
      * Allowed horizontal distance (including frictions, workarounds like bunny
      * hopping). Set in SurvivalFly.check.
@@ -54,8 +62,8 @@ public class PlayerMoveData extends MoveData {
      */
     public double yAllowedDistance;
 
-    // Properties involving the environment.
 
+    // Properties involving the environment.
     /** This move was a bunny hop. */
     public boolean bunnyHop;
    
@@ -65,10 +73,8 @@ public class PlayerMoveData extends MoveData {
     /** This move was allowed to jump. Set in SurvivalFly.check(vdistrel) */
     public boolean allowjump;
 
-    // TODO: verVel/horvel used?
 
     // Meta stuff.
-
     /**
      * Due to the thresholds for moving events, there could have been other
      * (micro-) moves by the player which could not be checked. One moving event
@@ -81,11 +87,17 @@ public class PlayerMoveData extends MoveData {
      * during processing of moving checks.
      */
     public SimpleEntry verVelUsed = null;
+    
+    /** The lift off envelope currently used by this move. Set in the moving listener. */
+    public LiftOffEnvelope liftOffEnvelope = null;
 
     @Override
     protected void resetBase() {
         // Properties of the player.
         walkSpeed = 0.287;
+        hasLevitation = false;
+        hasSlowfall = false;
+        hasGravity = true; // Assume one to have gravity rather than the opposite... :)
         // Properties involving the environment.
         bunnyHop = false;
         allowstep = false;
@@ -94,10 +106,9 @@ public class PlayerMoveData extends MoveData {
         yAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
         // Meta stuff.
-        //flyCheck = null;
-        //modelFlying = null;
         multiMoveCount = 0;
         verVelUsed = null;
+        liftOffEnvelope = LiftOffEnvelope.UNKNOWN;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();
     }

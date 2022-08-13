@@ -80,8 +80,7 @@ public class KeepAliveAdapter extends BaseAdapter {
         // TODO: Better modeling of actual packet sequences (flying vs. keep alive vs. request/ping).
         // TODO: Better integration with god-mode check / trigger reset ndt.
         if (frequencyCheck.isEnabled(player, pData) 
-            && frequencyCheck.check(player, time, data, cc, pData)
-            && !pData.hasBypass(CheckType.NET_KEEPALIVEFREQUENCY, player)) {
+            && frequencyCheck.check(player, time, data, cc, pData)) {
             event.setCancelled(true);
         }
     }
