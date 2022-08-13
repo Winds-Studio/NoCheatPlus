@@ -58,9 +58,9 @@ public class BlockInteractData extends ACheckData {
     
     // Data of the speed check.
     /** Last reset time. */
-    public long speedTime	= 0;
+    public long speedTime   = 0;
     /** Number of interactions since last reset-time. */
-    public int  speedCount	= 0;
+    public int  speedCount  = 0;
 
     /** Cancel is set, times in a row. */
     public int subsequentCancel = 0;

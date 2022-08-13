@@ -889,8 +889,8 @@ public class SurvivalFly extends Check {
         ////////////////////////////////////////////////////////////////////////
         // TODO: Fix this check (receiving blindness while already sprinting allows to still sprint !)
         //   if (player.hasPotionEffect(PotionEffectType.BLINDNESS) && player.isSprinting() 
-        //   	 && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player))) {
-        //   	 bufferUse = false;
+        //       && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player))) {
+        //       bufferUse = false;
         //       Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
         //       hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);     
         //       tags.add("blindsprint");
@@ -1291,7 +1291,7 @@ public class SurvivalFly extends Check {
                             // Skip if the player is just jumping out of powder snow
                             || BridgeMisc.hasLeatherBootsOn(player) && data.liftOffEnvelope == LiftOffEnvelope.POWDER_SNOW && lastMove.from.inPowderSnow
                             && (
-                            	 // 1: Ordinary gravity envelope.
+                                 // 1: Ordinary gravity envelope.
                                  lastMove.yDistance <= Magic.GRAVITY_MAX * 2.36 && lastMove.yDistance > 0.0 
                                  // 1: With slow fall
                                  || MathUtil.between(-Magic.DEFAULT_GRAVITY, thisMove.yDistance, 0.0)
@@ -1766,8 +1766,8 @@ public class SurvivalFly extends Check {
         if (yDistAbs > vAllowedDistance) {
             // Speed is higher than legit motion
             if (from.isOnGround(jumpHeight, 0D, 0D, BlockFlags.F_CLIMBABLE)) {
-            	// We don't throw an immediate violation here, unless the player's motion is higher than ordinary (0.42):
-            	// that means the player is trying to "step up" way too fast / instantly climb the block.
+                // We don't throw an immediate violation here, unless the player's motion is higher than ordinary (0.42):
+                // that means the player is trying to "step up" way too fast / instantly climb the block.
                 if (yDistance > maxJumpGain) {
                     vDistanceAboveLimit = Math.max(vDistanceAboveLimit, yDistAbs - vAllowedDistance);
                     tags.add("climbstep");
@@ -1775,7 +1775,7 @@ public class SurvivalFly extends Check {
                 else tags.add("climbheight("+ StringUtil.fdec3.format(yDistance) +")");
             }
             else if (!scaffolding) {
-            	// Ground is out of jump height reach, violation.
+                // Ground is out of jump height reach, violation.
                 vDistanceAboveLimit = Math.max(vDistanceAboveLimit, yDistAbs - vAllowedDistance);
                 tags.add("climbspeed");
             }
@@ -1856,20 +1856,20 @@ public class SurvivalFly extends Check {
         }
         else {
             // Handle descending
-        	// NOTE: Descend speed is a massive pain to model here due to movements not reaching the player move event thresholds and split moves.
-        	// Player can fall faster/slower if: they spam WASD; they stand still while falling through; are sneaking and such.
-        	// Not worth the hassle to account for each and every bullshit.
+            // NOTE: Descend speed is a massive pain to model here due to movements not reaching the player move event thresholds and split moves.
+            // Player can fall faster/slower if: they spam WASD; they stand still while falling through; are sneaking and such.
+            // Not worth the hassle to account for each and every bullshit.
             // NOTE: falling speed is static
-        	if (!thisMove.to.inWeb && lastMove.yDistance < 0.0) {
-        		// Falling from below.
-        		// Falling speed varies here: -0.11 / -0.07(+-) observed
-        		vAllowedDistance = -Magic.GRAVITY_MAX - Magic.GRAVITY_SPAN;
-        	}
-        	else if (!lastMove.from.inWeb && lastMove.yDistance < 0.0) {
+            if (!thisMove.to.inWeb && lastMove.yDistance < 0.0) {
+                // Falling from below.
+                // Falling speed varies here: -0.11 / -0.07(+-) observed
+                vAllowedDistance = -Magic.GRAVITY_MAX - Magic.GRAVITY_SPAN;
+            }
+            else if (!lastMove.from.inWeb && lastMove.yDistance < 0.0) {
                 // Leniency for falling from high enough places.
                 vAllowedDistance = lastMove.yDistance * Magic.FRICTION_MEDIUM_AIR - (thisMove.hasSlowfall ? Magic.SLOW_FALL_GRAVITY : Magic.GRAVITY_MIN);
             }
-        	else if (thisMove.hasSlowfall) {
+            else if (thisMove.hasSlowfall) {
                 // Usuallly, the movement here is smaller than what the PlayerMoveEvent can handle.
                 // Enforce slower falling speed.
                 vAllowedDistance = -Magic.GRAVITY_SPAN * Magic.FRICTION_MEDIUM_AIR + Magic.SLOW_FALL_GRAVITY;
@@ -1884,7 +1884,7 @@ public class SurvivalFly extends Check {
             vDistanceAboveLimit = 0.0;
         }
         if (vDistanceAboveLimit > 0.0) {
-        	tags.add(yDistance >= 0.0 ? "vwebasc" : "vwebdesc");
+            tags.add(yDistance >= 0.0 ? "vwebasc" : "vwebdesc");
         }
         return new double[]{vAllowedDistance, vDistanceAboveLimit};
     }
@@ -1935,19 +1935,19 @@ public class SurvivalFly extends Check {
             // Handle descending
             // Note that falling speed is static
             if (!thisMove.to.inBerryBush && lastMove.yDistance < 0.0) {
-            	// Exiting a bush from below, technically not possible because bushes need a dirt block to support them, just in case plugins get funny ideas.
-            	vAllowedDistance = -Magic.GRAVITY_MAX; // Arbitrary. Fuck it.
+                // Exiting a bush from below, technically not possible because bushes need a dirt block to support them, just in case plugins get funny ideas.
+                vAllowedDistance = -Magic.GRAVITY_MAX; // Arbitrary. Fuck it.
             }
             else if (!lastMove.from.inBerryBush && lastMove.yDistance < 0.0) {
                 // Leniency for falling from a high enough place onto a bush
                 vAllowedDistance = lastMove.yDistance * Magic.FRICTION_MEDIUM_AIR - (thisMove.hasSlowfall ? Magic.SLOW_FALL_GRAVITY : Magic.GRAVITY_MAX);
             }
             else if (thisMove.hasSlowfall
-            		// Spare transition from ascending to descending
-            		&& !(lastMove.yDistance > 0.0 && thisMove.yDistance < 0.0)) {
-            	// Why, WHY do players fall faster if moving horizontally. This game...
-            	// Technically, sneaking affects motion as well here...
-            	vAllowedDistance = thisMove.hDistance > 0.0 ? -Magic.GRAVITY_SPAN * 1.43 : -Magic.GRAVITY_VACC * 0.99;
+                    // Spare transition from ascending to descending
+                    && !(lastMove.yDistance > 0.0 && thisMove.yDistance < 0.0)) {
+                // Why, WHY do players fall faster if moving horizontally. This game...
+                // Technically, sneaking affects motion as well here...
+                vAllowedDistance = thisMove.hDistance > 0.0 ? -Magic.GRAVITY_SPAN * 1.43 : -Magic.GRAVITY_VACC * 0.99;
             }
             // Ordinary
             // (Falling speed seems to be kept reliably, unlike webs here)
@@ -1957,14 +1957,14 @@ public class SurvivalFly extends Check {
         }
  
         if (data.getOrUseVerticalVelocity(yDistance) != null
-        	// Don't ignore PVP and block-move velocity, do ignore other sources.
-        	&& thisMove.verVelUsed != null 
+            // Don't ignore PVP and block-move velocity, do ignore other sources.
+            && thisMove.verVelUsed != null 
             && (thisMove.verVelUsed.flags & (VelocityFlags.ORIGIN_BLOCK_MOVE | VelocityFlags.ORIGIN_PVP)) != 0
             && vDistanceAboveLimit > 0.0) {
             vDistanceAboveLimit = 0.0;
         }
         if (vDistanceAboveLimit > 0.0) {
-        	tags.add(yDistance >= 0.0 ? "vbushasc" : "vbushdesc");
+            tags.add(yDistance >= 0.0 ? "vbushasc" : "vbushdesc");
         }
         return new double[]{vAllowedDistance, vDistanceAboveLimit};
     }
@@ -1993,53 +1993,53 @@ public class SurvivalFly extends Check {
         boolean jump = false;
    
         if (yToBlock < Magic.GRAVITY_ODD) {
-        	// Close enough to ground below, allow jumping motion.
+            // Close enough to ground below, allow jumping motion.
             vAllowedDistance = data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier, data.lastBlockFrictionVertical);
             jump = true;
         }
         else {
-        	// Too far from the block, enforce climbing motion
+            // Too far from the block, enforce climbing motion
             if (BridgeMisc.hasLeatherBootsOn(player)) {
-            	// If the player has leather boots, they are allowed to climb this block
-            	if (thisMove.hasSlowfall && yDistance > 0.0 && lastMove.yDistance < 0.0
-            		&& !thisMove.to.inPowderSnow && (!lastMove.from.inPowderSnow || !secondlastMove.from.inPowderSnow) && player.isSneaking() && reallySneaking.contains(player.getName())) {
-            		// Shift+Space bar on top of powder snow: yDistance inversion, from a negastive to a positive amount. Appears only with slowfall. (-> -0.095 -> 0.279 (+0.374 gain, sometimes even more)
-            		vAllowedDistance = Math.abs(lastMove.yDistance * data.lastBlockFrictionVertical * data.lastFrictionVertical - 0.25);
+                // If the player has leather boots, they are allowed to climb this block
+                if (thisMove.hasSlowfall && yDistance > 0.0 && lastMove.yDistance < 0.0
+                    && !thisMove.to.inPowderSnow && (!lastMove.from.inPowderSnow || !secondlastMove.from.inPowderSnow) && player.isSneaking() && reallySneaking.contains(player.getName())) {
+                    // Shift+Space bar on top of powder snow: yDistance inversion, from a negastive to a positive amount. Appears only with slowfall. (-> -0.095 -> 0.279 (+0.374 gain, sometimes even more)
+                    vAllowedDistance = Math.abs(lastMove.yDistance * data.lastBlockFrictionVertical * data.lastFrictionVertical - 0.25);
 
-            	}
-                else if (thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0 && !lastMove.from.inPowderSnow) {
-            		// Hopping onto a snow block and sinking in.
-            		vAllowedDistance = lastMove.yDistance * data.lastBlockFrictionVertical - Magic.GRAVITY_MIN - Magic.GRAVITY_VACC;
-            	}
-            	else if (thisMove.hasSlowfall && yDistance < 0.0 && lastMove.yDistance < 0.0) { 
-            		// Enforce slower falling speed.
-            		// (Both descending moves: when jumping the player keeps ordinary falling speed on the first descending move 0.63 -> -0.118)
-                	vAllowedDistance = thisMove.hDistance > 0.0 ? -Magic.GRAVITY_ODD - Magic.SLOW_FALL_GRAVITY - 0.0002  : -Magic.GRAVITY_ODD; 
                 }
-            	// Ordinary climbing motion
-            	else vAllowedDistance = yDistance < 0.0 ? -Magic.snowClimbSpeedDescend : Magic.snowClimbSpeedAscend;
-            	tags.add("bootson");
+                else if (thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0 && !lastMove.from.inPowderSnow) {
+                    // Hopping onto a snow block and sinking in.
+                    vAllowedDistance = lastMove.yDistance * data.lastBlockFrictionVertical - Magic.GRAVITY_MIN - Magic.GRAVITY_VACC;
+                }
+                else if (thisMove.hasSlowfall && yDistance < 0.0 && lastMove.yDistance < 0.0) { 
+                    // Enforce slower falling speed.
+                    // (Both descending moves: when jumping the player keeps ordinary falling speed on the first descending move 0.63 -> -0.118)
+                    vAllowedDistance = thisMove.hDistance > 0.0 ? -Magic.GRAVITY_ODD - Magic.SLOW_FALL_GRAVITY - 0.0002  : -Magic.GRAVITY_ODD; 
+                }
+                // Ordinary climbing motion
+                else vAllowedDistance = yDistance < 0.0 ? -Magic.snowClimbSpeedDescend : Magic.snowClimbSpeedAscend;
+                tags.add("bootson");
             } 
             else {
-            	if (lastMove.yDistance > 0.0 && thisMove.yDistance > 0.0 
-            		&& thisMove.to.inPowderSnow && lastMove.from.inPowderSnow) {
-            		// One cannot ascend in powder snow without boots
-            		// (== 0.0 is covered by nogravityblock)
-            		vAllowedDistance = 0.0;
-            		tags.add("nobootsasc");
-            	}
-            	else if (thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0 && !lastMove.from.inPowderSnow) {
-            		// Hopping onto a snow block and sinking in.
-            		vAllowedDistance = lastMove.yDistance * data.lastBlockFrictionVertical * data.lastFrictionVertical - Magic.GRAVITY_MAX - Magic.GRAVITY_VACC;
-            	}
-            	else if (thisMove.hasSlowfall && (yDistance < 0.0 && lastMove.yDistance < 0.0
-            			// Odd in-air stop (neg -> 0 -> neg (with Distance being the same as the second last move)
-            			|| thisMove.yDistance == 0.0 && lastMove.yDistance < 0.0 && lastMove.yDistance - thisMove.yDistance == lastMove.yDistance)) {
-            		// Enforce slower falling speed 
-                	vAllowedDistance = thisMove.hDistance > 0.0 ? -Magic.GRAVITY_ODD - Magic.SLOW_FALL_GRAVITY - 0.0002  : -Magic.GRAVITY_ODD; 
-            	}
-            	// Descend motion.
-            	else vAllowedDistance = -Magic.snowClimbSpeedDescend;
+                if (lastMove.yDistance > 0.0 && thisMove.yDistance > 0.0 
+                    && thisMove.to.inPowderSnow && lastMove.from.inPowderSnow) {
+                    // One cannot ascend in powder snow without boots
+                    // (== 0.0 is covered by nogravityblock)
+                    vAllowedDistance = 0.0;
+                    tags.add("nobootsasc");
+                }
+                else if (thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0 && !lastMove.from.inPowderSnow) {
+                    // Hopping onto a snow block and sinking in.
+                    vAllowedDistance = lastMove.yDistance * data.lastBlockFrictionVertical * data.lastFrictionVertical - Magic.GRAVITY_MAX - Magic.GRAVITY_VACC;
+                }
+                else if (thisMove.hasSlowfall && (yDistance < 0.0 && lastMove.yDistance < 0.0
+                        // Odd in-air stop (neg -> 0 -> neg (with Distance being the same as the second last move)
+                        || thisMove.yDistance == 0.0 && lastMove.yDistance < 0.0 && lastMove.yDistance - thisMove.yDistance == lastMove.yDistance)) {
+                    // Enforce slower falling speed 
+                    vAllowedDistance = thisMove.hDistance > 0.0 ? -Magic.GRAVITY_ODD - Magic.SLOW_FALL_GRAVITY - 0.0002  : -Magic.GRAVITY_ODD; 
+                }
+                // Descend motion.
+                else vAllowedDistance = -Magic.snowClimbSpeedDescend;
                 tags.add("bootsoff");
             }
         }
@@ -2048,14 +2048,14 @@ public class SurvivalFly extends Check {
         final boolean violation = jump ? yDistDiffEx > 0.0 : Math.abs(yDistance) > Math.abs(vAllowedDistance);
         vDistanceAboveLimit = violation ? Math.abs(yDistDiffEx) : 0.0;
         if (data.getOrUseVerticalVelocity(yDistance) != null
-        	// Don't ignore PVP and block-move velocity, do ignore other sources.
-        	&& thisMove.verVelUsed != null 
+            // Don't ignore PVP and block-move velocity, do ignore other sources.
+            && thisMove.verVelUsed != null 
             && (thisMove.verVelUsed.flags & (VelocityFlags.ORIGIN_BLOCK_MOVE | VelocityFlags.ORIGIN_PVP)) != 0
             && vDistanceAboveLimit > 0.0) {
             vDistanceAboveLimit = 0.0;
         }
         if (vDistanceAboveLimit > 0.0) {
-        	tags.add(yDistance >= 0.0 ? "vsnowasc" : "vsnowdesc");
+            tags.add(yDistance >= 0.0 ? "vsnowasc" : "vsnowdesc");
         }
         return new double[]{vAllowedDistance, vDistanceAboveLimit};
     }
@@ -2113,7 +2113,7 @@ public class SurvivalFly extends Check {
         // The antilevitation subcheck: prevent players from ignoring the levitation effect     //
         //////////////////////////////////////////////////////////////////////////////////////////
         if (Bridge1_9.getLevitationAmplifier(player) < 127 && lastMove.toIsValid && lastMove.hasLevitation) { 
-        	final double allowY = (lastMove.yDistance + (0.05D * LevitationLevel - lastMove.yDistance) * 0.2D) * Magic.FRICTION_MEDIUM_AIR;
+            final double allowY = (lastMove.yDistance + (0.05D * LevitationLevel - lastMove.yDistance) * 0.2D) * Magic.FRICTION_MEDIUM_AIR;
             // TODO: Wrong friction
             if (thisMove.headObstructed
                 // Exempt check for 10 seconds after joined
@@ -2271,10 +2271,10 @@ public class SurvivalFly extends Check {
             builder.append("\n fdsq: " + StringUtil.fdec3.format(thisMove.distanceSquared / lastMove.distanceSquared));
         }
         if (!lastMove.toIsValid) {
-        	builder.append("\n Invalid last move (data reset)");
+            builder.append("\n Invalid last move (data reset)");
         }
         if (!lastMove.valid) {
-        	builder.append("\n Invalid last move (missing data)");
+            builder.append("\n Invalid last move (missing data)");
         }
         if (thisMove.verVelUsed != null) {
             builder.append(" , vVelUsed: " + thisMove.verVelUsed + " ");

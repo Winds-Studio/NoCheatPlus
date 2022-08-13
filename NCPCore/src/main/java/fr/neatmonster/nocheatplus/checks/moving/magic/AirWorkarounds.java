@@ -620,9 +620,9 @@ public class AirWorkarounds {
                 // 0: Cases involving slowfall
                 || thisMove.hasSlowfall 
                 && (
-                	  // 1: Getting the slowfall effect while airborne
-                	  // TODO: Better yDistance confinement
-                	  (!lastMove.hasSlowfall || !secondLastMove.hasSlowfall)
+                      // 1: Getting the slowfall effect while airborne
+                      // TODO: Better yDistance confinement
+                      (!lastMove.hasSlowfall || !secondLastMove.hasSlowfall)
                       && MathUtil.between(-Magic.GRAVITY_MAX, yDistDiffEx, 0.0)
                       && data.ws.use(WRPT.W_M_SF_FASTFALL_6)
                       // 1: Jumping out of powder snow with slowfall
@@ -850,7 +850,7 @@ public class AirWorkarounds {
                 || !thisMove.hasSlowfall && lastMove.hasSlowfall 
                 && thisMove.yDistance < 0.0 
                 && MathUtil.between(lastMove.yDistance * data.lastFrictionVertical - Magic.DEFAULT_GRAVITY, thisMove.yDistance, 
-                		            lastMove.yDistance * data.lastFrictionVertical - Magic.SLOW_FALL_GRAVITY)
+                                    lastMove.yDistance * data.lastFrictionVertical - Magic.SLOW_FALL_GRAVITY)
                 // 0: Minecraft bug: bobbing up and down when slow falling on a bouncy block and trying to step up a block
                 || resetTo && !resetFrom && data.sfJumpPhase <= 3 && thisMove.yDistance < cc.sfStepHeight
                 && !data.isVelocityJumpPhase() && lastMove.yDistance < Magic.GRAVITY_MAX
@@ -889,7 +889,7 @@ public class AirWorkarounds {
     public static boolean oddJunction(final PlayerLocation from, final PlayerLocation to, final double yDistChange, 
                                       final double yDistDiffEx, final boolean resetTo,
                                       final MovingData data, final MovingConfig cc, final boolean resetFrom) {
-    	final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier);
 

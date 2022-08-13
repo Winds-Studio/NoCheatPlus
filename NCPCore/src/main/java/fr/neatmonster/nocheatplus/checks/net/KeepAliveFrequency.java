@@ -37,12 +37,12 @@ public class KeepAliveFrequency extends Check {
     public boolean check(final Player player, final long time, final NetData data, final NetConfig cc, final IPlayerData pData) {
         data.keepAliveFreq.add(time, 1f);
         final float first = data.keepAliveFreq.bucketScore(0);
-	    final long now = System.currentTimeMillis();
-    	
-	    if (now > pData.getLastJoinTime() && pData.getLastJoinTime() + cc.keepAliveFrequencyStartupDelay * 1000 < now) {
-    		return false;
-    	}
-    	
+        final long now = System.currentTimeMillis();
+        
+        if (now > pData.getLastJoinTime() && pData.getLastJoinTime() + cc.keepAliveFrequencyStartupDelay * 1000 < now) {
+            return false;
+        }
+        
         if (first > 1f) {
             // Trigger a violation.
             final double vl = Math.max(first - 1f, data.keepAliveFreq.score(1f) - data.keepAliveFreq.numberOfBuckets());

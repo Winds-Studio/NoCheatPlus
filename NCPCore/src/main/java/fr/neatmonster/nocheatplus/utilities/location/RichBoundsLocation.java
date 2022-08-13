@@ -708,7 +708,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInLiquid() {
         if (!isInWaterLogged() && blockFlags != null && (blockFlags.longValue() & BlockFlags.F_LIQUID) == 0) {
-        	return false;
+            return false;
         }
         return isInWater() || isInLava();
     }
@@ -831,7 +831,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isInPowderSnow() {
         if (inPowderSnow == null) {
             if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_POWDERSNOW) == 0) {
-            	inPowderSnow = false;
+                inPowderSnow = false;
             } 
             else {
                 inPowderSnow = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_POWDERSNOW) != 0;;
@@ -926,10 +926,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInOrAboveSoulSand() {
         if (isInSoulSand()) {
-        	inOrAboveSoulSand = true;
+            inOrAboveSoulSand = true;
         }
         else {
-        	inOrAboveSoulSand = isOnGround() && BlockProperties.collides(blockCache, minX, minY - yOnGround, minZ, maxX, maxY, maxZ, BlockFlags.F_SOULSAND);
+            inOrAboveSoulSand = isOnGround() && BlockProperties.collides(blockCache, minX, minY - yOnGround, minZ, maxX, maxY, maxZ, BlockFlags.F_SOULSAND);
         }
         return inOrAboveSoulSand;
     }
@@ -997,11 +997,11 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return true, if is an bubblestream
      */
     public boolean isInBubbleStream() {
-    	if (inBubblestream == null) {
-    	    inBubblestream = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_BUBBLECOLUMN)
-    	    		        && !isDraggedByBubbleStream();
-    	}
-    	return inBubblestream;
+        if (inBubblestream == null) {
+            inBubblestream = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_BUBBLECOLUMN)
+                            && !isDraggedByBubbleStream();
+        }
+        return inBubblestream;
      
     }
 

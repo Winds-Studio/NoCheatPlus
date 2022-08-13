@@ -136,7 +136,7 @@ public class MathUtil {
     * @return Maximum absolute value between the two inputs.
     */
    public static double absMax(double a, double b) {
-	   return Math.max(Math.abs(a), Math.abs(b));
+      return Math.max(Math.abs(a), Math.abs(b));
    }
 
    /**

@@ -346,7 +346,7 @@ public class BlockChangeListener implements Listener {
     }
 
     private void onInventoryClose(final InventoryCloseEvent event) {
-    	final HumanEntity entity = event.getPlayer();
+        final HumanEntity entity = event.getPlayer();
         if (entity instanceof Player) {
             final Player player = (Player) entity;
             if (player != null) {
@@ -355,11 +355,11 @@ public class BlockChangeListener implements Listener {
                 final MovingData mData = pData.getGenericInstance(MovingData.class);
                 if (ServerVersion.compareMinecraftVersion("1.11") >= 0) {
                     if (event.getInventory().getType() == InventoryType.SHULKER_BOX 
-                    	&& !mData.playerMoves.getCurrentMove().from.inLiquid
+                        && !mData.playerMoves.getCurrentMove().from.inLiquid
                         && biData.getLastBlock() != null 
                         && MaterialUtil.SHULKER_BOXES.contains(biData.getLastType())) {
                         // Add the state of the shulker at the time it was opened.
-                    	// (Doesn't seem to be quite enough with slowfall)
+                        // (Doesn't seem to be quite enough with slowfall)
                         tracker.addBlocks(biData.getLastBlock()); 
                         // (Ok-ish, rare and sporadic still appear, will need further investigation)
                     }
@@ -380,28 +380,28 @@ public class BlockChangeListener implements Listener {
     }
     
     private void onBlockBreak(final BlockBreakEvent event) {
-    	if (!event.isCancelled() && event.getPlayer().getGameMode() != GameMode.CREATIVE) {
-    		final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (!event.isCancelled() && event.getPlayer().getGameMode() != GameMode.CREATIVE) {
+            final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
             final BlockInteractData biData = pData.getGenericInstance(BlockInteractData.class);
             final MovingData mData = pData.getGenericInstance(MovingData.class);
-    		if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(event.getPlayer()))
+            if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(event.getPlayer()))
                 && !mData.playerMoves.getCurrentMove().from.inLiquid
                 // Skip instant/low-breaking-time blocks.
                 && BlockProperties.getBreakingDuration(event.getBlock().getType(), event.getPlayer()) > 2) {
-    			// Always add the broken block if slow fall is present.
-    			// Can this be confined further by having broken a block below?
-    			tracker.addBlocks(event.getBlock());
-    		    // (OK, seems to fix false positives reliably)
-    		}
-    		//   else if (BlockProperties.isValidTool(event.getBlock().getType(), Bridge1_9.getItemInMainHand(event.getPlayer()))
-    		//	    	 && Bridge1_9.getItemInMainHand(event.getPlayer()).containsEnchantment(Enchantment.DIG_SPEED)) {
-    		//	   // If this tool is appropriate for the broken block and the tool has efficiency on, add this block to the tracker
-    		//	   // Context: desync issues with client-server, ghost blocks. will require a more targeted fix
-    		//	   tracker.addBlocks(biData.getLastBlock()); // Does not seem to fix false positives..
-    		//	   event.getPlayer().sendMessage("Succesfully added entry 2");
+                // Always add the broken block if slow fall is present.
+                // Can this be confined further by having broken a block below?
+                tracker.addBlocks(event.getBlock());
+                // (OK, seems to fix false positives reliably)
+            }
+            //   else if (BlockProperties.isValidTool(event.getBlock().getType(), Bridge1_9.getItemInMainHand(event.getPlayer()))
+            //           && Bridge1_9.getItemInMainHand(event.getPlayer()).containsEnchantment(Enchantment.DIG_SPEED)) {
+            //     // If this tool is appropriate for the broken block and the tool has efficiency on, add this block to the tracker
+            //     // Context: desync issues with client-server, ghost blocks. will require a more targeted fix
+            //     tracker.addBlocks(biData.getLastBlock()); // Does not seem to fix false positives..
+            //     event.getPlayer().sendMessage("Succesfully added entry 2");
             //
-    		//   }
-    	}
+            //   }
+        }
     }
 
     @SuppressWarnings("deprecation")
@@ -425,7 +425,7 @@ public class BlockChangeListener implements Listener {
                     else {
                         final boolean defdata = block.getData() == 0;
                         if (is1_9 && type == BridgeMaterial.GRASS_BLOCK && tool.toolType == ToolType.SPADE 
-                        	|| defdata && tool.toolType == ToolType.HOE) {
+                            || defdata && tool.toolType == ToolType.HOE) {
                             tracker.addBlocks(block);
                         }
                     }

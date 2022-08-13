@@ -751,7 +751,7 @@ public class BlockProperties {
      * @return true, if is cobweb
      */
     public static final boolean isCobweb(final Material mat) {
-    	return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_COBWEB) != 0;
+        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_COBWEB) != 0;
     }
 
     /**

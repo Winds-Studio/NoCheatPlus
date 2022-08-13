@@ -533,7 +533,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event);
         }
         else {
-        	// This movement didn't reach the PlayerMoveEvent thresholds: Location has not been updated last moving event.
+            // This movement didn't reach the PlayerMoveEvent thresholds: Location has not been updated last moving event.
             // Do split into two moves.
             // 1: Process from -> loc.
             moveInfo.set(player, from, loc, cc.yOnGround);
@@ -960,22 +960,22 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         
         // 7: Fake add velocity when levitation ends to smoothen the transition and not trigger false positives
         if (lastMove.hasLevitation && !thisMove.hasLevitation) {
-        	data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance, 60));
+            data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance, 60));
             if (debug) {
-            	debug(player, "Transition from levitation to normal move: fake use velocity.");
+                debug(player, "Transition from levitation to normal move: fake use velocity.");
             }
         }
         
         // 8: Fake add velocity for when the stream launches the player in the air.
         // TODO: Can this be modeled better?
         if (!thisMove.headObstructed && lastMove.from.inBubbleStream 
-        	&& BlockProperties.isAir(pFrom.getTypeIdAbove()) && !lastMove.from.draggedByBubbleStream
-        	&& !data.isVelocityJumpPhase()) {
-        	data.addVerticalVelocity(new SimpleEntry(Math.min(1.8, lastMove.yDistance + 0.2), (int) Math.round(Math.min(1.8, lastMove.yDistance + 0.2) * 60)));
-        	data.setFrictionJumpPhase();
-        	if (debug) {
-        		debug(player, "Fake velocity for bubble stream launch effect.");
-        	}
+            && BlockProperties.isAir(pFrom.getTypeIdAbove()) && !lastMove.from.draggedByBubbleStream
+            && !data.isVelocityJumpPhase()) {
+            data.addVerticalVelocity(new SimpleEntry(Math.min(1.8, lastMove.yDistance + 0.2), (int) Math.round(Math.min(1.8, lastMove.yDistance + 0.2) * 60)));
+            data.setFrictionJumpPhase();
+            if (debug) {
+                debug(player, "Fake velocity for bubble stream launch effect.");
+            }
         }
         
 
@@ -2809,7 +2809,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 builder.append("(blocking)");
             }
             if (cData.isUsingItem) {
-            	builder.append("(using item)");
+                builder.append("(using item)");
             }
             final Vector v = player.getVelocity();
             if (v.lengthSquared() > 0.0) {
@@ -2821,10 +2821,10 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         final double slow = PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.SLOW);
         if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))) {
-        	builder.append("(e_slowfall= " + (Bridge1_13.getSlowfallingAmplifier(player) + 1) + ")");
+            builder.append("(e_slowfall= " + (Bridge1_13.getSlowfallingAmplifier(player) + 1) + ")");
         }
         if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
-        	builder.append("(e_levitation= " + (Bridge1_9.getLevitationAmplifier(player) + 1) + ")");
+            builder.append("(e_levitation= " + (Bridge1_9.getLevitationAmplifier(player) + 1) + ")");
         }
         if (!Double.isInfinite(slow)) {
             builder.append("(e_slow=" + (slow + 1) + ")");
