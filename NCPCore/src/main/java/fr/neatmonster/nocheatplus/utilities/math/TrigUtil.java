@@ -53,61 +53,61 @@ public class TrigUtil {
 
     private static final double DEG_TO_INDEX = 11.377778;
 
-    public static final double DEG_TO_RAD = 0.017453292;
+    public static final float DEG_TO_RAD = 0.017453292F;
     /** Multiply to get grad from rad. */
     public static final double fRadToGrad = DEG_FULL / PI2;
 
    /**
     * NMS table of sin values computed from 0 (inclusive) to 2*pi (exclusive), with steps of 2*PI / 65536.
     * (Optifine uses a different table but let's pretend it doesn't exist for the moment... :))
-    * From Mth.java (1.18.2)
+    * From M.java (1.18.2)
     */
     private static float[] SIN = new float[65536];
 
     static {
         for (int i = 0; i < SIN.length; ++i) {
-            SIN[i] = (float) Math.sin((double) i * 3.141592653589793D * 2.0D / 65536.0D);
+            SIN[i] = (float) StrictMath.sin((double) i * 3.141592653589793D * 2.0D / 65536.0D);
         }
     }
 
     /**
      * Sin looked up in a table
-     * @param var0
+     * @param value
      * @return the sin
      */
-    public static double sin(double var0) 
+    public static double sin(double value) 
     {
-      return (double)SIN[(int)(var0 * 10430.378F) & '\uffff'];
+      return (double)SIN[(int)(value * 10430.378F) & 65536];
     }
     
     /**
      * Cos looked up in the sin table with the appropriate offset
-     * @param var0
+     * @param value
      * @return the cos
      */
-    public static double cos(double var0) 
+    public static double cos(double value) 
     {
-      return (double)SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
+      return (double)SIN[(int)(value * 10430.378F + 16384.0F) & 65535];
     }
     
     /**
      * Sin looked up in a table
-     * @param var0
+     * @param value
      * @return the sin
      */
-    public static float sin(float var0) 
+    public static float sin(float value) 
     {
-      return SIN[(int)(var0 * 10430.378F) & '\uffff'];
+      return SIN[(int)(value * 10430.378F) & 65535];
     }
     
     /**
      * Cos looked up in the sin table with the appropriate offset
-     * @param var0
+     * @param value
      * @return the cos
      */
-    public static float cos(float var0) 
+    public static float cos(float value) 
     {
-      return SIN[(int)(var0 * 10430.378F + 16384.0F) & '\uffff'];
+      return SIN[(int)(value * 10430.378F + 16384.0F) & 65535];
     }
 
     /**

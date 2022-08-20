@@ -578,7 +578,7 @@ public class BlockProperties {
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
         double speedFactor = 1.0D;
-        if (pLoc.isInWater() || pLoc.isInBubbleStream()) {
+        if (pLoc.isInWater() || pLoc.isInBubbleStream() || pLoc.isDraggedByBubbleStream()) {
             // Early return: See Entity.java.getBlockSpeedFactor()
             // We don't care about the block's speed if in water or in bubble column (What about lava Mojang?)
             blockCache.cleanup();

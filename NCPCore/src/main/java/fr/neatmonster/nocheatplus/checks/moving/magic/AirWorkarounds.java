@@ -43,9 +43,11 @@ public class AirWorkarounds {
 
     // ONGOING: Tighten/Review all workarounds: some of them date back to the pre past-move-tracking framework period. They're likely too generic by now.
     // OBSERVED: Review all "landing-on-ground-allows-a-shoter-move" workarounds. They can be exploited for 1-block step cheats.
+	//           ^ These seem crucial, as landing back on ground would always yield a false positive otherwise.
     // TODO: Review stairs workarounds due to the new shape rework
-    // TODO: Review venvHacks,at least cobwebs. (Still needed?)
-    // TODO: Aim to remove all oddLiquid cases, replacing them with actual MC equations/formulas.
+    // TODO: Review venvHacks,at least cobwebs. (Still needed? -> Looks like it. Review bounding box)
+    // TODO: Aim to remove most oddLiquid cases, replacing them with actual MC equations/formulas.
+	// TODO: Note that the oddLiquid cases refer to the OLD and INCORRECT liquid bounding box, prior to this commit: https://github.com/Updated-NoCheatPlus/NoCheatPlus/commit/9293cde9edd655a61ec9570e0fd6fa0ad53ff44e
     // TODO: Identify which workarounds can be skipped with Slowfall
     /*
      * REMOVED AND TESTED: 
@@ -207,9 +209,11 @@ public class AirWorkarounds {
                 && Math.abs(yDistDiffEx) < 2.0 * Magic.GRAVITY_SPAN 
                 && lastMove.yDistance > 0.0 && thisMove.yDistance < lastMove.yDistance
                 && to.getY() - data.getSetBackY() <= data.liftOffEnvelope.getMaxJumpHeight(data.jumpAmplifier)
+                && !data.sfLowJump
                 && (
                     // 1: Decrease more after lost-ground cases with more y-distance than normal lift-off.
-                    MathUtil.between(maxJumpGain, lastMove.yDistance, 1.1 * maxJumpGain)
+                    // This can happen legitimately only a single time for a given air phase
+                    MathUtil.between(maxJumpGain, lastMove.yDistance, 1.005 * maxJumpGain)
                     && data.ws.use(WRPT.W_M_SF_SLOPE1)
                     //&& fallingEnvelope(yDistance, lastMove.yDistance, 2.0 * GRAVITY_SPAN)
                     // 1: Decrease more after going through liquid (but normal ground envelope).
@@ -365,7 +369,7 @@ public class AirWorkarounds {
      */
     private static boolean oddGravity(final PlayerLocation from, final PlayerLocation to, 
                                       final double yDistChange, final double yDistDiffEx, 
-                                      final MovingData data) {
+                                      final MovingData data, final boolean resetFrom, final boolean resetTo) {
         // Old condition (normal lift-off envelope).
         //        yDistance >= -GRAVITY_MAX - GRAVITY_SPAN 
         //        && (yDistChange < -GRAVITY_MIN && Math.abs(yDistChange) <= 2.0 * GRAVITY_MAX + GRAVITY_SPAN
@@ -379,7 +383,7 @@ public class AirWorkarounds {
                         // 1: Too big chunk of change, but within reasonable bounds (should be contained in some other generic case?).
                         lastMove.yDistance < 3.0 * Magic.GRAVITY_MAX + Magic.GRAVITY_MIN 
                         && MathUtil.between(-2.5 * Magic.GRAVITY_MAX - Magic.GRAVITY_MIN, yDistChange, -Magic.GRAVITY_MIN)
-                        && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_1)
+                        && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_1) // Can't use this more than 3 times for a single air phase. Reason: long-jump exploit potential.
                         // 1: Transition to 0.0 yDistance, ascending.
                         || MathUtil.between(Magic.GRAVITY_ODD / 2.0, lastMove.yDistance, Magic.GRAVITY_MIN) && thisMove.yDistance == 0.0
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_2)
@@ -607,7 +611,6 @@ public class AirWorkarounds {
                 // 0: Mirrored case for yDistance > vAllowedDistance, hitting ground. 2
                 // TODO: Needs more efficient structure.
                 || thisMove.yDistance > lastMove.yDistance - Magic.GRAVITY_MAX - Magic.GRAVITY_SPAN && (resetTo || thisMove.touchedGround)
-                // && thisMove.setBackYDistance <= 0.0 // Only allow the move if the player had actually been falling
                 && data.ws.use(WRPT.W_M_SF_FASTFALL_3)
                 // 0: Stairs and other cases moving off ground or ground-to-ground. 3
                 // TODO: Margins !?
@@ -901,7 +904,7 @@ public class AirWorkarounds {
             // Jump after leaving the liquid near ground.
             return true;
         }
-        if (AirWorkarounds.oddGravity(from, to, yDistChange, yDistDiffEx, data)) {
+        if (AirWorkarounds.oddGravity(from, to, yDistChange, yDistDiffEx, data, resetFrom, resetTo)) {
             // Starting to fall / gravity effects.
             return true;
         }

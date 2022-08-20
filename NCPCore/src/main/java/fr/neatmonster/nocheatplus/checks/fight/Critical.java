@@ -30,6 +30,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.penalties.IPenaltyList;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
@@ -76,6 +77,7 @@ public class Critical extends Check {
         final MovingData mData = pData.getGenericInstance(MovingData.class);
         final MovingConfig mCC = pData.getGenericInstance(MovingConfig.class);
         final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
+        final PlayerMoveData lastMove = mData.playerMoves.getFirstPastMove();
         final double mcFallDistance = (double) player.getFallDistance();
         final double ncpFallDistance = mData.noFallFallDistance;
         final double realisticFallDistance = MovingUtil.getRealisticFallDistance(player, thisMove.from.getY(), thisMove.to.getY(), mData, pData);
@@ -118,14 +120,20 @@ public class Critical extends Check {
                 tags.add("fakefall");
                 violation = true;
             }
-            // Unlike liquid, in these media players can fake critical hits. Invalidate them, always.
+            // In such media, critical hits cannot be performed but they can be faked by cheaters. Invalidate them, always.
             else if ((thisMove.from.inBerryBush || thisMove.from.inWeb 
                     || thisMove.from.inPowderSnow) && mData.insideMediumCount > 1) { 
-                // mcFallDistance > 0.0 is checked above.
                 tags.add("fakecrit(" + (thisMove.from.inWeb ? "web" : thisMove.from.inBerryBush ? "berry bush" : "powder snow") + ")");
                 violation = true;
                 // (Cannot seem to fake in liquid)
+                // (mcFallDistance > 0.0 is checked above)
             }  
+            // One cannot perform critical hits with slowfall, as Minecraft resets fall distance when it's present.
+            else if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) && lastMove.hasSlowfall) {
+                tags.add("fakecrit(slowfall)");
+                violation = true;
+                // (Technically already detected by the methods above. Just to be sure)
+            }
 
             // Handle violations
             if (violation) {

@@ -43,8 +43,11 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.ITraceEntry;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
 import fr.neatmonster.nocheatplus.checks.moving.player.UnusedVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
@@ -245,6 +248,19 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         if (debug) {
             debug(player, "Attacks " + (damagedPlayer == null ? ("entity " + damaged.getType()) : ("player" + damagedPlayer.getName())) + " damage=" + (finalDamage == originalDamage ? finalDamage : (originalDamage + "/" + finalDamage)));
         }
+        
+        // This (odd) vanilla mechanic can be found in Player.java.attack()
+        // If the player is sprint-attacking or is attacking with a knockback-equipped weapon, speed is slowed down and the sprinting status will reset.
+        final ItemStack stack = Bridge1_9.getItemInMainHand(player);
+        final PlayerMoveInfo moveInfo = auxMoving.usePlayerMoveInfo();
+        moveInfo.set(player, loc, null, mCc.yOnGround);
+        if (MovingUtil.shouldCheckSurvivalFly(player, moveInfo.from, null, mData, mCc, pData) 
+        	&& (player.isSprinting() || !BlockProperties.isAir(stack) && stack.getEnchantmentLevel(Enchantment.KNOCKBACK) > 0 
+                || Bridge1_13.isSwimming(player))) {
+            // (Uhm... Keep it here or move to the MovingListener?
+            final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
+            thisMove.hAllowedDistance *= 0.6f;
+        }
 
         // Can't fight dead.
         if (cc.cancelDead) {
@@ -382,6 +398,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         // Cleanup.
         useLoc1.setWorld(null);
         useLoc2.setWorld(null);
+        auxMoving.returnPlayerMoveInfo(moveInfo);
         return cancelled;
     }
 
@@ -518,7 +535,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
                         damagedPlayer.setNoDamageTicks(0);
                     }
                 }
-                // Adjust buffer for fast heal checks.
+                // Adjust buffer for fast heal check.
                 if (BridgeHealth.getHealth(damagedPlayer) >= BridgeHealth.getMaxHealth(damagedPlayer)) {
                     // TODO: Might use the same FightData instance for GodMode.
                     if (damagedData.fastHealBuffer < 0) {
@@ -852,9 +869,9 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
     
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
     public void entityInteract(PlayerInteractEntityEvent e) {
-    	Entity entity = e.getRightClicked();
-    	final Player player = e.getPlayer();
-    	final FightData data = DataManager.getGenericInstance(player, FightData.class);
+        Entity entity = e.getRightClicked();
+        final Player player = e.getPlayer();
+        final FightData data = DataManager.getGenericInstance(player, FightData.class);
         data.exemptArmSwing = entity != null && entity.getType().name().equals("PARROT");
     }
 

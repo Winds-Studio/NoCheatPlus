@@ -15,12 +15,14 @@
 package fr.neatmonster.nocheatplus.checks.moving.player;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -56,6 +58,7 @@ import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.ds.count.ActionAccumulator;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
@@ -71,9 +74,6 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
  * normal ground, while sprinting, sneaking, swimming, etc.
  */
 public class SurvivalFly extends Check {
-
-    // TODO: One might also consider recoding vDistRel and vDistLiquid to slim down workarounds
-    // (Estimation/Prediction-based, according to MC's formulas and equations)
 
     private final boolean ServerIsAtLeast1_13 = ServerVersion.compareMinecraftVersion("1.13") >= 0;
     /** Flag to indicate whether the buffer should be used for this move (only work inside setAllowedhDist). */
@@ -247,7 +247,7 @@ public class SurvivalFly extends Check {
         // Climbable blocks
         // NOTE: this check needs to be before isInWeb, because otherwise it can lead to false positive
         else if (from.isOnClimbable()) {
-            final double[] resultClimbable = vDistClimbable(player, from, to, fromOnGround, toOnGround, thisMove, lastMove, yDistance, data);
+            final double[] resultClimbable = vDistClimbable(player, from, to, fromOnGround, toOnGround, thisMove, lastMove, yDistance, data, cc);
             vAllowedDistance = resultClimbable[0];
             vDistanceAboveLimit = resultClimbable[1];
         }
@@ -540,6 +540,9 @@ public class SurvivalFly extends Check {
         // Adjust various speed/friction factors (both h/v).
         data.lastFrictionVertical = data.nextFrictionVertical;
         data.lastBlockFrictionVertical = data.nextBlockFrictionVertical;
+        data.lastHorizontalFrictionFactor = data.nextHorizontalFrictionFactor;
+        data.lastBlockSpeedMultiplier = data.nextBlockSpeedMultiplier;
+        data.lastStuckInBlockMultiplier = data.nextStuckInBlockMultiplier;
 
         // Log tags added after violation handling.
         if (debug && tags.size() > tagsLength) {
@@ -691,6 +694,151 @@ public class SurvivalFly extends Check {
         // Nothing found.
         return null;
     }
+    
+    
+   /** 
+    * Calculate this movement's force based on the player's horizontal input
+    * Always assume the maximum. (We currently do not distinguish the direction (right/left/backwards/forward))<br>
+    * Note that:<br>
+    *     - Sprint multiplier is contained within "movementSpeedFactor"<br>
+    *     - Sneak multiplier is contained within "strafe" and "forward"<br>
+    * This is likely because Sneaking was implemented long before Sprinting
+    * @param player
+    * @param movementSpeedFactor Movement speed attribute factor to update hDistance with.
+    * @param from
+    * @param pData
+    * @param cc
+    * @param cData
+    * @param sneaking
+    * @param checkPermissions If bypass permissions should be checked to further increase performance a little bit.
+    * @param tags
+    * @param xPredictedDistance
+    * @param zPredictedDistance
+    * @param to
+    * @return 
+    */ 
+   private void updateHorizontalSpeed(final Player player, float movementSpeedFactor, final IPlayerData pData, 
+                                      final MovingConfig cc, final boolean sneaking, boolean checkPermissions,
+                                      final Collection<String> tags, float xPredictedDistance, float zPredictedDistance, final PlayerLocation to) {
+   	final MovingData data = pData.getGenericInstance(MovingData.class);    	
+   	final CombinedData cData = pData.getGenericInstance(CombinedData.class);    
+   	// The player's inputs are multiplied by 0.98 before being passed to the travel method.
+   	// (xxa zza)
+   	float strafe = 0.98F;
+   	float forward = 0.98F;
+       // From KeyboardInput.java
+       if (sneaking && !Bridge1_13.isSwimming(player) && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+           tags.add("sneaking");
+           strafe *= Magic.SNEAK_MULTIPLIER;
+           forward *= Magic.SNEAK_MULTIPLIER;
+           // Account for NCP base speed modifiers.
+           strafe *= cc.survivalFlySneakingSpeed / 100;
+           forward *= cc.survivalFlySneakingSpeed / 100;
+       }
+       // From LocalPlayer.java.aiStep()
+       if ((cData.isUsingItem || player.isBlocking()) && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+           tags.add("usingitem");
+           strafe *= Magic.USING_ITEM_MULTIPLIER;
+           forward *= Magic.USING_ITEM_MULTIPLIER;
+           // Account for NCP base speed modifiers.
+           strafe *= cc.survivalFlyBlockingSpeed / 100;
+           forward *= cc.survivalFlyBlockingSpeed / 100;
+       } 
+       
+       float distanceSq = (float)MathUtil.square(strafe) + (float)MathUtil.square(forward);        
+       if (distanceSq >= 1.0E-4) {
+           float distance = Math.max(1.F, (float)Math.sqrt(distanceSq));
+           distance = movementSpeedFactor / distance;
+           strafe *= distance;
+           forward *= distance;
+           float SinYaw = TrigUtil.sin(to.getYaw() * (float)Math.PI / 180.F); 
+           float CosYaw = TrigUtil.cos(to.getYaw() * (float)Math.PI / 180.F);
+           // Add the newly calculated speed
+           xPredictedDistance += (strafe * CosYaw - forward * SinYaw);
+           zPredictedDistance += (forward * CosYaw + strafe * SinYaw);
+       }
+   }
+   
+   
+   /**
+    * Apply speed modifiers that apply in any medium (water,lava,air)
+    * @param player
+    * @param from
+    * @param data
+    * @param to
+    * @param sneaking
+    * @param xPredictedDistance Predicted xDistance
+    * @param zPredictedDistance Predicted zDistance
+    * @param onGround Accounts for ALL oddities (lost ground, past block activity etc)
+    * @param tags
+    * @param width
+    * @return 
+    */
+   private void applySpeedModifiers(final Player player, final PlayerLocation from, final MovingData data, 
+                                    final PlayerLocation to, final boolean sneaking, float xPredictedDistance, float zPredictedDistance,
+                                    final boolean onGround, final Collection<String> tags, final double width) {
+       // TODO: Anything else?
+       final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+       final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
+       
+       // Block speed
+       xPredictedDistance *= data.lastBlockSpeedMultiplier;
+       zPredictedDistance *= data.lastBlockSpeedMultiplier;
+       
+       // Stuck-speed
+       xPredictedDistance *= data.lastStuckInBlockMultiplier;
+       zPredictedDistance *= data.lastStuckInBlockMultiplier;
+       
+       // From BlockSlime.java
+       // (Ground check is already included)
+       if (from.isOnSlimeBlock()) {
+           if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking) {
+               float mult = 0.4f + (float)Math.abs(thisMove.yDistance) * 0.2f;
+               xPredictedDistance *= mult;
+               zPredictedDistance *= mult;
+               tags.add("hslimeblock");
+           }
+       }
+       
+       // (This is called from entityInside(). Technically, it should also apply in any medium, but the honey block's speed-factor is not. So.)
+       if (MovingUtil.isSlidingDown(from, width, thisMove, player)) {
+           if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
+           	xPredictedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
+           	zPredictedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
+               tags.add("honeyslide");
+           }
+       }
+       
+       // Apply pushing speed
+       // From Entity.java.push()
+       if (ServerIsAtLeast1_9 && CollisionUtil.isCollidingWithEntities(player, true)) {
+           // Likely a better way to do this...
+           // (Does it need to be done for each entity actually?)
+           // (here, the game would also subtract speed to the pushing entity)
+           for (Entity entity : player.getNearbyEntities(0.15, 0.2, 0.15)) {
+               final Location eLoc = entity.getLocation(useLoc);
+               float xDistToEntity = (float) (eLoc.getX() - from.getX());
+               float zDistToEntity = (float) (eLoc.getZ() - from.getZ());
+               float absDist = (float)MathUtil.absMax(xDistToEntity, zDistToEntity);
+               // Cleanup
+               useLoc.setWorld(null);
+               if (absDist >= 0.009999999776482582F) {
+                   absDist = (float)Math.sqrt(absDist);
+                   xDistToEntity /= absDist;
+                   zDistToEntity /= absDist;
+                   float var8 = Math.min(1.f, 1.f / absDist);
+                   xDistToEntity *= var8;
+                   zDistToEntity *= var8;
+                   xDistToEntity *= 0.05000000074505806F;
+                   zDistToEntity *= 0.05000000074505806F;
+                   // Add the distance
+                   xPredictedDistance += xDistToEntity;
+                   zPredictedDistance += zDistToEntity;
+                   tags.add("hpush");
+               }
+           }
+       }
+   }
 
 
     /**
@@ -708,15 +856,14 @@ public class SurvivalFly extends Check {
         // TODO: Workarounds ARE needed:
         // 1) First move(s) after landing will generate a false positive. Re-introduce the bunnyhoptick thing? -> No, let's not abuse counters... (!)
         // 2) Swimming on the surface: false positives on the first two moves when leaving liquid (1.13)
-        // 3) Turning around a lot will generate sporadic false positives
         // 4) Sneaking is possibly even more broken than sprinting. Start/Stop sneaking will always yield false positives.
         // 5) Liquid pushing is missing.
         // 6) Sneaking in water slows down too much
-        // 7) Sprinting and walking speed is too high (0.253 when walking, VS actual 0.215 | Sprinting: 0.35+- VS actual: 0.287)
-        // 8) Almost any resetCond block has too high speed. (Despite using the same NMS formulas(!?))
+    	// 7) Is the maybeBackOffFromEdge mechanic needed?
 
         double hDistanceAboveLimit = 0.0;
-        double hAllowedDistance = 0.0;
+        float xPredictedDistance = (float)lastMove.to.getX() - (float)lastMove.from.getX();
+        float zPredictedDistance = (float)lastMove.to.getZ() - (float)lastMove.from.getZ();
         /** Always set to true unless the player is in a bunnyfly phase */
         boolean allowHop = true;
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
@@ -731,7 +878,7 @@ public class SurvivalFly extends Check {
         // TODO: Not enough! Still a single false positive when landing on ground.
         final boolean fromOnGroundOrLostGround = fromOnGround || thisMove.touchedGroundWorkaround && lastMove.toIsValid;
         /** The movement_speed attribute of the player. Includes all effects except sprinting [see below] (!) */
-        double speedAttribute = attributeAccess.getHandle().getMovementSpeed(player);
+        float speedAttribute = (float) attributeAccess.getHandle().getMovementSpeed(player);
 
 
         //////////////////////////////////////////////////
@@ -754,9 +901,6 @@ public class SurvivalFly extends Check {
             if (data.bunnyhopDelay == 1 && !toOnGround && !to.isResetCond()) {
                 data.bunnyhopDelay++;
                 tags.add("bunnyfly(keep)");
-                // Jumping is lasting longer than usual, feed the improbable.
-                // This can happen legitimately, especially on ice for a couple of ticks, but never more than 6/5 ticks. Usually.
-                Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
             }
             else tags.add("bunnyfly(" + data.bunnyhopDelay + ")");
             // (Currently, no early reset case)
@@ -766,72 +910,20 @@ public class SurvivalFly extends Check {
         //////////////////////////////////////////////////////////////
         // Estimate the horizontal speed (per-move distance check)  //                      
         //////////////////////////////////////////////////////////////
-        // TODO: Liquid pushing (!)
-        // NOTE: Order is as intended: the game checks in this order: water, else if lava, else if gliding, else no medium
-        if (!from.isInWater()) {
-
-            if (!from.isInLava()) {
-                // No medium  
-                /** How much speed should be conserved on the next tick[Air= more speed conservation]. */
-                double inertia = onGround ? data.horizontalFrictionFactor * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA; 
-                /** Per-tick speed gain[Air= less speed] */      
-                double acceleration = onGround ? speedAttribute * (Magic.BASE_MOVEMENT_SPEED / (inertia * inertia * inertia)) : Magic.AIR_MOVEMENT_SPEED_ATTRIBUTE;
-                if (sprinting) {
-                    // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
-                    acceleration *= Magic.SPRINT_MULTIPLIER;
-                    // Count in NCP base sprinting speed modifier
-                    acceleration *= cc.survivalFlySprintingSpeed / 100;
-                }
-                // (Works similar to vDistRel, apply friction first, then add the new distance)
-                hAllowedDistance = (lastMove.hDistance * inertia * data.stuckInBlockMultiplier * data.blockSpeedMultiplier) 
-                                 + MovingUtil.getInputForce(player, acceleration, from, pData, cc, cData, sneaking, checkPermissions, tags);
-                // Bunnyhop (aka: sprint-jump) detection (Adds 0.2 towards the player's current facing)
-                if (allowHop && Magic.isBunnyhop(data, fromOnGroundOrLostGround, sprinting)) {
-                    hAllowedDistance += Magic.BUNNYHOP_ACCEL_BOOST;
-                    data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY; 
-                    thisMove.bunnyHop = true;
-                    tags.add("bunnyhop");
-                    // Keep up the Improbable, but don't feed anything.
-                    Improbable.update(System.currentTimeMillis(), pData);
-                }
-                // (This is called from entityInside(). Technically, it should also apply in any medium, but the honey block's speed-factor is not. So.)
-                // TODO: Research if this applies in media as well.
-                if (MovingUtil.isSlidingDown(from, mcAccess.getHandle().getWidth(player), thisMove, player)) {
-                    if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
-                        hAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
-                        tags.add("honeyslide");
-                    }
-                }
-                if (from.isOnClimbable() && lastMove.from.onClimbable) {
-                    // (Climbable speed is capped, for whatever reason)
-                    hAllowedDistance = Math.min(hAllowedDistance, Magic.CLIMBABLE_MAX_HORIZONTAL_SPEED);
-                }
-                if (onGround) {
-                   // Account for bukkit's /walkspeed command (applies only on ground)
-                   hAllowedDistance *= data.walkSpeed / Magic.CB_DEFAULT_WALKSPEED;
-                   // Account for NCP base speed modifiers.
-                   hAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
-                }
-            }
-            else {
-                // Medium lava
-                hAllowedDistance = (lastMove.hDistance * Magic.LAVA_HORIZONTAL_INERTIA * data.stuckInBlockMultiplier * data.blockSpeedMultiplier) 
-                                 + MovingUtil.getInputForce(player, Magic.LIQUID_BASE_ACCELERATION, from, pData, cc, cData, sneaking, checkPermissions, tags); 
-                hAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
-            }
-        }
-        else {
-            // Medium water
-            double waterInertia = (Bridge1_13.isSwimming(player) || sprinting) ? Magic.HORIZONTAL_SWIMMING_INERTIA : Magic.WATER_HORIZONTAL_INERTIA;
-            double acceleration = Magic.LIQUID_BASE_ACCELERATION;
-            double StriderLevel = BridgeEnchant.getDepthStriderLevel(player); // NCP already caps Strider to 3
+        // NOTE: Attack-slowdown is done in the FightListener (!)
+        if (from.isInWater() && to.isInWater()) {
+            /** How much speed should be conserved on the next tick. */
+        	float waterInertia = (Bridge1_13.isSwimming(player) || sprinting) ? Magic.HORIZONTAL_SWIMMING_INERTIA : Magic.WATER_HORIZONTAL_INERTIA;
+            /** Per-tick speed gain. */      
+        	float acceleration = Magic.LIQUID_BASE_ACCELERATION;
+            float StriderLevel = (float) BridgeEnchant.getDepthStriderLevel(player); 
             if (!onGround) {
                 StriderLevel *= Magic.STRIDER_OFF_GROUND_PENALTY_MULTIPLIER;
             }
             // Account for depth strider (Less speed conservation[More friction], but more per-tick speed)
             if (StriderLevel > 0.0) {
-                waterInertia += (0.54600006D - waterInertia) * StriderLevel / 3.0;
-                acceleration += (speedAttribute * 1.0 - acceleration) * StriderLevel / 3.0; 
+                waterInertia += (0.54600006f - waterInertia) * StriderLevel / 3.0f;
+                acceleration += (speedAttribute * 1.0f - acceleration) * StriderLevel / 3.0f;
             }
             // Account for dolphin's grace (More speed conservation[less friction], no change in the per-tick speed)
             // (This overrides swimming AND depth strider friction)
@@ -839,33 +931,89 @@ public class SurvivalFly extends Check {
             if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
                 waterInertia = Magic.DOLPHIN_GRACE_INERTIA; 
             }
-            hAllowedDistance = (lastMove.hDistance * waterInertia * data.stuckInBlockMultiplier * data.blockSpeedMultiplier) 
-                             + MovingUtil.getInputForce(player, acceleration, from, pData, cc, cData, sneaking, checkPermissions, tags);
-            hAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
+            // Friction
+            xPredictedDistance *= waterInertia;
+            zPredictedDistance *= waterInertia;
+            // Block speed, stuck speed, other.
+            applySpeedModifiers(player, from, data, to, sneaking, xPredictedDistance, zPredictedDistance, onGround, tags, mcAccess.getHandle().getWidth(player));
+            // NCP's modifiers
+            xPredictedDistance *= cc.survivalFlySwimmingSpeed / 100;
+            zPredictedDistance *= cc.survivalFlySwimmingSpeed / 100;
+            // Apply the new speed
+            updateHorizontalSpeed(player, acceleration, pData, cc, sneaking, checkPermissions, tags, xPredictedDistance, zPredictedDistance, to);
+        }
+        else if (from.isInLava() && to.isInLava()) {
+        	float acceleration = Magic.LIQUID_BASE_ACCELERATION;
+        	float lavaInertia = Magic.LAVA_HORIZONTAL_INERTIA;
+        	// Friction
+            xPredictedDistance *= lavaInertia;
+            zPredictedDistance *= lavaInertia;
+            // Block speed, stuck speed, other.
+            applySpeedModifiers(player, from, data, to, sneaking, xPredictedDistance, zPredictedDistance, onGround, tags, mcAccess.getHandle().getWidth(player));
+            // NCP's modifiers
+            xPredictedDistance *= cc.survivalFlySwimmingSpeed / 100;
+            zPredictedDistance *= cc.survivalFlySwimmingSpeed / 100;
+            // Apply the new speed
+            updateHorizontalSpeed(player, acceleration, pData, cc, sneaking, checkPermissions, tags, xPredictedDistance, zPredictedDistance, to);
+        }
+        else {
+        	float inertia = (float) (onGround ? data.lastHorizontalFrictionFactor * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA); 
+        	float acceleration = onGround ? speedAttribute * (Magic.BASE_MOVEMENT_SPEED / (inertia * inertia * inertia)) : Magic.AIR_MOVEMENT_SPEED_ATTRIBUTE;
+            if (sprinting) {
+                // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
+                acceleration *= Magic.SPRINT_MULTIPLIER;
+                // Count in NCP base sprinting speed modifier
+                acceleration *= cc.survivalFlySprintingSpeed / 100;
+            }
+            // Friction
+            xPredictedDistance *= inertia;
+            zPredictedDistance *= inertia;
+            // Block speed, stuck speed, others.
+            applySpeedModifiers(player, from, data, to, sneaking, xPredictedDistance, zPredictedDistance, onGround, tags, mcAccess.getHandle().getWidth(player));
+            if (allowHop && Magic.isBunnyhop(data, fromOnGroundOrLostGround, sprinting)) {
+                // Bunnyhop (aka: sprint-jump) detection (Adds 0.2 towards the player's current facing)
+            	xPredictedDistance -= TrigUtil.sin(to.getYaw() * TrigUtil.DEG_TO_RAD) * Magic.BUNNYHOP_ACCEL_BOOST; 
+                zPredictedDistance += TrigUtil.cos(to.getYaw() * TrigUtil.DEG_TO_RAD) * Magic.BUNNYHOP_ACCEL_BOOST; 
+                data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY; 
+                thisMove.bunnyHop = true;
+                tags.add("bunnyhop");
+                // Keep up the Improbable, but don't feed anything.
+                Improbable.update(System.currentTimeMillis(), pData);
+            }
+            if (onGround) {
+                // Account for bukkit's /walkspeed command (applies only on ground with no medium)
+            	xPredictedDistance *= data.walkSpeed / Magic.CB_DEFAULT_WALKSPEED;
+                zPredictedDistance *= data.walkSpeed / Magic.CB_DEFAULT_WALKSPEED;  
+                // NCP speed modifiers.
+                xPredictedDistance *= cc.survivalFlyWalkingSpeed / 100;
+                zPredictedDistance *= cc.survivalFlyWalkingSpeed / 100;
+             }
+             // Apply the new speed
+             updateHorizontalSpeed(player, acceleration, pData, cc, sneaking, checkPermissions, tags, xPredictedDistance, zPredictedDistance, to);
         }
         
-        // Global speed modifiers
-        MovingUtil.applyGlobalSpeedModifiers(player, from, data, to, sneaking, hAllowedDistance, onGround, tags);
         // Global speed bypass modifier (can be combined with the other bypass modifiers)
         if (checkPermissions && pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SPEEDING, player)) {
-            hAllowedDistance *= cc.survivalFlySpeedingSpeed / 100;
+            xPredictedDistance *= cc.survivalFlySpeedingSpeed / 100;
+            zPredictedDistance *= cc.survivalFlySpeedingSpeed / 100;
         }
         
         // Now, set the estimated distance in this move
-        thisMove.hAllowedDistance = hAllowedDistance;
+        thisMove.hAllowedDistance = MathUtil.dist(xPredictedDistance, zPredictedDistance);
+        /** Expected difference from current speed to allowed */
+        double hDistDiffEx = thisMove.hDistance - thisMove.hAllowedDistance;
 
         // Finally, throw a violation if speed is higher than estimated.
-        player.sendMessage("Current speed: " + StringUtil.fdec3.format(thisMove.hDistance));
-        player.sendMessage("Allowed speed: " + StringUtil.fdec3.format(thisMove.hAllowedDistance));
-        if (MathUtil.equal(thisMove.hDistance, thisMove.hAllowedDistance)) {
+        player.sendMessage("X: Predicted= " + StringUtil.fdec3.format(Math.abs(xPredictedDistance)) + " Actual= " + StringUtil.fdec3.format(Math.abs(thisMove.to.getX()-thisMove.from.getX())));
+        player.sendMessage("Z: Predicted= " + StringUtil.fdec3.format(Math.abs(zPredictedDistance)) + " Actual= " + StringUtil.fdec3.format(Math.abs(thisMove.to.getZ()-thisMove.from.getZ())));
+       if (MathUtil.equal(thisMove.hDistance, thisMove.hAllowedDistance) 
+        	|| hDistDiffEx <= 0.0) {
             // Ignore
         }
         else {
-            if (thisMove.hDistance > thisMove.hAllowedDistance) {
-                // hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance - thisMove.hAllowedDistance);
-                player.sendMessage("VL: " + StringUtil.fdec3.format(thisMove.hDistance - thisMove.hAllowedDistance));
-                tags.add("hdistrel");
-            }
+            // hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance - thisMove.hAllowedDistance);
+            player.sendMessage("VL: " + StringUtil.fdec3.format(thisMove.hDistance - thisMove.hAllowedDistance));
+            tags.add("hdistrel");
         }
 
 
@@ -895,6 +1043,25 @@ public class SurvivalFly extends Check {
         //       hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);     
         //       tags.add("blindsprint");
         //   }
+        
+        
+        ///////////////////////////////////////////////////////////////////////////////////////
+        // The hDistSB check: prevent players from jumping more far than legit jump length   //
+        ///////////////////////////////////////////////////////////////////////////////////////
+        // TODO: This is just an extremely crude sketch
+        // NOTE: slowfall allows longer jumps
+        // if (Magic.inAir(thisMove) && data.hasSetBack() && !data.isVelocityJumpPhase() 
+        //  	&& thisMove.hDistance > Magic.MIN_MOVEMENT_DISTANCE
+        //  	// This is to prevent jumping off of cliffs getting detected. Bit rough, allows to skip the check even if landing with 1 block lower altitude than the setbacky
+        //  	&& to.getY() >= data.getSetBackY()) {
+        //  	final double maxJumpLength = 4.0;
+        //  	double setBackHDistance = MathUtil.dist(data.getSetBackX() - to.getX(), data.getSetBackZ() - to.getZ());
+        //  	double totalHDistViolation = setBackHDistance - maxJumpLength - lastMove.hDistance;
+        //  	if (totalHDistViolation > 0.0) {
+        //  		hDistanceAboveLimit = Math.max(hDistanceAboveLimit, totalHDistViolation); 
+        //   		tags.add("hdistsb");
+        //  	}
+        //  }
         
 
         ///////////////////////////////////////////////////////////////////////
@@ -980,7 +1147,7 @@ public class SurvivalFly extends Check {
         // 1) We have a couple of workarounds that allow players to decelerate unexpectedly upon landing on ground (only with the first move);
         // 2) NCP's low-jump check relies on the in-air change of y direction (ascend->descend) to work, and as shown in the figure above, the player lands on the ground
         // without having to descend first, so we never get to pick up the lower jump.
-        // Having said that, with NoCheatPlus' past-move-tracking system, we can attempt to judge ex-post if a player jumped unexpectedly
+        // Having said that, with NoCheatPlus' past-move-tracking system, we can attempt to judge ex-post if a player jumped lower than possible
         if (cc.survivalFlyAccountingStep && !data.isVelocityJumpPhase() && data.hasSetBack() && !(thisMove.from.aboveStairs || lastMove.from.aboveStairs)
             && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_STEP, player))) {
             
@@ -1004,23 +1171,20 @@ public class SurvivalFly extends Check {
                     // (Not observed nor tested though. This is just an educated guess.)
                     || thisMove.setBackYDistance > 0.0 && lastMove.yDistance > 0.0 && thisMove.yDistance <= 0.0
                     && thisMove.setBackYDistance < data.liftOffEnvelope.getMinJumpHeight(data.jumpAmplifier)
-                    // 0: Similar case.
+                    // 0: Jumping *exactly* 1 block up with fewer events than legit.
+                    // TODO: Maybe skip yDistance check. Generic (could catch more stuff)
                     || thisMove.setBackYDistance == 0.0 && lastMove.setBackYDistance == 1.0 && thisMove.yDistance == 0.0
                     && lastMove.yDistance > 0.0) {
                     
                     // The player ended up on ground sooner than expected. 
                     if (!lastMove.from.onGround && lastMove.to.onGround && toOnGround) { // from.onGround is ignored on purpose.
-                        if (data.getOrUseVerticalVelocity(thisMove.yDistance) == null) {
-                            // TODO: Redesign setback handling: allow queuing setbacks and use past setback locations, instead of invaliding hDistance.
-                            // Mitigate the advantage by invalidating this hDistance
-                            hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
-                            bufferUse = false;
-                            // Feed the Improbable.
-                            Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
-                            // Experimental: this movement was a lowjump, although catched at a later stage. Set the flag to invalidate the next jump attempt.
-                            data.sfLowJump = true;
-                            tags.add("lowvdistsb");
-                        }
+                        // TODO: Redesign setback handling: allow queuing setbacks and use past setback locations, instead of invaliding hDistance.
+                        // Mitigate the advantage by invalidating this hDistance
+                        hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance);
+                        bufferUse = false;
+                        // Feed the Improbable.
+                        Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
+                        tags.add("lowvdistsb");
                     }
                 }
             }
@@ -1051,7 +1215,6 @@ public class SurvivalFly extends Check {
                               final double hDistance, final double yDistance, 
                               final int multiMoveCount, final PlayerMoveData lastMove, 
                               final MovingData data, final MovingConfig cc, final IPlayerData pData) {
-
         double vAllowedDistance = 0.0;
         double vDistanceAboveLimit = 0.0;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
@@ -1077,9 +1240,9 @@ public class SurvivalFly extends Check {
             strictVdistRel = true;
         }
         else if (lastMove.toIsValid && Magic.fallingEnvelope(yDistance, lastMove.yDistance, data.lastFrictionVertical, 0.0)) {
-             // Ordinary falling envelope
-             vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_MIN; // Minecraft base gravity is actually 0.08, why did asofold decide to use minimum and where does the magic value come from?
-             strictVdistRel = true;
+            // Ordinary falling envelope
+            vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_MIN; // Minecraft base gravity is actually 0.08, why did asofold decide to use minimum and where does the magic value come from?
+            strictVdistRel = true;
         }
         // Moving off from something (resetFrom accounts for everything: ground, lost ground, past on ground, media).
         else if (resetFrom || thisMove.touchedGroundWorkaround) { // Isn't touchedGroundWorkaround already included in resetFrom!?
@@ -1750,31 +1913,36 @@ public class SurvivalFly extends Check {
     private double[] vDistClimbable(final Player player, final PlayerLocation from, final PlayerLocation to,
                                     final boolean fromOnGround, final boolean toOnGround, 
                                     final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
-                                    final double yDistance, final MovingData data) {
+                                    final double yDistance, final MovingData data, final MovingConfig cc) {
         data.sfNoLowJump = true;
         data.clearActiveHorVel(); // Might want to clear ALL horizontal vel.
         double vDistanceAboveLimit = 0.0;
         double yDistAbs = Math.abs(yDistance);
+        final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier) + 0.0001;
         /** Climbing a ladder in water and exiting water for whatever reason speeds up the player a lot in that one transition ... */
         boolean waterStep = lastMove.from.inLiquid && yDistAbs < Magic.swimBaseSpeedV(Bridge1_13.hasIsSwimming());
-        double vAllowedDistance = waterStep ? yDistAbs : yDistance < 0.0 ? Magic.climbSpeedDescend : Magic.climbSpeedAscend;
-        final double jumpHeight = LiftOffEnvelope.NORMAL.getMaxJumpHeight(data.jumpAmplifier);
-        final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier);
         // Quick, temporary fix for scaffolding block
         boolean scaffolding = from.isOnGround() && from.getBlockY() == Location.locToBlock(from.getY()) 
                               && yDistance > 0.0 && yDistance < maxJumpGain;
+        double vAllowedDistance = (waterStep || scaffolding) ? yDistAbs : yDistance < 0.0 ? Magic.climbSpeedDescend : Magic.climbSpeedAscend;
+        final double maxJumpHeight = LiftOffEnvelope.NORMAL.getMaxJumpHeight(0.0) + (data.jumpAmplifier > 0 ? (0.6 + data.jumpAmplifier - 1.0) : 0.0);
+ 
         if (yDistAbs > vAllowedDistance) {
             // Speed is higher than legit motion
-            if (from.isOnGround(jumpHeight, 0D, 0D, BlockFlags.F_CLIMBABLE)) {
+            if (from.isOnGround(BlockFlags.F_CLIMBABLE) && to.isOnGround(BlockFlags.F_CLIMBABLE)) {
+            	vDistanceAboveLimit = Math.max(vDistanceAboveLimit, yDistAbs - cc.sfStepHeight);
+            	tags.add("climbstep");
+            }
+        	else if (from.isOnGround(maxJumpHeight, 0D, 0D, BlockFlags.F_CLIMBABLE)) {
                 // We don't throw an immediate violation here, unless the player's motion is higher than ordinary (0.42):
                 // that means the player is trying to "step up" way too fast / instantly climb the block.
                 if (yDistance > maxJumpGain) {
                     vDistanceAboveLimit = Math.max(vDistanceAboveLimit, yDistAbs - vAllowedDistance);
-                    tags.add("climbstep");
+                    tags.add("instantclimb");
                 }
-                else tags.add("climbheight("+ StringUtil.fdec3.format(yDistance) +")");
+                else tags.add("climbheight("+ StringUtil.fdec3.format(maxJumpHeight) +")");
             }
-            else if (!scaffolding) {
+            else {
                 // Ground is out of jump height reach, violation.
                 vDistanceAboveLimit = Math.max(vDistanceAboveLimit, yDistAbs - vAllowedDistance);
                 tags.add("climbspeed");
@@ -1782,7 +1950,7 @@ public class SurvivalFly extends Check {
         }
         
         // Can't climb up with vine not attached to a solid block (legacy).
-        if (yDistance > 0.0 && !thisMove.touchedGround && !from.canClimbUp(jumpHeight)) {
+        if (yDistance > 0.0 && !thisMove.touchedGround && !from.canClimbUp(maxJumpHeight)) {
             vDistanceAboveLimit = Math.max(vDistanceAboveLimit, yDistance);
             vAllowedDistance = 0.0;
             tags.add("climbdetached");

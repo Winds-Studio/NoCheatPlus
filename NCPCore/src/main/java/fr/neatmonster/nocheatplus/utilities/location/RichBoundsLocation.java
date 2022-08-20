@@ -1058,7 +1058,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                     if (bounds != null && y - bY >= bounds[4] && BlockProperties.collidesBlock(blockCache, x, minY - yOnGround, z, x, minY, z, blockX, bY, blockZ, useNode, null, flags)) {
                         // TODO: BlockHeight is needed for fences, use right away (above)?
                         if (!BlockProperties.isPassableWorkaround(blockCache, blockX, bY, blockZ, minX - blockX, minY - yOnGround - bY, minZ - blockZ, useNode, maxX - minX, yOnGround, maxZ - minZ,  1.0)
-                            || (flags & BlockFlags.F_GROUND_HEIGHT) != 0 &&  BlockProperties.getGroundMinHeight(blockCache, blockX, bY, blockZ, useNode, flags) <= y - bY) {
+                            || (flags & BlockFlags.F_GROUND_HEIGHT) != 0 && BlockProperties.getGroundMinHeight(blockCache, blockX, bY, blockZ, useNode, flags) <= y - bY) {
                             //  NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "*** onground SHORTCUT");
                             onGround = true;
                         }
@@ -1093,7 +1093,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Simple block-on-ground check for given margin (no entities). Meant for
+     * Simple block-on-ground check for given margin (no entities).<br> Meant for
      * checking bigger margin than the normal yOnGround.
      *
      * @param yOnGround
@@ -1104,6 +1104,20 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         if (notOnGroundMaxY >= yOnGround) return false;
         else if (onGroundMinY <= yOnGround) return true;
         return  isOnGround(yOnGround, 0D, 0D, 0L);
+    }
+    
+    /**
+     * Check for on ground status, ignoring the block with ignoreFlags attached (no entities).
+     *
+     * @param yOnGround
+     *            the y on ground
+     * @param ignoreFlags
+     *            Flags to not regard as ground.
+     * @return true, if is on ground
+     */
+    public boolean isOnGround(final long ignoreFlags) {
+        // Full on-ground check (blocks).
+        return BlockProperties.isOnGround(blockCache, minX, minY - yOnGround, minZ, maxX, minY, maxZ, ignoreFlags);
     }
 
     /**
@@ -1146,7 +1160,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Simple block-on-ground check for given margin (no entities). Meant for
+     * Simple block-on-ground check for given margin (no entities).<br> Meant for
      * checking bigger margin than the normal yOnGround.
      *
      * @param yOnGround
@@ -1316,7 +1330,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Set block flags using yOnGround, unless already set. Check the maximally
+     * Set block flags using yOnGround, unless already set. <br>Check the maximally
      * used bounds for the block checking, to have flags ready for faster
      * denial.
      */

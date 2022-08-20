@@ -95,7 +95,7 @@ public class MathUtil {
     * @return the 2d distance
     */
    public static double dist(double xDistance, double zDistance) {
-      return Math.sqrt(xDistance * xDistance + zDistance * zDistance);
+      return Math.sqrt(square(xDistance) + square(zDistance));
    }
    
    /**

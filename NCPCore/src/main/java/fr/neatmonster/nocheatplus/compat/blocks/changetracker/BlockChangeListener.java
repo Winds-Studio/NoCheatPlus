@@ -19,50 +19,38 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Bisected.Half;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.HumanEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.material.Directional;
 import org.bukkit.material.Door;
 import org.bukkit.material.MaterialData;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
-import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractData;
-import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.registry.order.RegistrationOrder.RegisterMethodWithOrder;
 import fr.neatmonster.nocheatplus.event.mini.MiniListener;
 import fr.neatmonster.nocheatplus.logging.Streams;
-import fr.neatmonster.nocheatplus.players.DataManager;
-import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties.ToolProps;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties.ToolType;
-import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 
 public class BlockChangeListener implements Listener {
@@ -150,26 +138,6 @@ public class BlockChangeListener implements Listener {
             public void onEvent(BlockFormEvent event) {
                 if (enabled) {
                     onBlockForm(event);
-                }
-            }
-        },
-        new MiniListener<InventoryCloseEvent>() {
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-            @RegisterMethodWithOrder(tag = defaultTag)
-            @Override
-            public void onEvent(InventoryCloseEvent event) {
-                if (enabled) {
-                    onInventoryClose(event);
-                }
-            }
-        },
-        new MiniListener<BlockBreakEvent>() {
-            @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-            @RegisterMethodWithOrder(tag = defaultTag)
-            @Override
-            public void onEvent(BlockBreakEvent event) {
-                if (enabled) {
-                    onBlockBreak(event);
                 }
             }
         }
@@ -345,28 +313,6 @@ public class BlockChangeListener implements Listener {
         }
     }
 
-    private void onInventoryClose(final InventoryCloseEvent event) {
-        final HumanEntity entity = event.getPlayer();
-        if (entity instanceof Player) {
-            final Player player = (Player) entity;
-            if (player != null) {
-                final IPlayerData pData = DataManager.getPlayerData(player);
-                final BlockInteractData biData = pData.getGenericInstance(BlockInteractData.class);
-                final MovingData mData = pData.getGenericInstance(MovingData.class);
-                if (ServerVersion.compareMinecraftVersion("1.11") >= 0) {
-                    if (event.getInventory().getType() == InventoryType.SHULKER_BOX 
-                        && !mData.playerMoves.getCurrentMove().from.inLiquid
-                        && biData.getLastBlock() != null 
-                        && MaterialUtil.SHULKER_BOXES.contains(biData.getLastType())) {
-                        // Add the state of the shulker at the time it was opened.
-                        // (Doesn't seem to be quite enough with slowfall)
-                        tracker.addBlocks(biData.getLastBlock()); 
-                        // (Ok-ish, rare and sporadic still appear, will need further investigation)
-                    }
-                }
-            }
-        }
-    }
 
     private void onInteractPhysical(final PlayerInteractEvent event) {
         final Block block = event.getClickedBlock();
@@ -376,31 +322,6 @@ public class BlockChangeListener implements Listener {
             if (type == BridgeMaterial.FARMLAND) {
                 tracker.addBlocks(block);
             }
-        }
-    }
-    
-    private void onBlockBreak(final BlockBreakEvent event) {
-        if (!event.isCancelled() && event.getPlayer().getGameMode() != GameMode.CREATIVE) {
-            final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
-            final BlockInteractData biData = pData.getGenericInstance(BlockInteractData.class);
-            final MovingData mData = pData.getGenericInstance(MovingData.class);
-            if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(event.getPlayer()))
-                && !mData.playerMoves.getCurrentMove().from.inLiquid
-                // Skip instant/low-breaking-time blocks.
-                && BlockProperties.getBreakingDuration(event.getBlock().getType(), event.getPlayer()) > 2) {
-                // Always add the broken block if slow fall is present.
-                // Can this be confined further by having broken a block below?
-                tracker.addBlocks(event.getBlock());
-                // (OK, seems to fix false positives reliably)
-            }
-            //   else if (BlockProperties.isValidTool(event.getBlock().getType(), Bridge1_9.getItemInMainHand(event.getPlayer()))
-            //           && Bridge1_9.getItemInMainHand(event.getPlayer()).containsEnchantment(Enchantment.DIG_SPEED)) {
-            //     // If this tool is appropriate for the broken block and the tool has efficiency on, add this block to the tracker
-            //     // Context: desync issues with client-server, ghost blocks. will require a more targeted fix
-            //     tracker.addBlocks(biData.getLastBlock()); // Does not seem to fix false positives..
-            //     event.getPlayer().sendMessage("Succesfully added entry 2");
-            //
-            //   }
         }
     }
 

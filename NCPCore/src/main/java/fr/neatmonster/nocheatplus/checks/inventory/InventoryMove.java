@@ -63,6 +63,8 @@ public class InventoryMove extends Check {
     * @return true if successful
     */
     public boolean check(final Player player, final InventoryData data, final IPlayerData pData, final InventoryConfig cc, final SlotType type) {
+
+        // TODO: Recode/Refine/Redo :)
         
         boolean cancel = false;
         boolean violation = false;

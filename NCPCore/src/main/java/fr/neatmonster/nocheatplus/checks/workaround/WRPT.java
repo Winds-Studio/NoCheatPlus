@@ -178,6 +178,8 @@ public class WRPT extends SimpleWorkaroundRegistry {
                 new WorkaroundCountDown(W_M_SF_ODDLIQUID_7, 1),
                 new WorkaroundCountDown(W_M_SF_ODDLIQUID_5, 4),
                 new WorkaroundCountDown(W_M_SF_ODDLIQUID_12, 1),
+                new WorkaroundCountDown(W_M_SF_ODDGRAVITY_1, 3),
+                new WorkaroundCountDown(W_M_SF_SLOPE1, 1),
         };
         ws_moving.addAll(Arrays.asList(resetNotInAir));
         setWorkaroundBluePrint(resetNotInAir);

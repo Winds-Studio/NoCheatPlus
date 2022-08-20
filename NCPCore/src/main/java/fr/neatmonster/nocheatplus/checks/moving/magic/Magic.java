@@ -32,30 +32,29 @@ public class Magic {
     // Might move some methods to another class (EnvironmentUtils (?))
     
     // CraftBukkit/Minecraft constants.
-    public static final double CB_DEFAULT_WALKSPEED = 0.2;
+    public static final float CB_DEFAULT_WALKSPEED = 0.2f;
     public static final double DEFAULT_FLYSPEED = 0.1;
-    public static final double HORIZONTAL_INERTIA = 0.91;
-    public static final double BUNNYHOP_ACCEL_BOOST = 0.2;
+    public static final float HORIZONTAL_INERTIA = 0.91f;
+    public static final float BUNNYHOP_ACCEL_BOOST = 0.2f;
     public static final int BUNNYHOP_MAX_DELAY = 10;
     public static final double CLIMBABLE_MAX_HORIZONTAL_SPEED = 0.15200000596046448;
-    public static final double AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02;
-    public static final double LIQUID_BASE_ACCELERATION = 0.02;
-    public static final double HORIZONTAL_SWIMMING_INERTIA = 0.9;
-    public static final double WATER_HORIZONTAL_INERTIA = 0.8;
-    public static final double DOLPHIN_GRACE_INERTIA = 0.96;
-    public static final double STRIDER_OFF_GROUND_PENALTY_MULTIPLIER = 0.5;
-    public static final double SNEAK_MULTIPLIER = 0.3;
-    public static final double SPRINT_MULTIPLIER = 1.3f;
-    public static final double USING_ITEM_MULTIPLIER = 0.2;
-    public static final double SNEAK_STEP_DISTANCE = 0.05;
-    public static final double LAVA_HORIZONTAL_INERTIA = 0.5;
+    public static final float AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02f;
+    public static final float LIQUID_BASE_ACCELERATION = 0.02f;
+    public static final float HORIZONTAL_SWIMMING_INERTIA = 0.9f;
+    public static final float WATER_HORIZONTAL_INERTIA = 0.8f;
+    public static final float DOLPHIN_GRACE_INERTIA = 0.96f;
+    public static final float STRIDER_OFF_GROUND_PENALTY_MULTIPLIER = 0.5f;
+    public static final float SNEAK_MULTIPLIER = 0.3f;
+    public static final float SPRINT_MULTIPLIER = 1.3f;
+    public static final float USING_ITEM_MULTIPLIER = 0.2f;
+    public static final float SNEAK_STEP_DISTANCE = 0.05f;
+    public static final float LAVA_HORIZONTAL_INERTIA = 0.5f;
     public static final double MIN_MOVEMENT_DISTANCE = 0.003;
-    public static final double BASE_MOVEMENT_SPEED = 0.21600002;
-    public static final double LEGACY_BASE_MOVEMENT_SPEED = 0.16277136;
+    public static final float BASE_MOVEMENT_SPEED = 0.21600002f;
+    public static final float LEGACY_BASE_MOVEMENT_SPEED = 0.16277136f;
     public static final double BUNNYHOP_JUMP_BONUS = 0.291924;
-    public static final double SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13;
-    public static final double SLIDE_SPEED_THROTTLE = 0.05;
-    public static final double MIN_SLIDE_FALLING_SPEED = 0.08;
+    public static final float SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13f;
+    public static final float SLIDE_SPEED_THROTTLE = 0.05f;
 
 
     // Gravity.
@@ -173,7 +172,10 @@ public class Magic {
                 // This mechanic is applied only if the player is sprinting
                 sprinting && lastMove.toIsValid
                 // 0: Motion speed condition. Demand the player to hit the jumping envelope.
-                && thisMove.yDistance > data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
+                && (
+                    thisMove.yDistance > data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
+                    || thisMove.headObstructed && thisMove.yDistance > GRAVITY_MAX
+                )
                 // 0: Ground conditions
                 && (
                     // 1: Ordinary/obvious lift-off.
