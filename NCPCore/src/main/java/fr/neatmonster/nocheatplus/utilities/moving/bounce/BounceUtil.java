@@ -111,9 +111,12 @@ public class BounceUtil {
         if (to.getY() > from.getY() || to.getY() == from.getY() && data.verticalBounce.value < 0.13) {
             // Apply bounce.
             if (to.getY() == from.getY()) {
+
+                // TODO: Why is this needed?
                 // Fake use velocity here.
-                data.prependVerticalVelocity(new SimpleEntry(tick, 0.0, 1));
-                data.getOrUseVerticalVelocity(0.0);
+                //data.prependVerticalVelocity(new SimpleEntry(tick, 0.0, 1));
+                //data.getOrUseVerticalVelocity(0.0);
+
                 if (lastMove.toIsValid && lastMove.yDistance < 0.0) {
                     // Renew the bounce effect.
                     data.verticalBounce = new SimpleEntry(tick, data.verticalBounce.value, 1);
