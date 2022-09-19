@@ -175,7 +175,7 @@ public class MathUtil {
          return false;
       }
       // Moving down slower than expected.
-      return yDistance > refDist && yDistance - refDist <= 0.0;
+      return yDistance > refDist && yDistance - refDist >= 0.0;
    }
 
    /**

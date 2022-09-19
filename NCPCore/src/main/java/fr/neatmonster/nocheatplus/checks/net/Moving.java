@@ -18,19 +18,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.actions.ParameterName;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
+import fr.neatmonster.nocheatplus.logging.Streams;
+import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
@@ -65,12 +70,13 @@ public class Moving extends Check {
      */
     public boolean check(final Player player, final DataPacketFlying packetData, final NetData data, final NetConfig cc, 
                          final IPlayerData pData, final Plugin plugin) {
-        
         // TODO: This will trigger if the client is waiting for chunks to load (Slow fall, on join or after a teleport)
         boolean cancel = false;
         final long now = System.currentTimeMillis();
+        final boolean debug = pData.isDebugActive(CheckType.NET_MOVING);
         tags.clear();
         if (now > pData.getLastJoinTime() && pData.getLastJoinTime() + 10000 > now) {
+            tags.add("login_grace");
         	return false;
         }
         if (packetData.hasPos) {
@@ -115,17 +121,34 @@ public class Moving extends Check {
                         player.teleport(LocUtil.clone(newTo), BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
                         // Request an Improbable update, unlikely that this is legit.
                         TickTask.requestImprobableUpdate(player.getUniqueId(), 1.0f);
-                        if (pData.isDebugActive(CheckType.NET_MOVING)) 
+                        if (debug) {
                             debug(player, "Set back player: " + player.getName() + ":" + LocUtil.simpleFormat(newTo));
                         }
+                    }
                 });
                 if (task == -1) {
-                    StaticLog.logWarning("[NoCheatPlus] Failed to schedule task. Player: " + player.getName());
+                    StaticLog.logWarning("[NoCheatPlus] Failed to schedule task for player: " + player.getName());
                 }
                 mData.resetTeleported(); // Cleanup, just in case.
             }
             // Cleanup
             useLoc.setWorld(null);
+        }
+
+        if (debug) {
+            final Location packetLocation = new Location(null, packetData.getX(), packetData.getY(), packetData.getZ());
+            final StringBuilder builder = new StringBuilder(500);
+            if (packetData.hasPos) {
+                builder.append(CheckUtils.getLogMessagePrefix(player, type));
+                builder.append("\nPacket location: " + LocUtil.simpleFormat(packetLocation));
+                builder.append("\nServer location: " + LocUtil.simpleFormat(player.getLocation(useLoc)));
+                builder.append("\nDeltas: h= " + TrigUtil.distance(player.getLocation(useLoc), packetLocation) + ", y= " + Math.abs(player.getLocation(useLoc).getY() - packetLocation.getY()));
+            }
+            else {
+            	builder.append("Empty packet (no position)");
+            }
+            useLoc.setWorld(null);
+            NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, builder.toString());
         }
         return cancel;
     }

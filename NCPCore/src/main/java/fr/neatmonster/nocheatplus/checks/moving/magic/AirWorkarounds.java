@@ -74,7 +74,7 @@ public class AirWorkarounds {
      *  && data.ws.use(WRPT.W_M_SF_ODDLIQUID_10)
      *  
      * 
-     *  // REASON: This is what the block change tracker is for, why isn't it working here?
+     *  // REASON: Tackle with something else (tracker, ghost block fix)
      *  // 0: 1.13+ specific: breaking a block below too fast.
      *  // TODO: Confine more.
      *  || Bridge1_13.hasIsSwimming() 
@@ -88,7 +88,7 @@ public class AirWorkarounds {
      *   && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_4)
      *  
      * 
-     *  // REASON: This is what the block change tracker is for, why isn't it working here?
+     *  // REASON: Tackle with something else (tracker, ghost block fix)
      *  // 1.13+ specific: breaking a block below too fast.
      *  // TODO: Confine by ground conditions
      *  || Bridge1_13.hasIsSwimming() // && lastMove.touchedGround
@@ -402,7 +402,6 @@ public class AirWorkarounds {
                         // 1: Break the block underneath.
                         || lastMove.yDistance < 0.0 && lastMove.to.extraPropertiesValid && lastMove.to.onGround
                         && MathUtil.inRange(-Magic.GRAVITY_MAX - Magic.GRAVITY_SPAN, thisMove.yDistance, Magic.GRAVITY_MIN)
-                        && !thisMove.hasSlowfall // Avoid applying this workaround with slowfall, because when it is present, block-break events are covered by the tracker.
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_5)
                         // 1: Slope with slimes (also near ground without velocityJumpPhase, rather lowjump but not always).
                         || lastMove.yDistance < -Magic.GRAVITY_MAX && MathUtil.between(-Magic.GRAVITY_MIN, yDistChange, -Magic.GRAVITY_ODD / 2.0)
@@ -623,18 +622,17 @@ public class AirWorkarounds {
                 // 0: Cases involving slowfall
                 || thisMove.hasSlowfall 
                 && (
-                      // 1: Getting the slowfall effect while airborne
-                      // TODO: Better yDistance confinement
-                      (!lastMove.hasSlowfall || !secondLastMove.hasSlowfall)
-                      && MathUtil.between(-Magic.GRAVITY_MAX, yDistDiffEx, 0.0)
-                      && data.ws.use(WRPT.W_M_SF_FASTFALL_6)
-                      // 1: Jumping out of powder snow with slowfall
-                      || BridgeMisc.hasLeatherBootsOn(player) && data.liftOffEnvelope == LiftOffEnvelope.POWDER_SNOW 
-                      && lastMove.from.inPowderSnow
-                      && MathUtil.between(-Magic.DEFAULT_GRAVITY, thisMove.yDistance, 0.0)
-                      && lastMove.yDistance < data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) / 2.0
-                      && thisMove.hasSlowfall 
-                      && data.ws.use(WRPT.W_M_SF_FASTFALL_7)
+                        // 1: Getting the slowfall effect while airborne
+                        // (It's better to not introduce stricter conditions here, some plugins may spam this effect)
+                        (!lastMove.hasSlowfall || !secondLastMove.hasSlowfall)
+                        && MathUtil.between(-Magic.GRAVITY_MAX, yDistDiffEx, 0.0)
+                        && data.ws.use(WRPT.W_M_SF_FASTFALL_6)
+                        // 1: Jumping out of powder snow with slowfall
+                        || BridgeMisc.hasLeatherBootsOn(player) && data.liftOffEnvelope == LiftOffEnvelope.POWDER_SNOW 
+                        && lastMove.from.inPowderSnow
+                        && MathUtil.between(-Magic.DEFAULT_GRAVITY, thisMove.yDistance, 0.0)
+                        && lastMove.yDistance < data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) / 2.0
+                        && data.ws.use(WRPT.W_M_SF_FASTFALL_7)
                 )
         ;
     }
@@ -720,11 +718,6 @@ public class AirWorkarounds {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier);
 
-        if (!lastMove.toIsValid) {
-            return false;
-            // Skip everything if last move is invalid
-        }
-
         if (thisMove.yDistance > 0.0 && lastMove.yDistance < 0.0 
             && AirWorkarounds.oddBounce(to, thisMove.yDistance, lastMove, data)
             && data.ws.use(WRPT.W_M_SF_SLIME_JP_2X0)) {
@@ -745,6 +738,11 @@ public class AirWorkarounds {
             // Early return: transition from CreativeFly to SurvivalFly having been in a gliding phase.
         }
 
+        if (!lastMove.toIsValid) {
+            return false;
+            // Skip everything if last move is invalid. Do test elytra earlier.
+        }
+
         return
                 
                 // 0: Pretty coarse workaround, should instead do a proper modeling for from.getDistanceToGround.
@@ -753,8 +751,19 @@ public class AirWorkarounds {
                 // TODO: Better on-ground model (adapt to actual client code).
                 thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0 && yDistChange > -Magic.GRAVITY_MAX
                 && (
+                    // 1:
                     from.isOnGround(Math.abs(thisMove.yDistance) + 0.001) 
+                    // 1:
                     || BlockProperties.isLiquid(to.getTypeId(to.getBlockX(), Location.locToBlock(to.getY() - 0.5), to.getBlockZ()))
+                    // 1: Replaces the former LostGround_Pyramid case
+                    // TBD: In case we remove lostground_edgedesc, uncomment this one.
+                    // || MathUtil.between(0, data.sfJumpPhase, 7)
+                    // && thisMove.setBackYDistance < 0.0 && lastMove.setBackYDistance < 0.0
+                    // && MathUtil.between(Magic.GRAVITY_MAX, yDistDiffEx, Magic.GRAVITY_MAX * 2.5)
+                    // && MathUtil.between(Magic.GRAVITY_MIN, yDistChange, yDistDiffEx - Magic.GRAVITY_VACC)
+                    // && thisMove.yDistance > lastMove.yDistance 
+                    // && thisMove.setBackYDistance < lastMove.setBackYDistance
+                    // && !to.isOnGround()
                 )
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_1)
                 // 0: Special jump (water/edges/assume-ground), too small decrease.
@@ -854,19 +863,23 @@ public class AirWorkarounds {
                 && thisMove.yDistance < 0.0 
                 && MathUtil.between(lastMove.yDistance * data.lastFrictionVertical - Magic.DEFAULT_GRAVITY, thisMove.yDistance, 
                                     lastMove.yDistance * data.lastFrictionVertical - Magic.SLOW_FALL_GRAVITY)
-                // 0: Minecraft bug: bobbing up and down when slow falling on a bouncy block and trying to step up a block
-                || resetTo && !resetFrom && data.sfJumpPhase <= 3 && thisMove.yDistance < cc.sfStepHeight
-                && !data.isVelocityJumpPhase() && lastMove.yDistance < Magic.GRAVITY_MAX
-                && lastMove.from.onGround && !lastMove.to.onGround && thisMove.hasSlowfall
-                && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_NODATA3)
-                // 0: Exiting a berry bush from below (strictly speaking not possible, because bushes need a dirt block type below in order to grow)
-                || data.liftOffEnvelope == LiftOffEnvelope.BERRY_JUMP 
-                && data.sfJumpPhase <= 2 && thisMove.hasSlowfall 
-                && secondLastMove.from.inBerryBush 
-                && MathUtil.between(0.0001, yDistDiffEx, Magic.GRAVITY_VACC)
-                && MathUtil.between(0.001, yDistChange, Magic.GRAVITY_SPAN + Magic.GRAVITY_VACC)
-                && BlockProperties.isAir(from.getTypeIdBelow())
-                && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_NODATA4)
+                // 0: With slowfall
+                || thisMove.hasSlowfall 
+                && (
+                    // 1: Minecraft bug: bobbing up and down when slow falling on a bouncy block and trying to step up a block
+                    resetTo && !resetFrom && data.sfJumpPhase <= 3 && thisMove.yDistance < cc.sfStepHeight
+                    && !data.isVelocityJumpPhase() && lastMove.yDistance < Magic.GRAVITY_MAX
+                    && lastMove.from.onGround && !lastMove.to.onGround && lastMove.from.onBouncyBlock
+                    && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_NODATA3)
+                    // 1: Exiting a berry bush from below (strictly speaking not possible, because bushes need a dirt block type below in order to grow)
+                    || data.liftOffEnvelope == LiftOffEnvelope.BERRY_JUMP 
+                    && data.sfJumpPhase <= 2  
+                    && secondLastMove.from.inBerryBush 
+                    && MathUtil.between(0.0001, yDistDiffEx, Magic.GRAVITY_VACC)
+                    && MathUtil.between(0.001, yDistChange, Magic.GRAVITY_SPAN + Magic.GRAVITY_VACC)
+                    && BlockProperties.isAir(from.getTypeIdBelow())
+                    && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_NODATA4)
+                )
 
         ;
 

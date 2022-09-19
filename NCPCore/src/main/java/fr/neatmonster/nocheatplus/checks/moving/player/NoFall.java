@@ -459,8 +459,12 @@ public class NoFall extends Check {
 
         // TODO: early returns (...) 
         final double minY = Math.min(fromY, toY);
-
-        if (fromReset) {
+        if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))
+            || !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
+            // Just reset
+            data.clearNoFallData();
+        }
+        else if (fromReset) {
             // Just reset.
             data.clearNoFallData();
             // Ensure very big/strange moves don't yield violations.

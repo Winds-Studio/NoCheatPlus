@@ -466,7 +466,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             earlyReturn = data.lastMoveNoMove = true;
             token = "duplicate";
             // Ignore 1.17+ duplicate position packets.
-            // Context: Mojang attempted to fix a bucket placement desync issue by re-sending the previous position on right clicking...
+            // Context: Mojang attempted to fix a bucket placement desync issue by re-sending the position on right clicking...
             // On the server-side, this translates in a duplicate move which we need to ignore (i.e.: players can have 0 distance in air, MorePackets will trigger due to the extra packet if the button is pressed for long enough etc...)
             // You would think that this would AT LEAST fix the issue, but it doesn't. However it surely does complicate things on our side.
             // Thanks Mojang as always.
@@ -520,9 +520,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (
                 // 0: Handling split moves has been disabled.
                 // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
-                !cc.splitMoves ||
-                // 0: The usual case: no micro move happened.
-                TrigUtil.isSamePos(from, loc)
+                !cc.splitMoves 
+                // 0: The usual case: no micro move happened (the current location should always reflect the from location).
+                || TrigUtil.isSamePos(from, loc)
                 // 0: Special case / bug? TODO: Which/why, which version of MC/spigot?
                 || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())
                 // TODO: On pistons pulling the player back: -1.15 yDistance for split move 1 (untracked position > 0.5 yDistance!).
@@ -830,9 +830,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             if (newTo == null && ((Math.abs(thisMove.yDistance) > Magic.EXTREME_MOVE_DIST_VERTICAL) || thisMove.hDistance > Magic.EXTREME_MOVE_DIST_HORIZONTAL)) {
                 // Test for friction and velocity.
                 newTo = checkExtremeMove(player, pFrom, pTo, data, cc);
-                if (newTo != null) {
-                    thisMove.flyCheck = checkSf ? CheckType.MOVING_SURVIVALFLY : CheckType.MOVING_CREATIVEFLY;
-                }
             }
             
             // 4.4: Set BCT
@@ -960,7 +957,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         
         // 7: Fake add velocity when levitation ends to smoothen the transition and not trigger false positives
         if (lastMove.hasLevitation && !thisMove.hasLevitation) {
-            data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance, 60));
+            data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance + Magic.GRAVITY_MAX, 1));
             if (debug) {
                 debug(player, "Transition from levitation to normal move: fake use velocity.");
             }
@@ -1096,7 +1093,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // No check has requested a new to-Location (or actions are set not to cancel)
         if (newTo == null) {
 
-            // 1: Ignore this one.
+            // 1: An external hook has request a setback but actions are set to not cancel (or no check has requested a to loc)
             if (data.hasTeleported()) {
                 data.resetTeleported();
                 if (debug) debug(player, "Ignore hook-induced set-back: actions not set to cancel.");
@@ -1349,7 +1346,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * @param cc
      * @return
      */
-    @SuppressWarnings("unused")
     private Location checkExtremeMove(final Player player, final PlayerLocation from, final PlayerLocation to, 
                                       final MovingData data, final MovingConfig cc) {
         // TODO: Recent Minecraft versions allow a lot of unhealthy moves. Observed so far:
@@ -1524,18 +1520,15 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (method.shouldSetTo()) {
             event.setTo(newTo); // LEGACY: pre-2017-03-24
             if (pData.isDebugActive(checkType)) {
-                debug(player, "Set back type: SET_TO");
+                debug(player, "Set back technique: SET_TO");
             }
         }
         if (method.shouldCancel()) {
             event.setCancelled(true);
             if (pData.isDebugActive(checkType)) {
-                debug(player, "Set back type: CANCEL (schedule:" + method.shouldSchedule() + " updatefrom:" + method.shouldUpdateFrom() + ")");
+                debug(player, "Set back technique: CANCEL (schedule:" + method.shouldSchedule() + " updateFrom:" + method.shouldUpdateFrom() + ")");
             }
         } 
-        else if (pData.isDebugActive(checkType)) {
-            debug(player, "No setback performed.");
-        }
         // NOTE: A teleport is scheduled on MONITOR priority, if set so.
         // TODO: enforcelocation?
         // Debug.
@@ -1549,7 +1542,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * Monitor level PlayerMoveEvent. Uses useLoc.
      * @param event
      */
-    @EventHandler(priority=EventPriority.MONITOR, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
     public void onPlayerMoveMonitor(final PlayerMoveEvent event) {
         // TODO: Use stored move data to verify if from/to have changed (thus a teleport will result, possibly a minor issue due to the teleport).
         final long now = System.currentTimeMillis();
@@ -1611,9 +1604,11 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 if (pd.isPlayerSetBackScheduled()) {
                     debug(player, "Teleport (set back) already scheduled to: " + ref);
                 }
-                else if (debug) {
+                else {
+                    if (debug) {
+                        debug(player, "Schedule a new teleport (isPlayerSetBackScheduled returned false, with teleported being set - set back) to: " + ref);
+                    }
                     pd.requestPlayerSetBack();
-                    debug(player, "Schedule teleport (set back) to: " + ref);
                 }
             }
             // (Position adaption will happen with the teleport on tick, or with the next move.)
@@ -1785,7 +1780,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         if (data.hasTeleported()) {
             // More lenient: accept the position.
-            if (data.isTeleportedPosition(to))  return;
+            if (data.isTeleportedPosition(to)) {
+                return;
+            }
             else {
                 if (debug) debugTeleportMessage(player, event, "Prevent teleport, due to a scheduled set back: ", to);
                 event.setCancelled(true);
@@ -1805,7 +1802,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             }
         }
         // Teleport to untracked locations.
-        else if (cause == TeleportCause.COMMAND) { // TODO: TeleportCause.PLUGIN?
+        else if (cause == TeleportCause.COMMAND || cause == TeleportCause.PLUGIN) { 
             // Attempt to prevent teleporting to players inside of blocks at untracked coordinates.
             if (cc.passableUntrackedTeleportCheck) {
                 if (cc.loadChunksOnTeleport) {
@@ -2037,7 +2034,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * 
      * @param player
      * @param fakeNews
-     *            True, iff it's not really been applied yet (, but should get
+     *            True, if it's not really been applied yet (, but should get
      *            applied, due to reaching EventPriority.MONITOR).
      * @param data
      * @param cc
@@ -2133,9 +2130,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
 
     /**
-     * Player got a velocity packet. The server can't keep track of actual velocity values (by design), so we have to
-     * try and do that ourselves. Very rough estimates.
-     * 
+     * Player got a velocity packet: add the velocity to internal book-keeping for moving checks. 
      * @param event
      *            the event
      */
@@ -2173,7 +2168,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        if (player.isInsideVehicle() || !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))) {
+        if (player.isInsideVehicle()) {
             // Ignore vehicles (noFallFallDistance will be inaccurate anyway).
             data.clearNoFallData();
             return;

@@ -155,7 +155,7 @@ public class CreativeFly extends Check {
         double[] resH = hDist(player, from, to, hDistance, yDistance, sprinting, flying, thisMove, lastMove, time, model, data, cc);
         double limitH = resH[0];
         double resultH = resH[1];
-        double[] rese = hackElytraH(player, from, to, hDistance, yDistance, thisMove, lastMove, lostGround, data, cc, debug); // Related to the elytra
+        double[] rese = elytraCheck(player, from, to, hDistance, yDistance, thisMove, lastMove, lostGround, data, cc, debug); // Related to the elytra
         resultH = Math.max(resultH, rese[1]);
 
         // Check velocity.
@@ -579,7 +579,7 @@ public class CreativeFly extends Check {
      *
      * @author xaw3ep
      */
-    private double[] hackElytraH(final Player player, final PlayerLocation from, final PlayerLocation to, final double hDistance, 
+    private double[] elytraCheck(final Player player, final PlayerLocation from, final PlayerLocation to, final double hDistance, 
                                  final double yDistance, final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
                                  final boolean lostGround, final MovingData data, final MovingConfig cc, final boolean debug) {
 
@@ -819,6 +819,43 @@ public class CreativeFly extends Check {
         return new double[] {resultV, resultH};
     }
     
+
+    // From TridentItem.java
+    //   private double[] riptideCheck(final PlayerLocation from, final PlayerLocation to, final MovingData data) {
+    //       double vAllowedDistance = lastMove.yDistance;
+    //       double hAllowedDistance = lastMove.hDistance;
+    //       final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+    //       final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+    //       final double RiptideLevel = BridgeEnchant.getRiptideLevel(player);
+    //   
+    //       if (RiptideLevel > 0.0) {
+    //           float yaw = to.getYaw();
+    //           float pitch = to.getPitch();
+    //           float xDistance = -TrigUtil.sin(yaw * TrigUtil.DEG_TO_RAD) * TrigUtil.cos(pitch * TrigUtil.DEG_TO_RAD);
+    //           float yDistance = -TrigUtil.sin(pitch * TrigUtil.DEG_TO_RAD);
+    //           float zDistance = TrigUtil.cos(yaw * TrigUtil.DEG_TO_RAD) * TrigUtil.cos(pitch * TrigUtil.DEG_TO_RAD);
+    //           float distance3D = (float) Math.sqrt(xDistance * xDistance + yDistance * yDistance + zDistance * zDistance);
+    //           float force = 3.0F * ((1.0F + (float) RiptideLevel) / 4.0F);
+    //   
+    //           xDistance *= force / distance3D;
+    //           yDistance *= force / distance3D;
+    //           zDistance *= force / distance3D;
+    //           // Set the new distances: the game calls the push method, which means the new distance is simply added to the previous delta
+    //           hAllowedDistance += (double) MathUtil.dist(xDistance, zDistance);
+    //           vAllowedDistance += (double) yDistance;
+    //           thisMove.hAllowedDistance = hAllowedDistance;
+    //           // here, the games calls the actual moving method instead.
+    //           if (from.isOnGround()) {
+    //               vAllowedDistance *= 1.1999999F;
+    //           }
+    //       }
+    //       // Expected differences from current to allowed distance
+    //       double hDistDiffEx = thisMove.hDistance - thisMove.hAllowedDistance;
+    //       double yDistDiffEx = thisMove.yDistance - vAllowedDistance;
+    //       return new double[]{thisMove.hAllowedDistance, vAllowedDistance};
+    //   
+    //   }
+    
     
     /**
      * 
@@ -840,7 +877,7 @@ public class CreativeFly extends Check {
         // TODO: Further: record max h and descend speeds and relate to those.
         // TODO: Demand total speed to decrease.
 
-        // Elytra jump, let hackElytraH hande it
+        // Elytra jump, let elytraCheck hande it
         if (yDistance > 0.0 && yDistance < 0.42 && thisMove.touchedGround) {
             tags.add("e_jump");
             return yDistance;

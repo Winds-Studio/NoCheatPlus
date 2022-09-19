@@ -30,14 +30,17 @@ public class Magic {
 
     // TODO: Do any of these belong to MovingUtil?
     // Might move some methods to another class (EnvironmentUtils (?))
-    
     // CraftBukkit/Minecraft constants.
     public static final float CB_DEFAULT_WALKSPEED = 0.2f;
+    /** Minimum squared distance for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
+    public static final double CraftBukkit_minMoveDistSq = 1f / 256;
+    /** Minimum looking direction change for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
+    public static final float CraftBukkit_minLookChange = 10f;
     public static final double DEFAULT_FLYSPEED = 0.1;
     public static final float HORIZONTAL_INERTIA = 0.91f;
     public static final float BUNNYHOP_ACCEL_BOOST = 0.2f;
     public static final int BUNNYHOP_MAX_DELAY = 10;
-    public static final double CLIMBABLE_MAX_HORIZONTAL_SPEED = 0.15200000596046448;
+    public static final double CLIMBABLE_MAX_SPEED = 0.15000000596046448f;
     public static final float AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02f;
     public static final float LIQUID_BASE_ACCELERATION = 0.02f;
     public static final float HORIZONTAL_SWIMMING_INERTIA = 0.9f;
@@ -146,7 +149,7 @@ public class Magic {
      * too.)
      */
     public static final double EXTREME_MOVE_DIST_VERTICAL = 4.0;
-    public static final double EXTREME_MOVE_DIST_HORIZONTAL = 22.0;
+    public static final double EXTREME_MOVE_DIST_HORIZONTAL = 15.0;
     /** Minimal xz-margin for chunk load. */
     public static final double CHUNK_LOAD_MARGIN_MIN = 3.0;
 

@@ -670,10 +670,10 @@ public abstract class ConfPaths {
     private static final String MOVING_SURVIVALFLY_VLFREQUENCY              = MOVING_SURVIVALFLY_LENIENCY + "violationfrequency.";
     public static final String MOVING_SURVIVALFLY_VLFREQUENCY_ACTIVE        = MOVING_SURVIVALFLY_VLFREQUENCY + "active";
     public static final String MOVING_SURVIVALFLY_VLFREQUENCY_DEBUG         = MOVING_SURVIVALFLY_VLFREQUENCY + "debug";
-    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MAXTOTALVLS   = MOVING_SURVIVALFLY_VLFREQUENCY + "maxleniencyvl";
-    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MINADDEDVLS   = MOVING_SURVIVALFLY_VLFREQUENCY + "mintoadd";
-    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MOVECOUNT     = MOVING_SURVIVALFLY_VLFREQUENCY + "movecount";
-    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MOREVLS       = MOVING_SURVIVALFLY_VLFREQUENCY + "morevls";
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MAXTHRESHOLDVL = MOVING_SURVIVALFLY_VLFREQUENCY + "max-threshold-vl";
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_NOADDITIONVL  = MOVING_SURVIVALFLY_VLFREQUENCY + "no-addition-vl";
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_LASTVIOLATEDMOVECOUNT = MOVING_SURVIVALFLY_VLFREQUENCY + "last-violated-move-count";
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_AMOUNTTOADD   = MOVING_SURVIVALFLY_VLFREQUENCY + "amount-to-add";
 
     @GlobalConfig
     public static final String  MOVING_SURVIVALFLY_HOVER                    = MOVING_SURVIVALFLY + "hover.";
@@ -867,6 +867,14 @@ public abstract class ConfPaths {
     public static final String MOVING_SURVIVALFLY_HBUFMAX                = "checks.moving.survivalfly.hbufmax";
 
     // Deprecated paths (just removed).
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MAXTOTALVLS   = "checks.moving.survivalfly.violationfrequency.maxleniencyvl";
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MINADDEDVLS   = "checks.moving.survivalfly.violationfrequency.mintoadd";
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MOVECOUNT     = "checks.moving.survivalfly.violationfrequency.movecount";
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MOREVLS       = "checks.moving.survivalfly.violationfrequency.morevls";
     @Deprecated
     // TODO: Reduceredundant has been removed (implement or remove config).
     private static final String INVENTORY_ITEMS                          = INVENTORY + "items.";

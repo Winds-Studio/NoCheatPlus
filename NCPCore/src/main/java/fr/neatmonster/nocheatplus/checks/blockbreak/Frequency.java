@@ -79,7 +79,7 @@ public class Frequency extends Check {
         // Find if one or both are violations:
         final float fullViolation = (fullScore > fullTime * fullLag) ? (fullScore - fullTime * fullLag) : 0;
         final float shortTermWeight = 50f * cc.frequencyShortTermTicks / (float) cc.frequencyShortTermLimit; 
-        final float shortTermViolation = data.frequencyShortTermCount > cc.frequencyShortTermLimit ? data.frequencyShortTermCount - cc.frequencyShortTermLimit * shortTermWeight : 0; 
+        final float shortTermViolation = data.frequencyShortTermCount > cc.frequencyShortTermLimit ? (data.frequencyShortTermCount - cc.frequencyShortTermLimit) * shortTermWeight : 0; 
         final float violation = Math.max(fullViolation, shortTermViolation);
         boolean cancel = false;
         if (violation > 0.0) {
