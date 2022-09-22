@@ -61,19 +61,19 @@ public class ChatListener extends CheckListener implements INotifyReload, JoinLe
     // Checks.
 
     /** Captcha handler. */
-    private final Captcha captcha		= addCheck(new Captcha());  
+    private final Captcha captcha       = addCheck(new Captcha());  
 
     /** Commands repetition check. */
-    private final Commands commands 	= addCheck(new Commands()); 
+    private final Commands commands     = addCheck(new Commands()); 
 
     /** Logins check (global) */
-    private final Logins logins 		= addCheck(new Logins());
+    private final Logins logins         = addCheck(new Logins());
 
     /** Chat message check. */
-    private final Text text 			= addCheck(new Text());
+    private final Text text             = addCheck(new Text());
 
     /** Relogging check. */
-    private final Relog relog 			= addCheck(new Relog());
+    private final Relog relog           = addCheck(new Relog());
 
     // Auxiliary stuff.
 
@@ -225,16 +225,17 @@ public class ChatListener extends CheckListener implements INotifyReload, JoinLe
     }
 
     private boolean checkUntrackedLocation(final Player player, final String message, 
-            final MovingConfig mcc, final IPlayerData pData) {
+                                           final MovingConfig mcc, final IPlayerData pData) {
         final Location loc = player.getLocation(useLoc);
         boolean cancel = false;
         if (MovingUtil.shouldCheckUntrackedLocation(player, loc, pData)) {
             final Location newTo = MovingUtil.checkUntrackedLocation(loc);
             if (newTo != null) {
                 if (mcc.passableUntrackedCommandTryTeleport 
-                        && player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
+                    && player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
                     NCPAPIProvider.getNoCheatPlusAPI().getLogManager().info(Streams.TRACE_FILE, player.getName() + " runs the command '" + message + "' at an untracked location: " + loc + " , teleport to: " + newTo);
-                } else {
+                } 
+                else {
                     // TODO: Allow disabling cancel?
                     // TODO: Should message the player?
                     NCPAPIProvider.getNoCheatPlusAPI().getLogManager().info(Streams.TRACE_FILE, player.getName() + " runs the command '" + message + "' at an untracked location: " + loc + " , cancel the command.");
@@ -247,10 +248,9 @@ public class ChatListener extends CheckListener implements INotifyReload, JoinLe
     }
 
     private boolean textChecks(final Player player, final String message, 
-            final ChatConfig cc, final IPlayerData pData,
-            final boolean isMainThread, final boolean alreadyCancelled) {
-        return text.isEnabled(player, pData) && text.check(player, message, cc, pData, 
-                captcha, isMainThread, alreadyCancelled);
+                               final ChatConfig cc, final IPlayerData pData,
+                               final boolean isMainThread, final boolean alreadyCancelled) {
+        return text.isEnabled(player, pData) && text.check(player, message, cc, pData, captcha, isMainThread, alreadyCancelled);
     }
 
     /**
@@ -259,8 +259,7 @@ public class ChatListener extends CheckListener implements INotifyReload, JoinLe
      * @param event
      *            the event
      */
-    @EventHandler(
-            priority = EventPriority.NORMAL)
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerLogin(final PlayerLoginEvent event) {
         if (event.getResult() != Result.ALLOWED) return;
         final Player player = event.getPlayer();
@@ -319,7 +318,5 @@ public class ChatListener extends CheckListener implements INotifyReload, JoinLe
     }
 
     @Override
-    public void playerLeaves(final Player player) {
-    }
-
+    public void playerLeaves(final Player player) {}
 }

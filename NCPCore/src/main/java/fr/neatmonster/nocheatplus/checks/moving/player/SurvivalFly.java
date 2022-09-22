@@ -940,7 +940,8 @@ public class SurvivalFly extends Check {
         final double minJumpGain = data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier);
         final PlayerMoveData pastMove2 = data.playerMoves.getSecondPastMove();
         final PlayerMoveData pastMove3 = data.playerMoves.getThirdPastMove();
-        final double jumpGainMargin = 0.001;
+        // NOTE: This is used by lowjump-post (!)
+        final double jumpGainMargin = 0.005;
         final boolean sneaking = player.isSneaking() && reallySneaking.contains(player.getName());
         /** Takes into account everything: from, to, from-past-ground, to-past-ground, lost ground */
         final boolean onGround = fromOnGround || toOnGround || thisMove.touchedGroundWorkaround;

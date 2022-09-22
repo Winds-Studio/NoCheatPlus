@@ -125,11 +125,16 @@ public class Magic {
     public static final double GLIDE_DESCEND_GAIN_MAX_POS = GRAVITY_ODD / 1.95;
 
     // On-ground.
-    public static final double Y_ON_GROUND_MIN = 0.00001;
-    public static final double Y_ON_GROUND_MAX = 0.0626;
+    public static final double Y_ON_GROUND_MIN = 0.0000001;
+    public static final double Y_ON_GROUND_MAX = 0.025;
+    public static final double Y_ON_GROUND_DEFAULT = 0.00001;
+    /** LEGACY NCP YONGROUND VALUES */
+    // public static final double Y_ON_GROUND_MIN = 0.00001;
+    // public static final double Y_ON_GROUND_MAX = 0.0626;
     // TODO: Model workarounds as lost ground, use Y_ON_GROUND_MIN?
-    public static final double Y_ON_GROUND_DEFAULT = 0.025; // Jump upwards, while placing blocks. // Old 0.016
-    //    public static final double Y_ON_GROUND_DEFAULT = 0.029; // Bounce off slime blocks.
+    // public static final double Y_ON_GROUND_DEFAULT = 0.025; // Jump upwards, while placing blocks. // Old 0.016
+    // public static final double Y_ON_GROUND_DEFAULT = 0.029; // Bounce off slime blocks.
+
     /** The lower bound of fall distance for taking fall damage. */
     public static final double FALL_DAMAGE_DIST = 3.0;
     /** The minimum damage amount that actually should get applied. */

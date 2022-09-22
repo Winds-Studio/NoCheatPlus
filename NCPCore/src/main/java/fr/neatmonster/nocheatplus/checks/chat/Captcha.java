@@ -26,8 +26,8 @@ import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.ColorUtil;
 
 /**
- * NOTE: EARLY REFACTORING STATE, MOST METHODS NEED SYNC OVER DATA !
- * @author mc_dev
+ * Send a captcha to players upon failing chat checks.
+ * @author asofold
  *
  */
 public class Captcha extends Check implements ICaptcha{
@@ -52,7 +52,8 @@ public class Captcha extends Check implements ICaptcha{
             data.reset();
             data.captchaStarted = false;
             player.sendMessage(ColorUtil.replaceColors(cc.captchaSuccess));
-        } else {
+        } 
+        else {
             // Increment their tries number counter.
             data.captchTries++;
             data.captchaVL ++;
@@ -83,13 +84,12 @@ public class Captcha extends Check implements ICaptcha{
         if (reset) data.captchTries = 0;
         final char[] chars = new char[cc.captchaLength];
         for (int i = 0; i < cc.captchaLength; i++)
-            chars[i] = cc.captchaCharacters.charAt(random
-                    .nextInt(cc.captchaCharacters.length()));
+            chars[i] = cc.captchaCharacters.charAt(random.nextInt(cc.captchaCharacters.length()));
         data.captchaGenerated = new String(chars);
     }
 
     @Override
-    public void resetCaptcha(Player player){
+    public void resetCaptcha(Player player) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         ChatData data = pData.getGenericInstance(ChatData.class);
         synchronized (data) {
@@ -98,10 +98,10 @@ public class Captcha extends Check implements ICaptcha{
     }
 
     @Override
-    public void resetCaptcha(Player player, ChatConfig cc, ChatData data, IPlayerData pData){
+    public void resetCaptcha(Player player, ChatConfig cc, ChatData data, IPlayerData pData) {
         data.captchTries = 0;
         if (shouldCheckCaptcha(player, cc, data, pData) 
-                || shouldStartCaptcha(player, cc, data, pData)){
+            || shouldStartCaptcha(player, cc, data, pData)) {
             generateCaptcha(cc, data, true);
         }
     }
