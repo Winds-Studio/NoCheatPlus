@@ -1077,16 +1077,16 @@ public class SurvivalFly extends Check {
         
         // Now, set the estimated distance in this move
         thisMove.hAllowedDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
-        hDistanceAboveLimit = thisMove.hDistance - thisMove.hAllowedDistance;
+        // hDistanceAboveLimit = thisMove.hDistance - thisMove.hAllowedDistance;
         // Finally, throw a violation if speed is higher than estimated.
         player.sendMessage("c/e: " + StringUtil.fdec3.format(thisMove.hDistance) + " / " + StringUtil.fdec3.format(thisMove.hAllowedDistance));
-        if (hDistanceAboveLimit <= 0.0 || hDistanceAboveLimit < 0.00000001) {
+        /*if (hDistanceAboveLimit <= 0.0 || hDistanceAboveLimit < 0.00000001) {
             // Speed is lower than estimated / accuracy margin, ignore.
         }
         else {
             // hDistanceAboveLimit = Math.max(hDistanceAboveLimit, thisMove.hDistance - thisMove.hAllowedDistance);
             // tags.add("hdistrel");
-        }
+        }*/
 
 
 

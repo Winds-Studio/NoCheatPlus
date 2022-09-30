@@ -773,7 +773,7 @@ public class AirWorkarounds {
                 && lastMove.yDistance - thisMove.yDistance > Magic.GRAVITY_ODD / 3.0
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_2) 
                 // 0: On (noob) tower up, the second move has a higher distance than expected, because the first had been starting slightly above the top.
-                || yDistDiffEx < Magic.Y_ON_GROUND_DEFAULT && Magic.noobJumpsOffTower(thisMove.yDistance, maxJumpGain, thisMove, lastMove, data)
+                || yDistDiffEx < 0.025 && Magic.noobJumpsOffTower(thisMove.yDistance, maxJumpGain, thisMove, lastMove, data)
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_3)
         ;
     }

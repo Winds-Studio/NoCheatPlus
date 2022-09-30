@@ -192,7 +192,7 @@ public class LostGround {
                         yDistance > 0.0
                         && lastMove.yDistance < 0.0 // Rather -0.15 or so.
                         && Math.abs(lastMove.yDistance) + Magic.GRAVITY_MAX + yDistance > cc.yOnGround + maxJumpGain 
-                        && from.isOnGround(Magic.Y_ON_GROUND_DEFAULT)
+                        && from.isOnGround(0.025)
                         /*
                          * Rather rare: Come to rest above the block.
                          * Multiple 0-dist moves with looking packets.
@@ -264,8 +264,8 @@ public class LostGround {
      */
     private static boolean noobTowerStillCommon(final PlayerLocation to, final double yDistance) {
         // TODO: Block recently placed underneath (xz box with 0.025 down, Direction.NONE).
-        return yDistance < Magic.Y_ON_GROUND_DEFAULT && to.getY() - to.getBlockY() < Magic.Y_ON_GROUND_DEFAULT
-               && to.isOnGround(Magic.Y_ON_GROUND_DEFAULT, BridgeMisc.hasLeatherBootsOn(to.getPlayer()) ? 0 : BlockFlags.F_POWDERSNOW);
+        return yDistance < 0.025 && to.getY() - to.getBlockY() < 0.025
+               && to.isOnGround(0.025, BridgeMisc.hasLeatherBootsOn(to.getPlayer()) ? 0 : BlockFlags.F_POWDERSNOW);
     }
 
 
