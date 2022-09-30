@@ -588,6 +588,7 @@ public class CreativeFly extends Check {
          * Fly out water with low envelope
          * Head obstructed ?
          */
+        // TODO: Attempt to simplify
         double resultV = 0.0;
         double resultH = 0.0;
         if (!cc.elytraStrict || !Bridge1_9.isGlidingWithElytra(player) || player.isFlying()) return new double[] {0.0, 0.0};
@@ -764,11 +765,11 @@ public class CreativeFly extends Check {
         } 
         // Gliding in water
         // TODO: Add vertical check
-        //TODO: Can you actually glide in water? Might as well force stop checking with CreativeFly
+        // TODO: Why is a gliding check needed here? MC doesn't check for fallflying if in water (EntityLiving.travel. MC checks: if(water) else if(lava) else if(fallflying) else normal)
         else if(from.isInLiquid()) {
 
             if (Bridge1_13.isRiptiding(player)) return new double[] {0.0, 0.0};
-            allowedElytraHDistance = thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
+            allowedElytraHDistance = thisMove.hAllowedDistance * cc.survivalFlyWalkingSpeed / 100D;
             final int level = BridgeEnchant.getDepthStriderLevel(player);
             
             // if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {

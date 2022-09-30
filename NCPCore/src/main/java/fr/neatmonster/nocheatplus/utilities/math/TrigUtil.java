@@ -52,7 +52,7 @@ public class TrigUtil {
     private static final double RAD_TO_INDEX = 651.8986;
 
     private static final double DEG_TO_INDEX = 11.377778;
-
+    /** PI / 180 */
     public static final float DEG_TO_RAD = 0.017453292F;
     /** Multiply to get grad from rad. */
     public static final double fRadToGrad = DEG_FULL / PI2;
@@ -60,13 +60,15 @@ public class TrigUtil {
    /**
     * NMS table of sin values computed from 0 (inclusive) to 2*pi (exclusive), with steps of 2*PI / 65536.
     * (Optifine uses a different table but let's pretend it doesn't exist for the moment... :))
-    * From M.java (1.18.2)
+    * From MathHelper.java 
     */
     private static float[] SIN = new float[65536];
 
+    private static float SIN_SCALE = 10430.378F;
+
     static {
         for (int i = 0; i < SIN.length; ++i) {
-            SIN[i] = (float) StrictMath.sin((double) i * 3.141592653589793D * 2.0D / 65536.0D);
+            SIN[i] = (float) StrictMath.sin((double) i * Math.PI * 2.0D / 65536.0D);
         }
     }
 
@@ -77,7 +79,7 @@ public class TrigUtil {
      */
     public static double sin(double value) 
     {
-      return (double)SIN[(int)(value * 10430.378F) & 65536];
+      return SIN[(int)(value * SIN_SCALE) & '\uffff'];
     }
     
     /**
@@ -87,7 +89,7 @@ public class TrigUtil {
      */
     public static double cos(double value) 
     {
-      return (double)SIN[(int)(value * 10430.378F + 16384.0F) & 65535];
+      return SIN[(int)(value * SIN_SCALE + 16384.0F) & '\uffff'];
     }
     
     /**
@@ -111,7 +113,9 @@ public class TrigUtil {
     }
 
     /**
-     * 3D-distance of two locations. This is obsolete, since it has been fixed. To ignore world checks it might be "useful".
+     * Obsolete method to calculate the 3D-distance of two locations.
+     * (Bukkit used to have inverted methods: distance() was the distance squared and distanceSquared() was the distance non-squared)
+     * To ignore world checks it might be "useful".
      * 
      * @param location1
      *            the location1

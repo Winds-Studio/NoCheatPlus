@@ -259,7 +259,8 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
                 || Bridge1_13.isSwimming(player))) {
             // (Uhm... Keep it here or move to the MovingListener?
             final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
-            thisMove.hAllowedDistance *= 0.6f;
+            thisMove.xAllowedDistance *= 0.6f;
+            thisMove.zAllowedDistance *= 0.6f;
         }
 
         // Can't fight dead.

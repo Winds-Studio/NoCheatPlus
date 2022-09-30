@@ -37,12 +37,6 @@ public class PlayerMoveData extends MoveData {
 	
 	/** Whether this movement is influenced by gravity */
 	public boolean hasGravity;
-
-    /**
-     * Typical maximum walk speed, accounting for player capabilities. Set in
-     * SurvivalFly.check.
-     */
-    public double walkSpeed;
     
     /**
      * The distance covered by a move from the setback point to the to.getY() point
@@ -51,6 +45,15 @@ public class PlayerMoveData extends MoveData {
 
 
     // Bounds set by checks.
+    /**
+     * Allowed x distance only. Set in SurvivalFly.check(hDistChecks)
+     */
+    public double xAllowedDistance;
+
+    /**
+     * Allowed z distance only. Set in SurvivalFly.check(hDistChecks)
+     */
+    public double zAllowedDistance;
     /**
      * Allowed horizontal distance (including frictions, workarounds like bunny
      * hopping). Set in SurvivalFly.check.
@@ -94,7 +97,6 @@ public class PlayerMoveData extends MoveData {
     @Override
     protected void resetBase() {
         // Properties of the player.
-        walkSpeed = 0.287;
         hasLevitation = false;
         hasSlowfall = false;
         hasGravity = true; // Assume one to have gravity rather than the opposite... :)
@@ -103,7 +105,9 @@ public class PlayerMoveData extends MoveData {
         allowstep = false;
         allowjump = false;
         // Bounds set by checks.
+        xAllowedDistance = 0.0;
         yAllowedDistance = 0.0;
+        zAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
         // Meta stuff.
         multiMoveCount = 0;

@@ -509,30 +509,29 @@ public class BlockProperties {
     }
 
     /**
-     * NMS friction factors library for vertical motion
-     * This concerns single blocks
+     * NMS stuck-in-block vertical speed factor library,
      * @param player
      * @param location
      * @param yOnGround
      */
-    public static final double getVerticalFrictionFactorByBlock(final Player player, final Location location, final double yOnGround) {
+    public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
-        double friction = 1.0;
+        double stuckInFactor = 1.0;
         if (pLoc.isInBerryBush()) {
-            friction = 0.75;
+            stuckInFactor = 0.75;
         }
         else if (pLoc.isInPowderSnow()) {
-            friction = 1.5;
+            stuckInFactor = 1.5;
         }
         else if (pLoc.isInWeb()) {
-            friction = 0.05000000074505806;
+            stuckInFactor = 0.05000000074505806;
         }
         blockCache.cleanup();
         pLoc.cleanup();
-        return friction;
+        return stuckInFactor;
     }
 
     /**
@@ -613,7 +612,7 @@ public class BlockProperties {
      * @param location
      * @param yOnGround
      */
-    public static final double getStuckInBlockSpeedFactor(final Player player, final Location location, final double yOnGround) {
+    public static final double getStuckInBlockHorizontalFactor(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
