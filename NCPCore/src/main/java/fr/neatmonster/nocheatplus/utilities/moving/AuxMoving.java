@@ -101,7 +101,7 @@ public class AuxMoving implements IRegisterAsGenericInstance {
     }
 
     /**
-     * Convenience method to do both data.resetPositions and
+     * Convenience method to do data.resetPositions, data.adjustLiftOffEnvelope and
      * data.adjustMediumProperties, wrapping given loc with a PlayerLocation
      * instance.
      * 

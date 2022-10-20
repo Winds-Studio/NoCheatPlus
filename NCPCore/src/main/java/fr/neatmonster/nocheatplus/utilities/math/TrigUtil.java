@@ -40,26 +40,20 @@ public class TrigUtil {
     public static final double DIRECTION_PRECISION = 2.6;
     /** Precision for the fight.direction check within the LocationTrace loop. */
     public static final double DIRECTION_LOOP_PRECISION = 0.5;
-
+    /** Double PI */
     public static final double PI2 = Math.PI * 2.0;
-
+    /** PI / by 2 */
     public static final double PId2 =  Math.PI / 2.0;
 
-    private static final double RAD_FULL =  Math.PI * 2.0;
-
     private static final double DEG_FULL = 360.0;
-
-    private static final double RAD_TO_INDEX = 651.8986;
-
-    private static final double DEG_TO_INDEX = 11.377778;
     /** PI / 180 */
-    public static final float DEG_TO_RAD = 0.017453292F;
+    public static final float DEG_TO_RAD = (float)Math.PI / 180.0F;
     /** Multiply to get grad from rad. */
     public static final double fRadToGrad = DEG_FULL / PI2;
 
    /**
     * NMS table of sin values computed from 0 (inclusive) to 2*pi (exclusive), with steps of 2*PI / 65536.
-    * (Optifine uses a different table but let's pretend it doesn't exist for the moment... :))
+    * (Optifine uses a different table, but let's pretend it doesn't exist for the moment... :))
     * From MathHelper.java 
     */
     private static float[] SIN = new float[65536];
@@ -99,7 +93,7 @@ public class TrigUtil {
      */
     public static float sin(float value) 
     {
-      return SIN[(int)(value * 10430.378F) & 65535];
+      return SIN[(int)(value * SIN_SCALE) & '\uffff'];
     }
     
     /**
@@ -109,7 +103,73 @@ public class TrigUtil {
      */
     public static float cos(float value) 
     {
-      return SIN[(int)(value * 10430.378F + 16384.0F) & 65535];
+      return SIN[(int)(value * SIN_SCALE + 16384.0F) & '\uffff'];
+    }
+
+    /**
+     * Returns the looking direction vector of the player.
+     * (This uses MC's trigonometric look-up table)
+     * @param yaw
+     *            Horizontal looking direction
+     * @param pitch
+     *            Vertical looking direction
+     * @return the vector
+     */
+    public static final Vector getLookingDirection(float pitch, float yaw) {
+        float radPitch = pitch * DEG_TO_RAD;
+        float radYaw = -yaw * DEG_TO_RAD;
+        float cosYaw = cos(radYaw);
+        float sinYaw = sin(radYaw);
+        float cosPitch = cos(radPitch);
+        float sinPitch = sin(radPitch);
+        return new Vector((double)(sinYaw * cosPitch), (double)(-sinPitch), (double)(cosYaw * cosPitch));
+    }
+    
+    /**
+     * Returns the looking direction vector of the player.
+     * (This uses MC's trigonometric look-up table)
+     * @param loc
+     * @return the vector
+     */
+    public static final Vector getLookingDirection(final IGetPositionWithLook loc) {
+        return getLookingDirection(loc.getPitch(), loc.getYaw());
+    }
+    
+    /**
+     * Returns the looking direction vector of the player.
+     * (This uses the MC's trigonometric look-up table)
+     * @param loc
+     * @return the vector
+     */
+    public static final Vector getLookingDirection(final Location loc) {
+        return getLookingDirection(loc.getPitch(), loc.getYaw());
+    }
+     
+    /**
+     * Horizontal looking direction only.
+     * @param yaw
+     * @return the h-look vector
+     */
+    public static final Vector getHorizontalDirection(final float yaw) {
+    	return getLookingDirection(0.0f, yaw);
+    }
+    
+    /**
+     * Horizontal looking direction only.
+     * @param loc
+     * @return the h-look vector
+     */
+    public static final Vector getHorizontalDirection(final IGetPositionWithLook loc) {
+    	return getHorizontalDirection(loc.getYaw());
+    }
+    
+    /**
+     * Horizontal looking direction only.
+     * @param loc
+     * @return the h-look vector
+     */
+    public static final Vector getHorizontalDirection(final Location loc) {
+    	return getHorizontalDirection(loc.getYaw());
     }
 
     /**

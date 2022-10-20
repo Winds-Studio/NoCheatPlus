@@ -54,9 +54,9 @@ public class PlayerMoveData extends MoveData {
      * Allowed z distance only. Set in SurvivalFly.check(hDistChecks)
      */
     public double zAllowedDistance;
+
     /**
-     * Allowed horizontal distance (including frictions, workarounds like bunny
-     * hopping). Set in SurvivalFly.check.
+     * Allowed horizontal distance. Set in SurvivalFly.check.
      */
     public double hAllowedDistance;
 

@@ -527,7 +527,7 @@ public class BlockProperties {
             stuckInFactor = 1.5;
         }
         else if (pLoc.isInWeb()) {
-            stuckInFactor = 0.05000000074505806;
+            stuckInFactor = 0.05;
         }
         blockCache.cleanup();
         pLoc.cleanup();
@@ -540,7 +540,7 @@ public class BlockProperties {
      * @param location
      * @param yOnGround
      */
-    public static final double getBlockFrictionFactor(final Player player, final Location location, final double yOnGround) {
+    public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
@@ -549,16 +549,16 @@ public class BlockProperties {
         final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
         /** Default friction for all other blocks */
-        final double DEFAULT_FRICTION = 0.6D;
-        double friction = DEFAULT_FRICTION;
+        final float DEFAULT_FRICTION = 0.6f;
+        float friction = DEFAULT_FRICTION;
         if (isBlueIce(blockBelow)) {
-            friction = 0.989D;
+            friction = 0.989f;
         }
         else if (isIce(blockBelow)) {
-            friction = 0.98D;
+            friction = 0.98f;
         }
         else if (isSlime(blockBelow)) {
-            friction = 0.8D;
+            friction = 0.8f;
         }
         blockCache.cleanup();
         pLoc.cleanup();
@@ -571,35 +571,35 @@ public class BlockProperties {
      * @param location
      * @param yOnGround
      */
-    public static final double getBlockSpeedFactor(final Player player, final Location location, final double yOnGround) {
+    public static final float getBlockSpeedFactor(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         pLoc.set(location, player, yOnGround);
-        double speedFactor = 1.0D;
-        if (pLoc.isInWater() || pLoc.isInBubbleStream() || pLoc.isDraggedByBubbleStream()) {
-            // Early return: See Entity.java.getBlockSpeedFactor()
-            // We don't care about the block's speed if in water or in bubble column (What about lava Mojang?)
-            blockCache.cleanup();
-            pLoc.cleanup();
-            return speedFactor;
-        }
+        float speedFactor = 1.0f;
         
-        if (pLoc.isOnHoneyBlock()) {
-            speedFactor = 0.4D;
-        }
-        else if (pLoc.isInOrAboveSoulSand()) {
+        if (pLoc.isInOrAboveSoulSand()) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
             if (BridgeEnchant.hasSoulSpeed(player)) {
-                speedFactor = 1.0D;
+                speedFactor = 1.0f;
             } 
             // Soul speed is absent and the player is inside the block. Do slow down.
             else if (pLoc.isInSoulSand()) {
-                speedFactor = 0.4D;
+                speedFactor = 0.4f;
             }
-            // Above soul sand but not inside and no soul speed present, do not slow down
-            else speedFactor = 1.0D;
+            // Above soul sand (but not inside) and no soul speed present, do not slow down
+            else speedFactor = 1.0f;
+        }
+        //  else if (pLoc.isInWater() || pLoc.isInBubbleStream() || pLoc.isDraggedByBubbleStream()) {
+        //    // Early return: See Entity.java.getBlockSpeedFactor()
+        //    // We don't care about the block's speed if in water or in bubble column (What about lava Mojang?)
+        //    blockCache.cleanup();
+        //    pLoc.cleanup();
+        //    return speedFactor;
+        //  }
+        else if (pLoc.isOnHoneyBlock()) {
+            speedFactor = 0.4f;
         }
         blockCache.cleanup();
         pLoc.cleanup();
@@ -622,10 +622,10 @@ public class BlockProperties {
             stuckInFactor = 0.25D;
         }
         else if (pLoc.isInBerryBush()) {
-            stuckInFactor = 0.800000011920929D;
+            stuckInFactor = 0.8D;
         }
         else if (pLoc.isInPowderSnow()) {
-            stuckInFactor = 0.8999999761581421D;
+            stuckInFactor = 0.89D;
         }
         blockCache.cleanup();
         pLoc.cleanup();

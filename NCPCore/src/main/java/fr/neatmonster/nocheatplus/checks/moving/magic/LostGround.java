@@ -139,7 +139,6 @@ public class LostGround {
         final double setBackYDistance = from.getY() - data.getSetBackY();
         // Micro lost ground, appear when respawn, lantern
         // TODO: hDistance is to confine, need to test
-        // NOTE: Is this a false negative? Will need to check client-code
         if (hDistance <= 0.03 && from.isOnGround(0.03) 
             && (thisMove.headObstructed && MaterialUtil.LANTERNS.contains(from.getTypeIdAbove()) || data.joinOrRespawn)) {
             return applyLostGround(player, from, true, thisMove , data, "micro", tags);

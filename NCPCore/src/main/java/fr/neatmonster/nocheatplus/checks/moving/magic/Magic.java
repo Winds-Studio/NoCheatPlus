@@ -40,7 +40,7 @@ public class Magic {
     public static final float HORIZONTAL_INERTIA = 0.91f;
     public static final float BUNNYHOP_ACCEL_BOOST = 0.2f;
     public static final int BUNNYHOP_MAX_DELAY = 10;
-    public static final double CLIMBABLE_MAX_SPEED = 0.15000000596046448f;
+    public static final double CLIMBABLE_MAX_SPEED = 0.15f;
     public static final float AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02f;
     public static final float LIQUID_BASE_ACCELERATION = 0.02f;
     public static final float HORIZONTAL_SWIMMING_INERTIA = 0.9f;
@@ -55,7 +55,6 @@ public class Magic {
     public static final double MIN_MOVEMENT_DISTANCE = 0.003;
     public static final float BASE_MOVEMENT_SPEED = 0.21600002f;
     public static final float LEGACY_BASE_MOVEMENT_SPEED = 0.16277136f;
-    public static final double BUNNYHOP_JUMP_BONUS = 0.291924;
     public static final float SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13f;
     public static final float SLIDE_SPEED_THROTTLE = 0.05f;
 
@@ -187,7 +186,8 @@ public class Magic {
                 // 0: Ground conditions
                 && (
                     // 1: Ordinary/obvious lift-off.
-                    data.sfJumpPhase == 0 && thisMove.from.onGround
+                    data.sfJumpPhase == 0 && thisMove.from.onGround 
+                    && !thisMove.to.onGround // Don't apply if stepping blocks.
                     // 1: Do allow hopping if a past on ground status is found or this (legitimate) on ground phase was lost 
                     || data.sfJumpPhase <= 1 && fromOnGroundOrLostGround && !lastMove.bunnyHop
                 )

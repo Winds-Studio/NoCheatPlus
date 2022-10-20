@@ -493,7 +493,7 @@ public class VehicleChecks extends CheckListener {
         switch (data.vehicleConsistency) {
             case FROM:
             case TO:
-                aux.resetPositionsAndMediumProperties(player, player.getLocation(useLoc1), data, cc); // TODO: Drop MC 1.4!
+                aux.resetPositionsAndMediumProperties(player, player.getLocation(useLoc1), data, cc);
                 break;
             case INCONSISTENT:
                 // TODO: Any exploits exist? -> TeleportUtil.forceMount(player, vehicle)

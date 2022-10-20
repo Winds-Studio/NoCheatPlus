@@ -79,7 +79,7 @@ public class Moving extends Check {
             tags.add("login_grace");
         	return false;
         }
-        if (packetData.hasPos) {
+        if (packetData != null && packetData.hasPos) {
             final MovingData mData = pData.getGenericInstance(MovingData.class);
             /** Actual Location on the server */
             final Location knownLocation = player.getLocation(useLoc);

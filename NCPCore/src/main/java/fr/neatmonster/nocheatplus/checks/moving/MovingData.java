@@ -122,16 +122,16 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     
     // *----------Speed/Friction factors (hor/ver)----------*
     /** Horizontal friction factor from NMS.*/
-    public double lastFrictionHorizontal = 0.0;
-    public double nextFrictionHorizontal = 0.0;
+    public float lastFrictionHorizontal = 0.0f;
+    public float nextFrictionHorizontal = 0.0f;
     /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/
     public double lastStuckInBlockHorizontal = 0.0; 
     /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/
     public double nextStuckInBlockHorizontal = 0.0; 
     /** Single block-speed multiplier.*/
-    public double lastBlockSpeedMultiplier = 0.0;
+    public float lastBlockSpeedMultiplier = 0.0f;
     /** Single block-speed multiplier.*/
-    public double nextBlockSpeedMultiplier = 0.0;
+    public float nextBlockSpeedMultiplier = 0.0f;
     /** Stuck-in-block vertical speed factor */
     public double nextStuckInBlockVertical = 0.0;
     /** Stuck-in-block vertical speed factor */
@@ -363,7 +363,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         verticalBounce = null;
         blockChangeRef.valid = false;
         liqtick = 0;
-        lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0;
+        // Set to 1.0 to prevent any unintentional / by 0. These are mainly used within multiplication or division operations anyway.
+        lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
+        lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0f;
     }
 
 
@@ -395,7 +397,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         vehicleConsistency = MoveConsistency.INCONSISTENT; // Not entirely sure here.
         verticalBounce = null;
         timeSinceSetBack = 0;
-        lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0;
+        lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
+        lastFrictionHorizontal = lastBlockSpeedMultiplier =  1.0f;
         lastSetBackHash = setBack == null ? 0 : setBack.hashCode();
         // Reset to setBack.
         resetPlayerPositions(setBack);
@@ -510,7 +513,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         insideMediumCount = 0;
         verticalBounce = null;
         blockChangeRef.valid = false;
-        lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0;
+        lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
+        lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0f;
         // TODO: other buffers ?
         // No reset of vehicleConsistency.
     }
