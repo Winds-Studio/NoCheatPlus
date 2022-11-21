@@ -41,13 +41,15 @@ public class TrigUtil {
     /** Precision for the fight.direction check within the LocationTrace loop. */
     public static final double DIRECTION_LOOP_PRECISION = 0.5;
     /** Double PI */
-    public static final double PI2 = Math.PI * 2.0;
+    public static final double PI2 = Math.PI * 2.0D;
     /** PI / by 2 */
-    public static final double PId2 =  Math.PI / 2.0;
+    public static final double PId2 =  Math.PI / 2.0D;
 
     private static final double DEG_FULL = 360.0;
-    /** PI / 180 */
-    public static final float DEG_TO_RAD = (float)Math.PI / 180.0F;
+    /** PI / 180 as a float */
+    public static final float toRadians = (float)Math.PI / 180.0F;
+    /** 180 / PI as a float */
+    public static final float toDegrees = 180.0F / (float)Math.PI;
     /** Multiply to get grad from rad. */
     public static final double fRadToGrad = DEG_FULL / PI2;
 
@@ -62,7 +64,7 @@ public class TrigUtil {
 
     static {
         for (int i = 0; i < SIN.length; ++i) {
-            SIN[i] = (float) StrictMath.sin((double) i * Math.PI * 2.0D / 65536.0D);
+            SIN[i] = (float) StrictMath.sin((double) i * PI2 / 65536.0D);
         }
     }
 
@@ -115,9 +117,10 @@ public class TrigUtil {
      *            Vertical looking direction
      * @return the vector
      */
-    public static final Vector getLookingDirection(float pitch, float yaw) {
-        float radPitch = pitch * DEG_TO_RAD;
-        float radYaw = -yaw * DEG_TO_RAD;
+    public static final Vector getLookingDirection(float pitch, float yaw) 
+    {
+        float radPitch = pitch * toRadians;
+        float radYaw = -yaw * toRadians;
         float cosYaw = cos(radYaw);
         float sinYaw = sin(radYaw);
         float cosPitch = cos(radPitch);
@@ -131,7 +134,8 @@ public class TrigUtil {
      * @param loc
      * @return the vector
      */
-    public static final Vector getLookingDirection(final IGetPositionWithLook loc) {
+    public static final Vector getLookingDirection(final IGetPositionWithLook loc) 
+    {
         return getLookingDirection(loc.getPitch(), loc.getYaw());
     }
     
@@ -141,7 +145,8 @@ public class TrigUtil {
      * @param loc
      * @return the vector
      */
-    public static final Vector getLookingDirection(final Location loc) {
+    public static final Vector getLookingDirection(final Location loc) 
+    {
         return getLookingDirection(loc.getPitch(), loc.getYaw());
     }
      
@@ -150,7 +155,8 @@ public class TrigUtil {
      * @param yaw
      * @return the h-look vector
      */
-    public static final Vector getHorizontalDirection(final float yaw) {
+    public static final Vector getHorizontalDirection(final float yaw) 
+    {
     	return getLookingDirection(0.0f, yaw);
     }
     
@@ -159,7 +165,8 @@ public class TrigUtil {
      * @param loc
      * @return the h-look vector
      */
-    public static final Vector getHorizontalDirection(final IGetPositionWithLook loc) {
+    public static final Vector getHorizontalDirection(final IGetPositionWithLook loc) 
+    {
     	return getHorizontalDirection(loc.getYaw());
     }
     
@@ -168,7 +175,8 @@ public class TrigUtil {
      * @param loc
      * @return the h-look vector
      */
-    public static final Vector getHorizontalDirection(final Location loc) {
+    public static final Vector getHorizontalDirection(final Location loc) 
+    {
     	return getHorizontalDirection(loc.getYaw());
     }
 

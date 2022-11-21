@@ -35,7 +35,7 @@ public class DummyAttributeAccess implements IAttributeAccess {
     }
     
     @Override
-    public double getMovementSpeed(final Player player) {
-    	return Double.MAX_VALUE;
+    public float getMovementSpeed(final Player player) {
+    	return Float.MAX_VALUE;
     }
 }

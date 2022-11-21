@@ -45,6 +45,12 @@ public class AttributeAccess implements IAttributeAccess {
     }
 
     @Override
+    public float getMovementSpeed(final Player player) {
+        // / by 2 to get the base value 0.1f
+        return (player.getWalkSpeed() / 2f) * (float)getSpeedAttributeMultiplier(player);
+    }
+
+    @Override
     public double getSprintAttributeMultiplier(Player player) {
         final AttributeModifier mod = ((CraftLivingEntity) player).getHandle().a(GenericAttributes.d).a(AttribUtil.ID_SPRINT_BOOST);
         if (mod == null) {

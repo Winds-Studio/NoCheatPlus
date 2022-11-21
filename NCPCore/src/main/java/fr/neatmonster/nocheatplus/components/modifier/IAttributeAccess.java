@@ -46,11 +46,12 @@ public interface IAttributeAccess {
     public double getSprintAttributeMultiplier(Player player);
     
     /**
-     * Retrieve the player's movement speed. Sprinting is left out (!).
+     * Retrieve the player's movement speed by multiplying walk-speed with getSpeedAttributeMultiplier. <br>
+     * This takes into account Bukkit's /walkspeed command as well.
      * 
      * @param player
      * @return The player speed. If not possible to
-     *         determine, it should be Double.MAX_VALUE.
+     *         determine, it should be Float.MAX_VALUE.
      */
-    public double getMovementSpeed(Player player);
+    public float getMovementSpeed(Player player);
 }

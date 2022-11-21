@@ -37,26 +37,49 @@ public class Magic {
     /** Minimum looking direction change for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
     public static final float CraftBukkit_minLookChange = 10f;
     public static final double DEFAULT_FLYSPEED = 0.1;
+    /** EntityLiving, travel */
     public static final float HORIZONTAL_INERTIA = 0.91f;
+    /** EntityLiving, jumpFromGround */
     public static final float BUNNYHOP_ACCEL_BOOST = 0.2f;
+    /** EntityLiving, noJumpDelay field */
     public static final int BUNNYHOP_MAX_DELAY = 10;
+    /** EntityLiving, handleOnClimbable */
     public static final double CLIMBABLE_MAX_SPEED = 0.15f;
-    public static final float AIR_MOVEMENT_SPEED_ATTRIBUTE = 0.02f;
+    /** EntityLiving, flyingSpeed (NMS field can be misleading, this is for air in general, not strictly creative-fly) */
+    public static final float AIR_ACCELERATION = 0.02f;
+    /** EntityLiving, travel */
     public static final float LIQUID_BASE_ACCELERATION = 0.02f;
+    /** EntityLiving, travel */
     public static final float HORIZONTAL_SWIMMING_INERTIA = 0.9f;
+    /** EntityLiving, getWaterSlowDown */
     public static final float WATER_HORIZONTAL_INERTIA = 0.8f;
+    /** EntityLiving, travel */
     public static final float DOLPHIN_GRACE_INERTIA = 0.96f;
-    public static final float STRIDER_OFF_GROUND_PENALTY_MULTIPLIER = 0.5f;
+    /** EntityLiving, travel */
+    public static final float STRIDER_OFF_GROUND_MULTIPLIER = 0.5f;
+    /** LocalPlayer, aiStep */
     public static final float SNEAK_MULTIPLIER = 0.3f;
+    /** MCPK */
     public static final float SPRINT_MULTIPLIER = 1.3f;
+    /** LocalPlayer, aiStep */
     public static final float USING_ITEM_MULTIPLIER = 0.2f;
-    public static final float SNEAK_STEP_DISTANCE = 0.05f;
+    /** EntityHuman, maybeBackOffFromEdge */
+    public static final double SNEAK_STEP_DISTANCE = 0.05;
+    /** EntityLiving, travel */
     public static final float LAVA_HORIZONTAL_INERTIA = 0.5f;
     public static final double MIN_MOVEMENT_DISTANCE = 0.003;
-    public static final float BASE_MOVEMENT_SPEED = 0.21600002f;
-    public static final float LEGACY_BASE_MOVEMENT_SPEED = 0.16277136f;
+    /** Result of 0.6^3. */
+    public static final float DEFAULT_FRICTION_CUBED = 0.6f * 0.6f * 0.6f; // 0.21600002f;
+    /** Result of (0.6 * 0.91)^3. Used by legacy clients. Newer clients use the one above, not inertia. */
+    public static final float CUBED_INERTIA = 0.16277136f;
+    /** HoneyBlock */
     public static final float SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13f;
+    /** HoneyBlock */
     public static final float SLIDE_SPEED_THROTTLE = 0.05f;
+    /** EntityLiving, aiStep */
+    public static final double NEGLIGIBLE_SPEED_THRESHOLD = 0.003;
+    /** EntityLiving, aiStep */
+    public static final double NEGLIGIBLE_SPEED_THRESHOLD_LEGACY = 0.005;
 
 
     // Gravity.
@@ -161,12 +184,12 @@ public class Magic {
      * Test if this move is a bunnyhop (sprint-jump)
      * 
      * @param data
-     * @param fromOnGroundOrLostGround This is tested for only if regular thisMove.from.onGround returns false.
+     * @param isOnGroundOpportune Checked only during block-change activity, via the block-change-tracker. 
      * @param sprinting
      * @return true if is bunnyhop.
      * 
      */
-    public static boolean isBunnyhop(final MovingData data, final boolean fromOnGroundOrLostGround, boolean sprinting) {
+    public static boolean isBunnyhop(final MovingData data, final boolean isOnGroundOpportune, boolean sprinting) {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         
@@ -177,7 +200,7 @@ public class Magic {
 
         return 
                 // This mechanic is applied only if the player is sprinting
-                sprinting && lastMove.toIsValid
+                sprinting
                 // 0: Motion speed condition. Demand the player to hit the jumping envelope.
                 && (
                     thisMove.yDistance > data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
@@ -186,10 +209,10 @@ public class Magic {
                 // 0: Ground conditions
                 && (
                     // 1: Ordinary/obvious lift-off.
-                    data.sfJumpPhase == 0 && thisMove.from.onGround 
-                    && !thisMove.to.onGround // Don't apply if stepping blocks.
+                    data.sfJumpPhase == 0 && thisMove.from.onGround && !thisMove.to.onGround // Don't apply if stepping blocks.
                     // 1: Do allow hopping if a past on ground status is found or this (legitimate) on ground phase was lost 
-                    || data.sfJumpPhase <= 1 && fromOnGroundOrLostGround && !lastMove.bunnyHop
+                    || data.sfJumpPhase <= 1 && !thisMove.to.onGround
+                    && (thisMove.touchedGroundWorkaround || isOnGroundOpportune) && !lastMove.bunnyHop
                 )
             ;
     }
@@ -527,5 +550,26 @@ public class Magic {
                 && inAir(thisMove)
                 && lastMove.yDistance < maxJumpGain && lastMove.yDistance > maxJumpGain * 0.67
                 && Magic.fallingEnvelope(yDistance, maxJumpGain, data.lastFrictionVertical, Magic.GRAVITY_SPAN);
+    }
+
+    /**
+     * Retrieve the appropriate modifier to calculate the relative speed decrease with
+     * @param data
+     * @param headObstructed
+     * @return the modifier
+     */
+    public static double bunnySlopeSlowdown(final MovingData data) {
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        return 
+               // TODO: How exactly did asofold get the 0.66 magic value for ordinary jumping?
+               // Blue ice 
+               (lastMove.from.onBlueIce || lastMove.to.onBlueIce) ? 0.142027114267269 :
+               // Ice/packed Ice
+               (lastMove.to.onIce || lastMove.from.onIce) ? 0.159036144578313 :
+               // Slimes and beds
+               (lastMove.to.onBouncyBlock || lastMove.from.onBouncyBlock) ? 0.594594594594595 :
+               // Ordinary
+               0.66
+            ;
     }
 }

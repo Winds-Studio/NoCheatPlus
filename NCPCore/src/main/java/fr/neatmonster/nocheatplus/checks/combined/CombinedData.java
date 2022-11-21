@@ -36,6 +36,10 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     public float lastYaw;
     public long  lastYawTime;
     public float sumYaw;
+    public String lastWorld = "";
+    public long lastJoinTime;
+    public long lastLogoutTime;
+    public long lastMoveTime;
     public final ActionFrequency yawFreq = new ActionFrequency(3, 333);
 
     // General penalty time. Used for fighting mainly, but not only close combat (!), set by yawrate check.
@@ -45,7 +49,6 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     public final ActionFrequency improbableCount = new ActionFrequency(20, 3000); // 20 buckets covering 3 seconds each (full time resolution of 1 minute)
 
     // *----------No slowdown related data----------*
-    // TODO:Would make more sense to move into Net or Combined data
     /** Whether the player is using an item */
     public boolean isUsingItem = false;
     /** Whether the player use the item on left hand */
@@ -56,18 +59,26 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     public long releaseItemTime = 0;
     /** Detection flag */
     public boolean isHackingRI = false;
+    
+    /**
+     * Reduce Improbable's data by the given amount, capped at a minimum of 0.
+     * @param amount
+     */
+    public void relaxImprobableData(final float amount) {
+        ActionFrequency.reduce(System.currentTimeMillis(), amount, improbableCount);
+    }
 
-    // General data
-    // TODO: -> PlayerData (-> OfflinePlayerData)
-    public String lastWorld = "";
-    public long lastJoinTime;
-    public long lastLogoutTime;
-    public long lastMoveTime;
+    /**
+     * Hard reset Improbable's data.
+     * @param amount
+     */
+    public void resetImprobableData() {
+        improbableCount.clear(System.currentTimeMillis());
+    }
 
     @Override
     public boolean dataOnRemoveSubCheckData(Collection<CheckType> checkTypes) {
-        for (final CheckType checkType : checkTypes)
-        {
+        for (final CheckType checkType : checkTypes) {
             switch(checkType) {
                 // TODO: case COMBINED:
                 case COMBINED_IMPROBABLE:

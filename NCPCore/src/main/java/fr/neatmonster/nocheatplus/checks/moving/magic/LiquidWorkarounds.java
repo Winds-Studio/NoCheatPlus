@@ -91,8 +91,7 @@ public class LiquidWorkarounds {
                 // Lenient on marginal violation if speed decreases by 'enough'.
                 // (Observed on 'dirty' phase. Then why not confining by isVelocityJumpPhase?)
                 if (Math.abs(frictDist - yDistance) <= 2.0 * Magic.GRAVITY_MAX
-                    && yDistance < lastMove.yDistance - 4.0 * Math.abs(frictDist - yDistance)
-                    && data.isVelocityJumpPhase()) {
+                    && yDistance < lastMove.yDistance - 4.0 * Math.abs(frictDist - yDistance)) {
                     return yDistance;
                 }
 
@@ -115,9 +114,8 @@ public class LiquidWorkarounds {
                     }
 
                     // Velocity use in lastMove, keep air friction roughly.
-                    // (Then confine it by lastMove.verVelUsed != null?)
                     if (!Magic.resetCond(pastMove1) && lastMove.yDistance - Magic.GRAVITY_MAX > thisMove.yDistance
-                        && Magic.intoLiquid(lastMove) && Magic.leavingLiquid(thisMove) && lastMove.verVelUsed != null) {
+                        && Magic.intoLiquid(lastMove) && Magic.leavingLiquid(thisMove)) {
                         return yDistance;
                     }
                 }
@@ -160,7 +158,7 @@ public class LiquidWorkarounds {
                 return yDistance;
             }
             // Lava rather.
-            else if (data.lastFrictionVertical < 0.65 // (Random, but smaller than water.) 
+            else if (data.lastFrictionVertical == Magic.FRICTION_MEDIUM_LAVA 
                     && (
                             // Moving downstream.
                             lastMove.yDistance < 0.0 && yDistance > -0.5 && yDistance < lastMove.yDistance 

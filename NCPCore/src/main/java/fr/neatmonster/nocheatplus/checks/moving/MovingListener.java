@@ -93,6 +93,8 @@ import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
 import fr.neatmonster.nocheatplus.components.location.SimplePositionWithLook;
+import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
+import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.components.registry.factory.IFactoryOne;
 import fr.neatmonster.nocheatplus.components.registry.feature.IHaveCheckType;
 import fr.neatmonster.nocheatplus.components.registry.feature.INeedConfig;
@@ -172,6 +174,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     /** Statistics / debugging counters. */
     private final Counters counters = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class);
+    
+    /** Access to player's attributes (mainly speed-related) */
+    private IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
 
     private final int idMoveEvent = counters.registerKey("event.player.move");
 
@@ -406,10 +411,12 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final boolean debug = pData.isDebugActive(checkType);
-        data.increasePlayerMoveCount();
         final Location from = event.getFrom().clone();
         final Location to = event.getTo().clone();
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         Location newTo = null;
+        // Increase the player move event counte with each move.
+        data.increasePlayerMoveCount();
 
 
         //////////////////////////////////////////  
@@ -463,7 +470,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         else if (TrigUtil.isSamePos(from, to) && !data.lastMoveNoMove) { 
             //if (data.sfHoverTicks > 0) data.sfHoverTicks += hoverTicksStep;
-            earlyReturn = data.lastMoveNoMove = true;
+            earlyReturn = data.lastMoveNoMove = thisMove.duplicatePosition = true;
             token = "duplicate";
             // Ignore 1.17+ duplicate position packets.
             // Context: Mojang attempted to fix a bucket placement desync issue by re-sending the position on right clicking...
@@ -506,9 +513,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //////////////////////////////////////////////////////////////
         // Fire one or two moves here (Split move handling).        //
         //////////////////////////////////////////////////////////////
-        // The split move checking was first introduced due to a Bukkit/Spigot bug (reported by asofold and then fixed by the Spigot team)
-        // @See: https://hub.spigotmc.org/jira/browse/SPIGOT-1646
-        // Despite the fix, the mechanic was kept anyway because of the fact that a single PlayerMoveEvent can sometimes be the result of multiple packets;
+        // This mechanic is needed because of the fact that a single PlayerMoveEvent can sometimes be the result of multiple packets;
         // This is due to thresholds for moving events: 1f / 256 for distance, 10 for looking direction change
         // (newTo should be null here)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
@@ -681,11 +686,11 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             boolean hasboots = BridgeMisc.hasLeatherBootsOn(player);
             if (pTo.isOnGround() && !hasboots 
                 && pTo.adjustOnGround(!pTo.isOnGroundDueToStandingOnAnEntity() && !pTo.isOnGround(cc.yOnGround, BlockFlags.F_POWDERSNOW)) && debug) {
-                debug(player, "Collide ground surface but not actually on ground. Adjusting To location.");
+                debug(player, "Powder Snow: Ground collision was detected but the player is un-equipped with leather boots. Reset the from.onGround flag.");
             }
             if (pFrom.isOnGround() && !hasboots 
                 && pFrom.adjustOnGround(!pFrom.isOnGroundDueToStandingOnAnEntity() && !pFrom.isOnGround(cc.yOnGround, BlockFlags.F_POWDERSNOW)) && debug) {
-                debug(player, "Collide ground surface but not actually on ground. Adjusting From location");
+                debug(player, "Powder Snow: Ground collision was detected but the player is un-equipped with leather boots. Reset the to.onGround flag.");
             }
         }
 
@@ -701,7 +706,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         ////////////////////////////////////
         // Set some data for this move.   //
         ////////////////////////////////////
+        // Set coordinates
         thisMove.set(pFrom, pTo);
+        // Set this split move phase.
         thisMove.multiMoveCount = multiMoveCount;
         // Set flag for swimming with the flowing direction of liquid.
         thisMove.downStream = pFrom.isDownStream(thisMove.to.getX()-thisMove.from.getX(), thisMove.to.getZ()-thisMove.from.getZ()); 
@@ -717,9 +724,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.hasSlowfall = !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player));
         // " " has gravity
         thisMove.hasGravity = BridgeMisc.hasGravity(player);
-        // The currently used lift off envelope
-        // TODO: Later replace data.liftOffEnvelope with this.
-        thisMove.liftOffEnvelope = data.liftOffEnvelope;
     
 
         ////////////////////////////
@@ -746,17 +750,32 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         ////////////////////////////////////
         boolean checkCf;
         boolean checkSf;
+        float walkSpeed = attributeAccess.getHandle().getMovementSpeed(player);
+        if (walkSpeed == Float.MAX_VALUE) {
+            if (debug) {
+                debug(player, "The player's movement speed attribute couldn't be retrieved. Fallback to manual calculation.");
+            }
+            // This is basically for 1.5 only. Since that version doesn't support attributes, we have to do things manually. Ugly.
+            walkSpeed = player.getWalkSpeed() / 2f;
+            if (!Double.isInfinite(mcAccess.getHandle().getFasterMovementAmplifier(player))) {
+                walkSpeed += (float)(mcAccess.getHandle().getFasterMovementAmplifier(player) + 1) * 0.2f * walkSpeed;
+            }
+            if (!Double.isInfinite(PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.SLOW))){
+                walkSpeed += (float)(PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.SLOW) + 1) * -0.15f * walkSpeed;
+            }
+        }
         if (MovingUtil.shouldCheckSurvivalFly(player, pFrom, pTo, data, cc, pData)) {
             checkCf = false;
             checkSf = true;
+            // NOTE: Fly checking has to be set here to be correctly used by Extreme_Move.
             thisMove.flyCheck = CheckType.MOVING_SURVIVALFLY;
-            data.adjustWalkSpeed(player.getWalkSpeed(), tick, cc.speedGrace);
+            data.adjustWalkSpeed(walkSpeed, tick, cc.speedGrace);
         }
         else if (pData.isCheckActive(CheckType.MOVING_CREATIVEFLY, player)) {
             checkCf = true;
             checkSf = false;
             thisMove.flyCheck = CheckType.MOVING_CREATIVEFLY;
-            prepareCreativeFlyCheck(player, from, to, moveInfo, thisMove, multiMoveCount, tick, data, cc);
+            prepareCreativeFlyCheck(player, from, to, moveInfo, thisMove, multiMoveCount, tick, data, cc, walkSpeed);
         }
         // (thisMove.flyCheck stays null.)
         else checkCf = checkSf = false;
@@ -910,6 +929,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         
         // 6: Recalculate explosion velocity as PlayerVelocityEvent can't handle well on 1.13+
         // TODO: Merge with velocity entries that were added at the same time with this one!
+        // TODO: Evaluate if this can be removed with the new hspeed rework (Should be, since it doesn't rely on a hard-limit anymore)
         if (data.shouldApplyExplosionVelocity) {
             data.shouldApplyExplosionVelocity = false;
             double xLastDistance = 0.0; double zLastDistance = 0.0; double yLastDistance = 0.0;
@@ -955,20 +975,21 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             data.explosionVelAxisZ = 0.0;
         }
         
-        // 7: Fake add velocity when levitation ends to smoothen the transition and not trigger false positives
+        // 7: HACK: Fake add velocity when levitation ends to smoothen the transition and not trigger false positives
         if (lastMove.hasLevitation && !thisMove.hasLevitation) {
+            // Ensure to use the previous yDistance which has been checked by SurvivalFly.
             data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance + Magic.GRAVITY_MAX, 1));
             if (debug) {
                 debug(player, "Transition from levitation to normal move: fake use velocity.");
             }
         }
         
-        // 8: Fake add velocity for when the stream launches the player in the air.
+        // 8: HACK: Fake add velocity for when the stream launches the player in the air.
         // TODO: Can this be modeled better?
         if (!thisMove.headObstructed && lastMove.from.inBubbleStream 
             && BlockProperties.isAir(pFrom.getTypeIdAbove()) && !lastMove.from.draggedByBubbleStream
             && !data.isVelocityJumpPhase()) {
-            data.addVerticalVelocity(new SimpleEntry(Math.min(1.8, lastMove.yDistance + 0.2), (int) Math.round(Math.min(1.8, lastMove.yDistance + 0.2) * 60)));
+            data.addVerticalVelocity(new SimpleEntry(Math.min(1.8, lastMove.yDistance + 0.1), (int) Math.round(Math.min(1.8, lastMove.yDistance + 0.1) * 60)));
             data.setFrictionJumpPhase();
             if (debug) {
                 debug(player, "Fake velocity for bubble stream launch effect.");
@@ -1149,9 +1170,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     private void prepareCreativeFlyCheck(final Player player, final Location from, final Location to, 
                                          final PlayerMoveInfo moveInfo, final PlayerMoveData thisMove, final int multiMoveCount, 
-                                         final int tick, final MovingData data, final MovingConfig cc) {
+                                         final int tick, final MovingData data, final MovingConfig cc, float walkSpeed) {
         data.adjustFlySpeed(player.getFlySpeed(), tick, cc.speedGrace);
-        data.adjustWalkSpeed(player.getWalkSpeed(), tick, cc.speedGrace);
+        data.adjustWalkSpeed(walkSpeed, tick, cc.speedGrace);
         // TODO: Adjust height of PlayerLocation more efficiently / fetch model early.
         final ModelFlying model = cc.getModelFlying(player, moveInfo.from, data, cc);
         if (MovingConfig.ID_JETPACK_ELYTRA.equals(model.getId())) {
@@ -1304,13 +1325,14 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final double xDistance = to.getX() - from.getX();
         final double zDistance = to.getZ() - from.getZ();
         final Direction dir;
-        if (Math.abs(xDistance) > Math.abs(zDistance)) dir = xDistance > 0.0 ? Direction.X_POS : Direction.X_NEG;
+        if (Math.abs(xDistance) > Math.abs(zDistance)) {
+            dir = xDistance > 0.0 ? Direction.X_POS : Direction.X_NEG;
+        }
         else dir = zDistance > 0.0 ? Direction.Z_POS : Direction.Z_NEG;
     
         final BlockChangeEntry entry = BlockChangeSearch(from, tick, dir, debug, data, cc, worldId, false);
         if (entry != null) {
             final int count = MovingData.getHorVelValCount(0.6);
-            // TODO: Clear active horizontal velocity?
             data.clearActiveHorVel();
             data.addHorizontalVelocity(new AccountEntry(tick, 0.6, count, count));
             // Stuck in block, Hack
@@ -1998,6 +2020,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * @param to
      * @param data
      * @param cc
+     * @param pData
      * @return True, if processing the teleport event should be aborted, false
      *         otherwise.
      */
@@ -2008,7 +2031,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Set back.
             confirmSetBack(player, true, data, cc, pData, to);
             // Reset some more data.
-            // TODO: Some more?
             data.reducePlayerMorePacketsData(1);
             // Log.
             if (pData.isDebugActive(checkType)) {
@@ -2038,6 +2060,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      *            applied, due to reaching EventPriority.MONITOR).
      * @param data
      * @param cc
+     * @param pData
+     * @param fallbackTeleported
      */
     private void confirmSetBack(final Player player, final boolean fakeNews, final MovingData data, 
                                 final MovingConfig cc, final IPlayerData pData, final Location fallbackTeleported) {
@@ -2239,6 +2263,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                         fallDistance = dataDist;
                         BridgeHealth.setRawDamage(event, dataDamage);
                     }
+                    // There are edge (and hard to reproduce) cases where this may happen due to bugs on NCP's side,
+                    // but a legit player should never be able to trigger fakefall many times in a row. So an Improbable check request makes sense.
+                    Improbable.check(player, player.getFallDistance(), System.currentTimeMillis(), "nofall.fakefall",pData);
                 }
             }
             // Be sure not to lose that block.
@@ -2250,6 +2277,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             if (!pLoc.isOnGround(1.0, 0.3, 0.1) && !pLoc.isResetCond() && !pLoc.isAboveLadder() && !pLoc.isAboveStairs()) {
                 if (noFallVL(player, "fakeground", data, cc) && data.hasSetBack()) {
                     allowReset = false;
+                    Improbable.check(player, 1.0f, System.currentTimeMillis(), "nofall.fakeground",pData);
                 }
             }
             // Legitimate damage: clear accounting data.
@@ -2792,8 +2820,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final double jump = mcAccess.getJumpAmplifier(player);
         final double speed = mcAccess.getFasterMovementAmplifier(player);
         final double strider = BridgeEnchant.getDepthStriderLevel(player);
+        final double swiftSneak = BridgeEnchant.getSwiftSneakLevel(player);
         if (BuildParameters.debugLevel > 0) {
-            builder.append("\n(walkspeed=" + player.getWalkSpeed() + " flyspeed=" + player.getFlySpeed() + ")");
+            builder.append("\n(walkspeed(attr)=" + attributeAccess.getHandle().getMovementSpeed(player) + " flyspeed=" + player.getFlySpeed() + ")");
             if (player.isSprinting()) {
                 builder.append("(sprinting)");
             }
@@ -2829,6 +2858,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         if (strider != 0) {
             builder.append("(e_depth_strider=" + strider + ")");
+        }
+        if (swiftSneak != 0) {
+        	builder.append("(swift_sneak=" + swiftSneak + ")");
         }
         if (Bridge1_9.isGliding(player)) {
             builder.append("(gliding)");

@@ -357,12 +357,12 @@ public class CreativeFly extends Check {
                 }
                 tags.add("flying");
             }
-            else {
-                // (Ignore sprinting here).
-                final double attrMod = attributeAccess.getHandle().getSpeedAttributeMultiplier(player);
-                if (attrMod != Double.MAX_VALUE) fSpeed *= attrMod;
-                fSpeed *= data.walkSpeed / Magic.CB_DEFAULT_WALKSPEED;
-            }
+            //  else {
+            //     // (Ignore sprinting here).
+            //      final double attrMod = attributeAccess.getHandle().getSpeedAttributeMultiplier(player);
+            //      if (attrMod != Double.MAX_VALUE) fSpeed *= attrMod;
+            //      fSpeed *= data.walkSpeed / Magic.CB_DEFAULT_WALKSPEED;
+            //  }
         }
         else fSpeed = 1.0;
         

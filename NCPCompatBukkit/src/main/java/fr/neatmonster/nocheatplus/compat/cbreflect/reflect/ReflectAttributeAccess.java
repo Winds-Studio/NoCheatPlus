@@ -153,8 +153,9 @@ public class ReflectAttributeAccess implements IAttributeAccess {
     }
     
     @Override
-    public double getMovementSpeed(Player player) {
-    	return 0.1 * getSpeedAttributeMultiplier(player, true);
+    public float getMovementSpeed(final Player player) {
+        // / by 2 to get the base value 0.1f
+        return (player.getWalkSpeed() / 2f) * (float)getSpeedAttributeMultiplier(player);
     }
 
     @Override

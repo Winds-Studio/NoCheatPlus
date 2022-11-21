@@ -84,6 +84,15 @@ public class PlayerMoveData extends MoveData {
      * is split into two moves 1: from -> loc, 2: loc -> to.
      */
     public int multiMoveCount;
+    
+    /**
+     * Mojang introduced a new mechanic in 1.17 which allows player to re-send their position on right clicking.
+     * So there could have been a duplicate move of the one that has just been sent.
+     * This moving event is skipped from being processed.
+     * Do note that players cannot send duplicate packets in a row, there has to be a non-duplicate packet in between each duplicate one.
+     * (Sequence is: normal -> redundant -> normal (...))
+     */
+    public boolean duplicatePosition;
 
     /**
      * Just the used vertical velocity. Could be overridden multiple times
@@ -91,8 +100,6 @@ public class PlayerMoveData extends MoveData {
      */
     public SimpleEntry verVelUsed = null;
     
-    /** The lift off envelope currently used by this move. Set in the moving listener. */
-    public LiftOffEnvelope liftOffEnvelope = null;
 
     @Override
     protected void resetBase() {
@@ -112,7 +119,7 @@ public class PlayerMoveData extends MoveData {
         // Meta stuff.
         multiMoveCount = 0;
         verVelUsed = null;
-        liftOffEnvelope = LiftOffEnvelope.UNKNOWN;
+        duplicatePosition = false;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();
     }

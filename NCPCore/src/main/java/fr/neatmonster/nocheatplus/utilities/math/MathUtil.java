@@ -108,28 +108,6 @@ public class MathUtil {
    }
    
    /**
-    * Test if the absolute difference between two values is small enough to be considered equal.
-    * (From Mth.java)
-    * @param a The minuend (Must be a float)
-    * @param b The subtrahend (Must be a float)
-    * @return True, if the difference is smaller than 1.0E-5F
-    */
-   public static boolean equal(float a, float b) {
-      return Math.abs(a - b) < 1.0E-5;
-   }
-   
-   /**
-    * Test if the absolute difference between two values is small enough to be considered equal.
-    * (From Mth.java)
-    * @param a The minuend (Must be a double)
-    * @param b The subtrahend (Must be a double)
-    * @return True, if the difference is smaller than 9.999999747378752E-6D
-    */
-   public static boolean equal(double a, double b) {
-      return Math.abs(a - b) < 9.999999747378752E-6D;
-   }
-   
-   /**
     * Maximum of the absolute value of two numbers.
     * @param a
     * @param b

@@ -752,6 +752,22 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isSubmerged(final double yMargin) {
         return BlockProperties.collides(blockCache, minX, minY + yMargin, minZ, maxX, maxY, maxZ, BlockFlags.F_LIQUID);
     }
+    
+    /**
+     * Check if the moved AABB collides with a block with the given flags
+     * @param xMargin
+     *             Parameter to move the bounding box along the X axis
+     * @param yMargin
+     *             Parameter to move the bounding box along the Y axis
+     * @param zMargin
+     *             Parameter to move the bounding box along the Z axis
+     * @param collisionFlags
+     *              Flags to check for collision with.
+     * @return true if collision is found with the moved box.
+     */
+    public boolean collidesWithMovedAABB(double xMargin, double yMargin, double zMargin, long collisionFlags) {
+        return BlockProperties.collides(blockCache, minX + xMargin, minY + yMargin, + minZ + zMargin, maxX + xMargin, maxY + yMargin, maxZ + zMargin, collisionFlags);
+    }
 
     /**
      * Check if solid blocks hit the box.
@@ -1195,20 +1211,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             }
         }
         return onGround;
-    }
-
-    /**
-     * Test if ground is present below the player within the given distance
-     * @param xDistance
-     *            the x margin, given by the current xDistance
-     * @param yMargin
-     *            the y margin, given by the below amount.
-     * @param zDistance
-     *            the z margin, given by the current zDistance.
-     * @return true, if ground is found within the given margins
-     */
-    public boolean isGroundCoveredByCurrentDistance(final double xDistance, final double yMargin, final double zDistance) {
-        return BlockProperties.isOnGround(blockCache, xDistance, yMargin, zDistance, maxX, maxY, maxZ, 0L); // Don't care about the top of the box. We' are interested to see if there's ground beneath the player within the given hDistance.
     }
 
     /**

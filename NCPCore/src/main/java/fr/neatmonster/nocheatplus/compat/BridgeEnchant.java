@@ -325,7 +325,7 @@ public final class BridgeEnchant {
     /**
      * 
      * @param player
-     * @return Maximum level of SOUL_SPEED found on armor items, capped at 3.
+     * @return Maximum level of SWIFT_SNEAK found on armor items, capped at 3.
      *         Will return 0 if not available.
      */
     public static int getSwiftSneakLevel(final Player player) {

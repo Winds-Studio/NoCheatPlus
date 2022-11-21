@@ -110,7 +110,7 @@ public class Improbable extends Check implements IDisableListener {
     	// TODO: Other concepts for Improbable checking
         // 1) Let ALL checks *feed* the Improbable check 
     	// THEN
-    	// 2) Automatically check every custom amount of minutes/hours.
+    	// 2) Automatically check every custom amount of minutes/hours OR on-demand checking via command (i.e.: /ncp checkImprobable)
         
         if (!pData.isCheckActive(type, player)) {
             return false;
@@ -118,7 +118,7 @@ public class Improbable extends Check implements IDisableListener {
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         final CombinedConfig cc = pData.getGenericInstance(CombinedConfig.class);
         data.improbableCount.add(now, weight);
-        /** Score of the first 3 seconds (a bucket lasts 3 secs)*/
+        /** Score of the first 3 seconds (a bucket covers 3 secs)*/
         final float shortTerm = data.improbableCount.bucketScore(0);
         double violation = 0.0;
         boolean violated = false;

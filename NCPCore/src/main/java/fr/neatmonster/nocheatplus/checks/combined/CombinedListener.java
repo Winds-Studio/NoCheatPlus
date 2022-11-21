@@ -20,9 +20,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
 
@@ -33,6 +36,7 @@ import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
 import fr.neatmonster.nocheatplus.components.registry.factory.IFactoryOne;
+import fr.neatmonster.nocheatplus.components.registry.feature.JoinLeaveListener;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.players.PlayerFactoryArgument;
@@ -48,7 +52,7 @@ import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
  * @author asofold
  *
  */
-public class CombinedListener extends CheckListener {
+public class CombinedListener extends CheckListener implements JoinLeaveListener {
 
     protected final Improbable improbable = addCheck(new Improbable());
 
@@ -87,26 +91,22 @@ public class CombinedListener extends CheckListener {
                 .context() //
                 );
     }
-
-    /**
-     * We listen to this event to prevent players from leaving while falling, so from avoiding fall damage.
-     * 
-     * @param event
-     *            the event
-     */
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerJoin(final PlayerJoinEvent event) {
-        final Player player = event.getPlayer();
+    
+    @Override
+    public void playerJoins(final Player player) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         final CombinedConfig cc = pData.getGenericInstance(CombinedConfig.class);
+        final boolean debug = pData.isDebugActive(checkType);
 
         if (cc.invulnerableCheck 
             && (cc.invulnerableTriggerAlways || cc.invulnerableTriggerFallDistance && player.getFallDistance() > 0)) {
             // TODO: maybe make a heuristic for small fall distances with ground under feet (prevents future abuse with jumping) ?
             final int invulnerableTicks = mcAccess.getHandle().getInvulnerableTicks(player);
             if (invulnerableTicks == Integer.MAX_VALUE) {
-                // TODO: Maybe log a warning.
+            	if (debug) {
+            		debug(player, "Invulnerable ticks could not be determined.");
+            	}   	
             } 
             else {
                 final int ticks = cc.invulnerableInitialTicksJoin >= 0 ? cc.invulnerableInitialTicksJoin : invulnerableTicks;
@@ -116,16 +116,51 @@ public class CombinedListener extends CheckListener {
         }
     }
 
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerLeave(final PlayerQuitEvent event) {
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerRespawn(final PlayerRespawnEvent event) {
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        // Don't keep Improbable's data
-        data.improbableCount.clear(System.currentTimeMillis());
+        data.resetImprobableData();
+        final boolean debug = pData.isDebugActive(checkType);
+        if (debug) debug(player, "Clear improbable data on respawn.");
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerDeath(final PlayerDeathEvent event) {
+        final Player player = event.getEntity();
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
+        data.resetImprobableData();
+        final boolean debug = pData.isDebugActive(checkType);
+        if (debug) debug(player, "Clear improbable data on death.");
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onGameModeChange(final PlayerGameModeChangeEvent event) {
+        final Player player = event.getPlayer();
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
+        // If gamemode changes, then we can safely drop Improbable's data.
+        data.resetImprobableData();
+        final boolean debug = pData.isDebugActive(checkType);
+        if (debug) debug(player, "Clear improbable data on game mode change.");
+    }
+
+    @Override
+    public void playerLeaves(final Player player) {
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
+        data.resetImprobableData();
+        final boolean debug = pData.isDebugActive(checkType);
+        if (debug) debug(player, "Clear improbable data on leave.");
+    }
+    
+    /**
+     * We listen to entity damage events for the Invulnerable feature.
+     * @param event
+     *           the event
+     */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEntityDamage(final EntityDamageEvent event) {
         final Entity entity = event.getEntity();
