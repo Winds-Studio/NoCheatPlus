@@ -1003,7 +1003,8 @@ public class SurvivalFly extends Check {
          */
         // Handle split moves
         if (thisMove.multiMoveCount > 0) player.sendMessage("Split move: " + thisMove.multiMoveCount);
-        if (thisMove.multiMoveCount == 1) {
+        // TODO: Detect if legacySplitMove or modern one in order to decide to use this workaround or not
+        /*if (thisMove.multiMoveCount == 1) {
             // TODO: This workaround is not correct/enough.
             // Handle the first part of a split move
             if (thisMove.hDistance < 0.1) {
@@ -1033,11 +1034,11 @@ public class SurvivalFly extends Check {
                 thisMove.zAllowedDistance = lastMove.from.getZ() - pastMove2.to.getZ();
             }
         }
-        else { 
+        else {*/
             // Normal move. Initialize the allowed distance(s) with the previous speed.
-            thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.to.getX() - lastMove.from.getX() : Magic.NEGLIGIBLE_SPEED_THRESHOLD;
-            thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.to.getZ() - lastMove.from.getZ() : Magic.NEGLIGIBLE_SPEED_THRESHOLD;
-        }
+            thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.to.getX() - lastMove.from.getX() : 0.0;
+            thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.to.getZ() - lastMove.from.getZ() : 0.0;
+        //}
 
         /** How much speed should be conserved on the next tick. */
         float inertia;

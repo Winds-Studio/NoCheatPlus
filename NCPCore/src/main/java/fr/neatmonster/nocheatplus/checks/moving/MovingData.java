@@ -122,6 +122,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     
     // *----------Speed/Friction factors (hor/ver)----------*
     /** Horizontal friction factor from NMS.*/
+    // TODO: Might not good to set those at 0.0f, can cause NaN when /ncp removeplayer command execute
     public float lastFrictionHorizontal = 0.0f;
     public float nextFrictionHorizontal = 0.0f;
     /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/

@@ -79,7 +79,9 @@ import fr.neatmonster.nocheatplus.checks.moving.vehicle.VehicleChecks;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.AccountEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
+import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
+import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
@@ -538,28 +540,93 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event);
         }
         else {
-            // This movement didn't reach the PlayerMoveEvent thresholds: Location has not been updated last moving event.
-            // Do split into two moves.
-            // 1: Process from -> loc.
-            moveInfo.set(player, from, loc, cc.yOnGround);
-            if (debug) {
-                debug(player, "Split move 1 (from -> loc):");
-            }
-            if (!checkPlayerMove(player, from, loc, 1, moveInfo, debug, data, cc, pData, event) && processingEvents.containsKey(player.getName())) {
-                // Between -> set data accordingly (compare: onPlayerMoveMonitor).
-                onMoveMonitorNotCancelled(player, from, loc, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
-                data.joinOrRespawn = false;
-                // 2: Process loc -> to.
-                moveInfo.set(player, loc, to, cc.yOnGround);
-                checkPlayerMove(player, loc, to, 2, moveInfo, debug, data, cc, pData, event);
-                if (debug) {
-                    debug(player, "Split move 2 (loc -> to):");
+            // Only work if MovingFlying is active otherwise fall back to legacy one
+            final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
+            final DataPacketFlying[] queue = flyingHandle.getHandle();
+            if (queue.length != 0) {
+                int foundFirst = -1;
+                int foundLast = -1;
+                // 1: Find where is the from and to location
+                for (int i = 0; i < queue.length; i++) {
+                    final DataPacketFlying packetData = queue[i];
+                    if (packetData == null || !packetData.hasPos) {
+                        continue;
+                    }
+                    if (TrigUtil.isSamePos(to.getX(), to.getY(), to.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
+                        foundLast = i;
+                    } else
+                    if (TrigUtil.isSamePos(from.getX(), from.getY(), from.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
+                        foundFirst = i;
+                    }
+                    if (foundFirst > 0 && foundLast > 0) break;
                 }
+                // Not found, return to legacy split move
+                if (foundFirst < 0 || foundLast < 0 || foundFirst - foundLast + 1 < 1) {
+                    legacySplitMove(player, moveInfo, from, loc, to, debug, data, cc, pData, event);
+                    
+                    // Cleanup.
+                    data.joinOrRespawn = false;
+                    aux.returnPlayerMoveInfo(moveInfo);
+                    return;
+                }
+                // 2: Filter duplicate pos, null, look only or ground only packet
+                final DataPacketFlying[] queuePos = new DataPacketFlying[foundFirst - foundLast + 1];
+                int j = 0;
+                for (int i = foundFirst; i >= foundLast; i--) {
+                    if (j > 0 && queue[i].isSamePos(queuePos[j-1])) continue;
+                    if (queue[i] != null && queue[i].hasPos) {
+                        queuePos[j] = queue[i];
+                        j++;
+                    }
+                }
+                // 3: Actual split
+                int count = 1;
+                int maxSplit = 9;
+                for (int i = 0; i < j-1; i++) {
+                    final Location loc1 = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ());
+                    final Location loc2 = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i+1].getX(), queuePos[i+1].getY(), queuePos[i+1].getZ());
+                    moveInfo.set(player, loc1, loc2, cc.yOnGround);
+                    if (debug) {
+                        final String s1 = count == 1 ? "from" : "loc";
+                        final String s2 = i == j - 2 || count >= maxSplit ? "to" : "loc";
+                        debug(player, "Split move " + count + " (" + s1 + " -> " + s2 + "):");
+                    }
+                    if (!checkPlayerMove(player, loc1, loc2, count++, moveInfo, debug, data, cc, pData, event) && processingEvents.containsKey(player.getName())) {
+                        onMoveMonitorNotCancelled(player, loc1, loc2, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
+                        data.joinOrRespawn = false;
+                    } else break;
+                    // Split too much!
+                    if (count > maxSplit) break;
+                }
+            } else {
+                legacySplitMove(player, moveInfo, from, loc, to, debug, data, cc, pData, event);
             }
         }
         // Cleanup.
         data.joinOrRespawn = false;
         aux.returnPlayerMoveInfo(moveInfo);
+    }
+
+    private void legacySplitMove(final Player player, final PlayerMoveInfo moveInfo, final Location from, final Location loc, final Location to, 
+            final boolean debug, final MovingData data, final MovingConfig cc, final IPlayerData pData, final PlayerMoveEvent event) {
+        // This movement didn't reach the PlayerMoveEvent thresholds: Location has not been updated last moving event.
+        // Do split into two moves.
+        // 1: Process from -> loc.
+        moveInfo.set(player, from, loc, cc.yOnGround);
+        if (debug) {
+            debug(player, "Split move 1 (from -> loc):");
+        }
+        if (!checkPlayerMove(player, from, loc, 1, moveInfo, debug, data, cc, pData, event) && processingEvents.containsKey(player.getName())) {
+            // Between -> set data accordingly (compare: onPlayerMoveMonitor).
+            onMoveMonitorNotCancelled(player, from, loc, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
+            data.joinOrRespawn = false;
+            // 2: Process loc -> to.
+            moveInfo.set(player, loc, to, cc.yOnGround);
+            checkPlayerMove(player, loc, to, 2, moveInfo, debug, data, cc, pData, event);
+            if (debug) {
+                debug(player, "Split move 2 (loc -> to):");
+            }
+        }
     }
 
 
@@ -2860,7 +2927,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             builder.append("(e_depth_strider=" + strider + ")");
         }
         if (swiftSneak != 0) {
-        	builder.append("(swift_sneak=" + swiftSneak + ")");
+            builder.append("(swift_sneak=" + swiftSneak + ")");
         }
         if (Bridge1_9.isGliding(player)) {
             builder.append("(gliding)");
