@@ -122,9 +122,10 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     
     // *----------Speed/Friction factors (hor/ver)----------*
     /** Horizontal friction factor from NMS.*/
-    // TODO: Might not good to set those at 0.0f, can cause NaN when /ncp removeplayer command execute
-    public float lastFrictionHorizontal = 0.0f;
+    public float lastFrictionHorizontal = 0.6f;
     public float nextFrictionHorizontal = 0.0f;
+    public float lastInertia = 0.0f;
+    public float nextInertia = 0.0f;
     /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/
     public double lastStuckInBlockHorizontal = 0.0; 
     /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/
@@ -367,6 +368,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // Set to 1.0 to prevent any unintentional / by 0. These are mainly used within multiplication or division operations anyway.
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
         lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0f;
+        lastInertia = 0.0f;
     }
 
 
@@ -400,6 +402,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         timeSinceSetBack = 0;
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
         lastFrictionHorizontal = lastBlockSpeedMultiplier =  1.0f;
+        lastInertia = 0.0f;
         lastSetBackHash = setBack == null ? 0 : setBack.hashCode();
         // Reset to setBack.
         resetPlayerPositions(setBack);
@@ -515,7 +518,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         verticalBounce = null;
         blockChangeRef.valid = false;
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
-        lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0f;
+        lastFrictionHorizontal = 0.6f;
+        lastBlockSpeedMultiplier = 1.0f;
+        lastInertia = 0.0f;
         // TODO: other buffers ?
         // No reset of vehicleConsistency.
     }

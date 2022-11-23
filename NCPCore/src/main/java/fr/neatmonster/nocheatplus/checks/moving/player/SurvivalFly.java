@@ -530,6 +530,7 @@ public class SurvivalFly extends Check {
         data.lastStuckInBlockVertical = data.nextStuckInBlockVertical;
         data.lastStuckInBlockHorizontal = data.nextStuckInBlockHorizontal;
         data.lastBlockSpeedMultiplier = data.nextBlockSpeedMultiplier;
+        data.lastInertia = data.nextInertia;
 
         // Log tags added after violation handling.
         if (debug && tags.size() > tagsLength) {
@@ -715,6 +716,7 @@ public class SurvivalFly extends Check {
         String forwardDir = "";
 
         // 1: Placeholder estimation of the player's movement inputs
+        // TODO: Input vector (press ASWD) is independent on how player look(a.k.a yaw) so this one likely wrong
         // (Inspired from this thread: https://www.spigotmc.org/threads/player-movement-direction.389134/)
         double xDistance = to.getX() - from.getX();
         double zDistance = to.getZ() - from.getZ();
@@ -988,7 +990,8 @@ public class SurvivalFly extends Check {
         final double jumpGainMargin = 0.005;
         final boolean sneaking = player.isSneaking() && reallySneaking.contains(player.getName());
         /** Takes into account everything: from, to, from-past-ground, to-past-ground, lost ground */
-        final boolean onGround = fromOnGround || toOnGround || thisMove.touchedGroundWorkaround;
+        // TODO: New problem here, the onGround does not always reflect correct state with the client, cause fp 
+        final boolean onGround = fromOnGround || thisMove.touchedGroundWorkaround;
         final boolean isBlockingOrUsing = cData.isUsingItem || player.isBlocking();
         double hDistanceAboveLimit = 0.0;
 
@@ -1041,10 +1044,9 @@ public class SurvivalFly extends Check {
         //}
 
         /** How much speed should be conserved on the next tick. */
-        float inertia;
         // Only check 'from' to spare some problematic transition between media (i.e.: in 1.13+ with players being able to swim up to the surface and have 2 in-air moves)
         if (from.isInWater()) {
-            inertia = Bridge1_13.isSwimming(player) ? Magic.HORIZONTAL_SWIMMING_INERTIA : Magic.WATER_HORIZONTAL_INERTIA;
+            data.nextInertia = Bridge1_13.isSwimming(player) ? Magic.HORIZONTAL_SWIMMING_INERTIA : Magic.WATER_HORIZONTAL_INERTIA;
             /** Per-tick speed gain. */      
             float acceleration = Magic.LIQUID_BASE_ACCELERATION;
             float StriderLevel = (float)BridgeEnchant.getDepthStriderLevel(player); 
@@ -1053,17 +1055,17 @@ public class SurvivalFly extends Check {
             }
             if (StriderLevel > 0.0) {
                 // (Less speed conservation (or in other words, more friction))
-                inertia += (0.54600006f - inertia) * StriderLevel / 3.0f;
+                data.nextInertia += (0.54600006f - data.nextInertia) * StriderLevel / 3.0f;
                 // (More per-tick speed gain)
                 acceleration += (data.walkSpeed - acceleration) * StriderLevel / 3.0f;
             }
             if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
                 // (Much more speed conservation (or in other words, much less friction))
                 // (Overrides swimming AND depth strider friction)
-                inertia = Magic.DOLPHIN_GRACE_INERTIA; 
+                data.nextInertia = Magic.DOLPHIN_GRACE_INERTIA; 
             }
             // Block speed, stuck speed, other.
-            handleSpeedMultipliers(player, from, debug, to, sneaking, onGround, tags, pData, checkPermissions, inertia);
+            handleSpeedMultipliers(player, from, debug, to, sneaking, onGround, tags, pData, checkPermissions, data.lastInertia);
             // Apply the new speed.
             handleAdditionsAndUpdateSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug);
             // NCP custom modifier.
@@ -1071,14 +1073,14 @@ public class SurvivalFly extends Check {
             thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
         }
         else if (from.isInLava()) {
-            inertia = Magic.LAVA_HORIZONTAL_INERTIA; 
-            handleSpeedMultipliers(player, from, debug, to, sneaking, onGround, tags, pData, checkPermissions, inertia);
+            data.nextInertia = Magic.LAVA_HORIZONTAL_INERTIA; 
+            handleSpeedMultipliers(player, from, debug, to, sneaking, onGround, tags, pData, checkPermissions, data.lastInertia);
             handleAdditionsAndUpdateSpeed(player, Magic.LIQUID_BASE_ACCELERATION, pData, sneaking, checkPermissions, tags, to, from, debug);
             thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
             thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
         }
         else {
-            inertia = onGround ? data.lastFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;
+            data.nextInertia = onGround ? data.lastFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;
             float acceleration = onGround ? data.walkSpeed * (Magic.DEFAULT_FRICTION_CUBED / (data.lastFrictionHorizontal * data.lastFrictionHorizontal * data.lastFrictionHorizontal)) : Magic.AIR_ACCELERATION;
             if (sprinting) {
                 // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
@@ -1086,8 +1088,11 @@ public class SurvivalFly extends Check {
                 acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).
                 acceleration *= cc.survivalFlySprintingSpeed / 100;
             }
-            handleSpeedMultipliers(player, from, debug, to, sneaking, onGround, tags, pData, checkPermissions, inertia);
+            //System.out.println("1: " + thisMove.xAllowedDistance + " " + thisMove.zAllowedDistance + " grd:" + onGround + " asc:" + acceleration + " inertia:" + data.lastInertia + " f2:" + data.lastFrictionHorizontal + " " + thisMove.yDistance);
+            handleSpeedMultipliers(player, from, debug, to, sneaking, onGround, tags, pData, checkPermissions, data.lastInertia);
+            //System.out.println("2: " + thisMove.xAllowedDistance + " " + thisMove.zAllowedDistance);
             handleAdditionsAndUpdateSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug);
+            //System.out.println("3: " + thisMove.xAllowedDistance + " " + thisMove.zAllowedDistance);
             if (data.bunnyhopDelay <= 0 && Magic.isBunnyhop(data, useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick), sprinting)) {
                 // Bunnyhop (aka: sprint-jump). Increases the player's speed up to roughly twice the usual base speed.
                 thisMove.xAllowedDistance += (double)(-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
@@ -1120,6 +1125,7 @@ public class SurvivalFly extends Check {
         /** Expected difference from current to allowed */
         final double hDistDiffEx = thisMove.hDistance - thisMove.hAllowedDistance;
         player.sendMessage("c/e: " + thisMove.hDistance + " / " + thisMove.hAllowedDistance);
+        //System.out.println("c/e: " + thisMove.hDistance + " / " + thisMove.hAllowedDistance);
         if (hDistDiffEx <= 0.0) {
             // Speed is lower than estimated.
         }
