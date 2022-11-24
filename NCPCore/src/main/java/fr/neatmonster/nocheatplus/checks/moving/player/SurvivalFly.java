@@ -1009,14 +1009,14 @@ public class SurvivalFly extends Check {
                     data.nextInertia = Magic.DOLPHIN_GRACE_INERTIA; 
                 }
                 // Apply the new speed.
-                updatedHorizontalSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug);
+                updatedHorizontalSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug, data.lastInertia);
                 // NCP custom modifier.
                 thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
                 thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
             }
             else if (from.isInLava()) {
                 data.nextInertia = Magic.LAVA_HORIZONTAL_INERTIA; 
-                updatedHorizontalSpeed(player, Magic.LIQUID_BASE_ACCELERATION, pData, sneaking, checkPermissions, tags, to, from, debug);
+                updatedHorizontalSpeed(player, Magic.LIQUID_BASE_ACCELERATION, pData, sneaking, checkPermissions, tags, to, from, debug, data.lastInertia);
                 thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
                 thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
             }
@@ -1030,7 +1030,7 @@ public class SurvivalFly extends Check {
                     acceleration *= cc.survivalFlySprintingSpeed / 100;
                 }
                 //System.out.println("1: " + thisMove.xAllowedDistance + " " + thisMove.zAllowedDistance + " grd:" + onGround + " asc:" + acceleration + " inertia:" + data.lastInertia + " f2:" + data.lastFrictionHorizontal + " " + thisMove.yDistance);
-                updatedHorizontalSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug);
+                updatedHorizontalSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug, data.lastInertia);
                 //System.out.println("3: " + thisMove.xAllowedDistance + " " + thisMove.zAllowedDistance);
                 if (data.bunnyhopDelay <= 0 && Magic.isBunnyhop(data, useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick), sprinting)) {
                     // Bunnyhop (aka: sprint-jump). Increases the player's speed up to roughly twice the usual base speed.
@@ -1170,7 +1170,7 @@ public class SurvivalFly extends Check {
             && (fromOnGround || toOnGround || thisMove.touchedGroundWorkaround)
             && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SPRINTING, player))) {
             final Vector lookVector = TrigUtil.getHorizontalDirection(from.getYaw());
-            final Vector movementVector = new Vector(thisMove.xAllowedDistance, 0.0, thisMove.zAllowedDistance;
+            final Vector movementVector = new Vector(thisMove.xAllowedDistance, 0.0, thisMove.zAllowedDistance);
             if (TrigUtil.angle(lookVector, movementVector) > Math.PI / 2.5) {
                 hDistanceAboveLimit = Math.max(hDistanceAboveLimit, Math.abs(thisMove.hDistance - (data.walkSpeed * 2.0f)));
                 tags.add("omnisprint");
