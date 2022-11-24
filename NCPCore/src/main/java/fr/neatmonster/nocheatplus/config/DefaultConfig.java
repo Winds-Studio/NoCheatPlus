@@ -465,7 +465,7 @@ public class DefaultConfig extends ConfigFile {
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_VERTICAL_ASCEND_SPEED, 0, 785);
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_VERTICAL_MAXHEIGHT, cfMaxWorldY, 1104);
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_MODIFIERS, false, 785);
-	    set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_FWRESET, false, 1154);
+	        set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_FWRESET, false, 1154);
             set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_STRICT, true, 1154);
         }
         set(ConfPaths.MOVING_CREATIVEFLY_ACTIONS,
@@ -508,7 +508,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_STEP, true, 1154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_NOSLOW, true, 1154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_RESETITEM, true, 1154);
-        set(ConfPaths.MOVING_SURVIVALFLY_LENIENCY_HBUFMAX, 1.0, 1154);
         // SurvivalFly - ViolationFrequencyHook
         set(ConfPaths.MOVING_SURVIVALFLY_VLFREQUENCY_ACTIVE, true, 1154);
         set(ConfPaths.MOVING_SURVIVALFLY_VLFREQUENCY_DEBUG, false, 1154);

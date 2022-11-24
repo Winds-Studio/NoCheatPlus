@@ -119,8 +119,6 @@ public class MovingConfig extends ACheckConfig {
     public final boolean survivalFlyAccountingStep;
     public final boolean survivalFlyResetItem;
     // Leniency settings.
-    /** Horizontal buffer (rather sf), after failure leniency. */
-    public final double hBufMax;
     public final long survivalFlyVLFreezeCount;
     public final boolean survivalFlyVLFreezeInAir;
     // Set back policy.
@@ -263,7 +261,6 @@ public class MovingConfig extends ACheckConfig {
             this.sfStepHeight = ServerVersion.select(ref, 0.5, 0.6, 0.6, 0.5).doubleValue();
         } 
         else this.sfStepHeight = sfStepHeight;
-        hBufMax = config.getDouble(ConfPaths.MOVING_SURVIVALFLY_LENIENCY_HBUFMAX);
         survivalFlyVLFreezeCount = config.getInt(ConfPaths.MOVING_SURVIVALFLY_LENIENCY_FREEZECOUNT);
         survivalFlyVLFreezeInAir = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_LENIENCY_FREEZEINAIR);
         survivalFlyActions = config.getOptimizedActionList(ConfPaths.MOVING_SURVIVALFLY_ACTIONS, Permissions.MOVING_SURVIVALFLY);

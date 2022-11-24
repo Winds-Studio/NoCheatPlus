@@ -151,11 +151,6 @@ public class MovingUtil {
      * @return if the player is sliding on the honey block.
      */
     public static boolean isSlidingDown(final PlayerLocation from, final double width, final PlayerMoveData thisMove, final Player player) {
-        from.collectBlockFlags(0.95);
-        if ((from.getBlockFlags() & BlockFlags.F_STICKY) == 0) {
-            // Way too far from the block.
-            return false;
-        }
         if (thisMove.touchedGround) {
            // Not sliding, clearly.
            return false;

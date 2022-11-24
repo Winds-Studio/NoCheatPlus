@@ -90,7 +90,7 @@ public class Magic {
     /** Assumed minimal average decrease per move, suitable for regarding 3 moves. */
     public static final float GRAVITY_VACC = (float) (GRAVITY_MIN * 0.6); // 0.03744
     public static final double GRAVITY_SPAN = GRAVITY_MAX - GRAVITY_MIN; // 0.021
-    public static final double SLOW_FALL_GRAVITY = 0.0097; // This is actually 0.01
+    public static final double SLOW_FALL_GRAVITY = 0.0097; // This is actually 0.01, but this value matches with our gravity formula (lastDelta * friction - gravity)
 
     // Friction factor by medium (move inside of).
     public static final double FRICTION_MEDIUM_AIR = 0.98;

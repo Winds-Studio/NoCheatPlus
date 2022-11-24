@@ -261,6 +261,9 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
             final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
             thisMove.xAllowedDistance *= 0.6f;
             thisMove.zAllowedDistance *= 0.6f;
+            if (debug) {
+                debug(player, "Apply attack slowdown to the estimated speed.");
+            }
         }
 
         // Can't fight dead.

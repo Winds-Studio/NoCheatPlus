@@ -660,7 +660,6 @@ public abstract class ConfPaths {
     public static final String MOVING_SURVIVALFLY_EXTENDED_NOSLOW           = MOVING_SURVIVALFLY_EXTENDED + "noslow";
     public static final String MOVING_SURVIVALFLY_EXTENDED_RESETITEM        = MOVING_SURVIVALFLY_EXTENDED + "reset-activeitem";
     private static final String MOVING_SURVIVALFLY_LENIENCY                 = MOVING_SURVIVALFLY + "leniency.";
-    public static final String MOVING_SURVIVALFLY_LENIENCY_HBUFMAX          = MOVING_SURVIVALFLY_LENIENCY + "hbufmax";
     public static final String MOVING_SURVIVALFLY_LENIENCY_FREEZECOUNT      = MOVING_SURVIVALFLY_LENIENCY + "freezecount";
     public static final String MOVING_SURVIVALFLY_LENIENCY_FREEZEINAIR      = MOVING_SURVIVALFLY_LENIENCY + "freezeinair";
     private static final String MOVING_SURVIVALFLY_SETBACKPOLICY            = MOVING_SURVIVALFLY + "setbackpolicy.";
@@ -863,10 +862,10 @@ public abstract class ConfPaths {
     public static final String  MOVING_MOREPACKETSVEHICLE_CHECK          = "checks.moving.morepacketsvehicle.active";
     @Moved(newPath=MOVING_VEHICLE_MOREPACKETS_ACTIONS)
     public static final String  MOVING_MOREPACKETSVEHICLE_ACTIONS        = "checks.moving.morepacketsvehicle.actions";
-    @Moved(newPath=MOVING_SURVIVALFLY_LENIENCY_HBUFMAX)
-    public static final String MOVING_SURVIVALFLY_HBUFMAX                = "checks.moving.survivalfly.hbufmax";
 
     // Deprecated paths (just removed).
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_LENIENCY_HBUFMAX          = "checks.moving.survivalfly.leniency.hbufmax";
     @Deprecated
     public static final String MOVING_SURVIVALFLY_VLFREQUENCY_MAXTOTALVLS   = "checks.moving.survivalfly.violationfrequency.maxleniencyvl";
     @Deprecated

@@ -123,16 +123,21 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     // *----------Speed/Friction factors (hor/ver)----------*
     /** Horizontal friction factor from NMS.*/
     // TODO: Might not good to set those at 0.0f, can cause NaN when /ncp removeplayer command execute
-    public float lastFrictionHorizontal = 0.0f;
+    public float lastFrictionHorizontal = 0.6f;
+    /** Horizontal friction factor from NMS.*/
     public float nextFrictionHorizontal = 0.0f;
+    /** Inertia: friction * 0.91 */
+    public float lastInertia = 0.0f;
+    /** Inertia: friction * 0.91 */
+    public float nextInertia = 0.0f;
     /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/
-    public double lastStuckInBlockHorizontal = 0.0; 
+    public double lastStuckInBlockHorizontal = 1.0; 
     /** Speed multiplier for blocks that can make the player stick/stuck to/into it (such as webs).*/
-    public double nextStuckInBlockHorizontal = 0.0; 
+    public double nextStuckInBlockHorizontal = 1.0; 
     /** Single block-speed multiplier.*/
-    public float lastBlockSpeedMultiplier = 0.0f;
+    public float lastBlockSpeedMultiplier = 1.0f;
     /** Single block-speed multiplier.*/
-    public float nextBlockSpeedMultiplier = 0.0f;
+    public float nextBlockSpeedMultiplier = 1.0f;
     /** Stuck-in-block vertical speed factor */
     public double nextStuckInBlockVertical = 0.0;
     /** Stuck-in-block vertical speed factor */
@@ -221,8 +226,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     private static final LiftOffEnvelope defaultLiftOffEnvelope = LiftOffEnvelope.NORMAL;
     /** playerMoveCount at the time of the last sf violation. */
     public int sfVLMoveCount = 0;
-    /** The current horizontal buffer value. Horizontal moving VLs get compensated with emptying the buffer. */
-    public double sfHorizontalBuffer = 0.0;
     /** Count in air events for this jumping phase, resets when landing on ground, with set-backs and similar. */
     public int sfJumpPhase = 0;
     /** Count how many times in a row yDistance has been zero, only for in-air moves, updated on not cancelled moves (aimed at in-air workarounds) */
@@ -367,6 +370,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // Set to 1.0 to prevent any unintentional / by 0. These are mainly used within multiplication or division operations anyway.
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
         lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0f;
+        lastInertia = 0.0f;
     }
 
 
@@ -400,6 +404,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         timeSinceSetBack = 0;
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
         lastFrictionHorizontal = lastBlockSpeedMultiplier =  1.0f;
+        lastInertia = 0.0f;
         lastSetBackHash = setBack == null ? 0 : setBack.hashCode();
         // Reset to setBack.
         resetPlayerPositions(setBack);
@@ -515,7 +520,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         verticalBounce = null;
         blockChangeRef.valid = false;
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
-        lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0f;
+        lastFrictionHorizontal = 0.6f;
+        lastBlockSpeedMultiplier = 1.0f;
+        lastInertia = 0.0f;
         // TODO: other buffers ?
         // No reset of vehicleConsistency.
     }
@@ -842,8 +849,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // Elytra boost best fits velocity / effects.
         fireworksBoostDuration = 0; 
         fireworksBoostTickExpire = 0;
-        // Horizontal buffer.
-        sfHorizontalBuffer = 0.0;
     }
     
 

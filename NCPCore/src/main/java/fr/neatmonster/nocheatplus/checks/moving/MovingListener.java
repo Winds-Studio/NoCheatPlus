@@ -513,33 +513,36 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
 
         //////////////////////////////////////////////////////////////
-        // Fire one or two moves here (Split move handling).        //
+        // Split the event into separate moves if suitable          //
         //////////////////////////////////////////////////////////////
-        // This mechanic is needed because of the fact that a single PlayerMoveEvent can sometimes be the result of multiple packets;
-        // This is due to thresholds for moving events: 1f / 256 for distance, 10 for looking direction change
+        // This mechanic is needed for two reasons.
+        // 1) In some particular cases, a single PlayerMoveEvent can be the result of multiple flying packets.
+        // 2) Bukkit has thresholds for firing PlayerMoveEvents (1f/256 for distance and 10f for looking direction). 
+        //    This will result in movements that don't have a significant change to be skipped (micro and very slow moves). 
+        // To fix this, a single PlayerMoveEvent is split into several other moves and then passed to checkPlayerMove()
         // (newTo should be null here)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         final Location loc = player.getLocation(moveInfo.useLoc);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         if (cc.loadChunksOnMove) MovingUtil.ensureChunksLoaded(player, from, to, lastMove, "move", cc, pData);
         
-        // Ordinary: fire from->to
         if (
-                // 0: Handling split moves has been disabled.
+                // 0: Handling of split moves has been disabled.
                 // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
                 !cc.splitMoves 
-                // 0: The usual case: no micro move happened (the current location should always reflect the from location).
+                // 0: The "from" location correctly reflects player.getLocation(); no micro move happened, so we don't have any untracked position
                 || TrigUtil.isSamePos(from, loc)
-                // 0: Special case / bug? TODO: Which/why, which version of MC/spigot?
+                // 0: Special case / bug? (Which/why, which version of MC/spigot?)
                 || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())
                 // TODO: On pistons pulling the player back: -1.15 yDistance for split move 1 (untracked position > 0.5 yDistance!).
                 // (Could also be other envelopes (0.9 velocity upwards), too tedious to research.)
             ) {
-            // 0: Fire move from -> to
+            // Normal move: fire from -> to
             moveInfo.set(player, from, to, cc.yOnGround);
-            checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event);
+            checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event, false);
         }
         else {
+            // Untracked position
             // Only work if MovingFlying is active otherwise fall back to legacy one
             final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
             final DataPacketFlying[] queue = flyingHandle.getHandle();
@@ -563,7 +566,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 // Not found, return to legacy split move
                 if (foundFirst < 0 || foundLast < 0 || foundFirst - foundLast + 1 < 1) {
                     legacySplitMove(player, moveInfo, from, loc, to, debug, data, cc, pData, event);
-                    
                     // Cleanup.
                     data.joinOrRespawn = false;
                     aux.returnPlayerMoveInfo(moveInfo);
@@ -589,16 +591,17 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     if (debug) {
                         final String s1 = count == 1 ? "from" : "loc";
                         final String s2 = i == j - 2 || count >= maxSplit ? "to" : "loc";
-                        debug(player, "Split move " + count + " (" + s1 + " -> " + s2 + "):");
+                        debug(player, "Split move: " + count + " (" + s1 + " -> " + s2 + "):");
                     }
-                    if (!checkPlayerMove(player, loc1, loc2, count++, moveInfo, debug, data, cc, pData, event) && processingEvents.containsKey(player.getName())) {
+                    if (!checkPlayerMove(player, loc1, loc2, count++, moveInfo, debug, data, cc, pData, event, true) && processingEvents.containsKey(player.getName())) {
                         onMoveMonitorNotCancelled(player, loc1, loc2, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
                         data.joinOrRespawn = false;
                     } else break;
                     // Split too much!
                     if (count > maxSplit) break;
                 }
-            } else {
+            } 
+            else {
                 legacySplitMove(player, moveInfo, from, loc, to, debug, data, cc, pData, event);
             }
         }
@@ -606,25 +609,39 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         data.joinOrRespawn = false;
         aux.returnPlayerMoveInfo(moveInfo);
     }
+    
 
+    /**
+     * Split a single move event into two different moves 
+     * (Relies exclusively on Bukkit, in case ProtocolLib isn't found or in case the packet "from/to" locations cannot be determined)
+     * 
+     * @param player
+     * @param moveInfo
+     * @param from
+     * @param loc
+     * @param to
+     * @param debug
+     * @param data
+     * @param cc
+     * @param pData
+     * @param event
+     */
     private void legacySplitMove(final Player player, final PlayerMoveInfo moveInfo, final Location from, final Location loc, final Location to, 
-            final boolean debug, final MovingData data, final MovingConfig cc, final IPlayerData pData, final PlayerMoveEvent event) {
-        // This movement didn't reach the PlayerMoveEvent thresholds: Location has not been updated last moving event.
-        // Do split into two moves.
+                                 final boolean debug, final MovingData data, final MovingConfig cc, final IPlayerData pData, final PlayerMoveEvent event) {
         // 1: Process from -> loc.
         moveInfo.set(player, from, loc, cc.yOnGround);
         if (debug) {
-            debug(player, "Split move 1 (from -> loc):");
+            debug(player, "Legacy split move: 1 (from -> loc):");
         }
-        if (!checkPlayerMove(player, from, loc, 1, moveInfo, debug, data, cc, pData, event) && processingEvents.containsKey(player.getName())) {
+        if (!checkPlayerMove(player, from, loc, 1, moveInfo, debug, data, cc, pData, event, false) && processingEvents.containsKey(player.getName())) {
             // Between -> set data accordingly (compare: onPlayerMoveMonitor).
             onMoveMonitorNotCancelled(player, from, loc, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
             data.joinOrRespawn = false;
             // 2: Process loc -> to.
             moveInfo.set(player, loc, to, cc.yOnGround);
-            checkPlayerMove(player, loc, to, 2, moveInfo, debug, data, cc, pData, event);
+            checkPlayerMove(player, loc, to, 2, moveInfo, debug, data, cc, pData, event, false);
             if (debug) {
-                debug(player, "Split move 2 (loc -> to):");
+                debug(player, "Legacy split move: 2 (loc -> to):");
             }
         }
     }
@@ -637,7 +654,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * @param event
      * @param data
      * @param cc 
-     * 
+     * @param pData
      * @return
      */
     private boolean handleTeleportedOnMove(final Player player, final PlayerMoveEvent event, final MovingData data, 
@@ -669,22 +686,27 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
 
     /**
-     * Core move checks.
+     * Run all movement-related core mechanics.
      * @param player
      * @param from
      * @param to
      * @param multiMoveCount
-     *            0: An ordinary move, not split. 1/2: first/second of a split
-     *            move.
+     *        0: represents an ordinary move (not split), 
+     *        >= 1: first/second/(...) part of a single move event.
      * @param moveInfo
+     * @param debug
      * @param data
      * @param cc
+     * @param pData
      * @param event
-     * @return If cancelled/done, i.e. not to process further split moves.
+     * @param isModernSplitMove False if legacySplitMove is used, or no split move is detected, true otherwise
+     * @return True, if the move is cancelled false otherwise.
+     *         If true, further split moves won't be processed.
      */
     private boolean checkPlayerMove(final Player player, final Location from, final Location to, final int multiMoveCount, 
                                     final PlayerMoveInfo moveInfo, final boolean debug, final MovingData data, 
-                                    final MovingConfig cc, final IPlayerData pData, final PlayerMoveEvent event) {
+                                    final MovingConfig cc, final IPlayerData pData, final PlayerMoveEvent event,
+                                    final boolean isModernSplitMove) {
         Location newTo = null;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final String playerName = player.getName(); // TODO: Could switch to UUID here (needs more changes).
@@ -1084,7 +1106,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 1.3: Actual check.
             // Only check if passable has not already set back.
             if (newTo == null) {
-                newTo = survivalFly.check(player, pFrom, pTo, multiMoveCount, data, cc, pData, tick, time, useBlockChangeTracker);
+                newTo = survivalFly.check(player, pFrom, pTo, multiMoveCount, data, cc, pData, tick, time, useBlockChangeTracker, isModernSplitMove);
             }
             
             // 1.4: Only check NoFall, if not already vetoed.
@@ -2503,7 +2525,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // More resetting.
         data.vDistAcc.clear();
         aux.resetPositionsAndMediumProperties(player, loc, data, cc);
-        data.sfHorizontalBuffer = cc.hBufMax;
 
         // Enforcing the location.
         if (cc.enforceLocation) {

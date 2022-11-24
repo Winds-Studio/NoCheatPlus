@@ -267,7 +267,7 @@ public class SimpleAxisVelocity {
 
     /**
      * Remove from start while the flag is present.
-     * @param originBlockBounce
+     * @param flag
      */
     public void removeLeadingQueuedVerticalVelocityByFlag(final long flag) {
         if (queued.isEmpty()) {
