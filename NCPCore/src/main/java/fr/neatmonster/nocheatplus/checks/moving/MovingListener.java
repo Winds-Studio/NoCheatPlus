@@ -416,8 +416,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final Location from = event.getFrom().clone();
         final Location to = event.getTo().clone();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        /** New "to" location where to setback the player to. Requested by vehicle checks */
         Location newTo = null;
-        // Increase the player move event counte with each move.
         data.increasePlayerMoveCount();
 
 
@@ -477,7 +477,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Ignore 1.17+ duplicate position packets.
             // Context: Mojang attempted to fix a bucket placement desync issue by re-sending the position on right clicking...
             // On the server-side, this translates in a duplicate move which we need to ignore (i.e.: players can have 0 distance in air, MorePackets will trigger due to the extra packet if the button is pressed for long enough etc...)
-            // You would think that this would AT LEAST fix the issue, but it doesn't. However it surely does complicate things on our side.
             // Thanks Mojang as always.
             // NOTE: on ground status does not seem to change
         }
@@ -488,7 +487,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         
         // (Reset here, not after the checks run)
         if (!TrigUtil.isSamePos(from, to)) {
-            data.lastMoveNoMove = false;
+            data.lastMoveNoMove = thisMove.duplicatePosition = false;
         }
 
         if (earlyReturn) {
@@ -518,8 +517,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // This mechanic is needed for two reasons.
         // 1) In some particular cases, a single PlayerMoveEvent can be the result of multiple flying packets.
         // 2) Bukkit has thresholds for firing PlayerMoveEvents (1f/256 for distance and 10f for looking direction). 
-        //    This will result in movements that don't have a significant change to be skipped (micro and very slow moves). 
-        // To fix this, a single PlayerMoveEvent is split into several other moves and then passed to checkPlayerMove()
+        // This will result in movements that don't have a significant change to be skipped. 
+        // With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
+        // To fix this, the incoming move event gets split into several other moves (as many as needed, with a cap) and then passed to checkPlayerMove()
         // (newTo should be null here)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         final Location loc = player.getLocation(moveInfo.useLoc);
@@ -527,55 +527,65 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (cc.loadChunksOnMove) MovingUtil.ensureChunksLoaded(player, from, to, lastMove, "move", cc, pData);
         
         if (
-                // 0: Handling of split moves has been disabled.
-                // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
-                !cc.splitMoves 
-                // 0: The "from" location correctly reflects player.getLocation(); no micro move happened, so we don't have any untracked position
-                || TrigUtil.isSamePos(from, loc)
-                // 0: Special case / bug? (Which/why, which version of MC/spigot?)
-                || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())
-                // TODO: On pistons pulling the player back: -1.15 yDistance for split move 1 (untracked position > 0.5 yDistance!).
-                // (Could also be other envelopes (0.9 velocity upwards), too tedious to research.)
-            ) {
+            // 0: Handling of split moves has been disabled.
+            // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
+            !cc.splitMoves 
+            // 0: The "from" location correctly reflects player.getLocation(); no micro move happened, so we don't have any untracked position
+            || TrigUtil.isSamePos(from, loc)
+            // 0: Special case / bug? (Which/why, which version of MC/spigot?)
+            || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())) {
+            // TODO: On pistons pulling the player back: -1.15 yDistance for split move 1 (untracked position > 0.5 yDistance!).
+            // (Could also be other envelopes (0.9 velocity upwards), too tedious to research.)
             // Normal move: fire from -> to
             moveInfo.set(player, from, to, cc.yOnGround);
             checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event, false);
         }
         else {
-            // Untracked position
+            // Untracked position, last moving event was skipped: the from location will not reflect player#getLocation().
+            // Peek into ProtocolLib to get the skipped movements' coordinates.
             // Only work if MovingFlying is active otherwise fall back to legacy one
+            // (Since the new hSpeed prediction relies on accurate split moves, this will force us to depend on ProtocolLib to support even the most basic features of Minecraft, but it's likely the most sensible choice anyway)
             final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
             final DataPacketFlying[] queue = flyingHandle.getHandle();
             if (queue.length != 0) {
-                int foundFirst = -1;
-                int foundLast = -1;
-                // 1: Find where is the from and to location
-                for (int i = 0; i < queue.length; i++) {
-                    final DataPacketFlying packetData = queue[i];
+                int fromIndex = -1;
+                int toIndex = -1;
+                // 1: Find out where the Bukkit's 'from' and 'to' locations are on packet-level in the flying queue.
+                for (int queueIndex = 0; queueIndex < queue.length; queueIndex++) {
+                    final DataPacketFlying packetData = queue[queueIndex];
                     if (packetData == null || !packetData.hasPos) {
                         continue;
                     }
                     if (TrigUtil.isSamePos(to.getX(), to.getY(), to.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
-                        foundLast = i;
-                    } else
-                    if (TrigUtil.isSamePos(from.getX(), from.getY(), from.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
-                        foundFirst = i;
+                        toIndex = queueIndex;
+                    } 
+                    else if (TrigUtil.isSamePos(from.getX(), from.getY(), from.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
+                        fromIndex = queueIndex;
                     }
-                    if (foundFirst > 0 && foundLast > 0) break;
+                    if (fromIndex > 0 && toIndex > 0) {
+                        // Found both.
+                        break;
+                    }
                 }
-                // Not found, return to legacy split move
-                if (foundFirst < 0 || foundLast < 0 || foundFirst - foundLast + 1 < 1) {
+                // Not found, return to legacy split moves
+                if (fromIndex < 0 || toIndex < 0 || fromIndex - toIndex + 1 < 1) {
                     legacySplitMove(player, moveInfo, from, loc, to, debug, data, cc, pData, event);
                     // Cleanup.
                     data.joinOrRespawn = false;
                     aux.returnPlayerMoveInfo(moveInfo);
+                    if (debug) {
+                        debug(player, "Failed to locate Bukkit's 'from' and 'to' locations in the flying queue, fallback to Bukkit-based split moves. (Flying queue indices - from: " + fromIndex + ", to: " + toIndex +")");
+                    }
                     return;
                 }
-                // 2: Filter duplicate pos, null, look only or ground only packet
-                final DataPacketFlying[] queuePos = new DataPacketFlying[foundFirst - foundLast + 1];
+                // 2: Filter duplicate pos (1.17+), null, look only or ground only packet
+                final DataPacketFlying[] queuePos = new DataPacketFlying[fromIndex - toIndex + 1];
                 int j = 0;
-                for (int i = foundFirst; i >= foundLast; i--) {
-                    if (j > 0 && queue[i].isSamePos(queuePos[j-1])) continue;
+                for (int i = fromIndex; i >= toIndex; i--) {
+                    if (j > 0 && queue[i].isSamePos(queuePos[j-1])) {
+                        // This packet is duplicate of the previous one, ignore it.
+                        continue;
+                    }
                     if (queue[i] != null && queue[i].hasPos) {
                         queuePos[j] = queue[i];
                         j++;
@@ -583,6 +593,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 }
                 // 3: Actual split
                 int count = 1;
+                // Maximum amount by which a single PlayerMoveEvent can be split.
                 int maxSplit = 9;
                 for (int i = 0; i < j-1; i++) {
                     final Location loc1 = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ());
@@ -591,18 +602,28 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     if (debug) {
                         final String s1 = count == 1 ? "from" : "loc";
                         final String s2 = i == j - 2 || count >= maxSplit ? "to" : "loc";
-                        debug(player, "Split move: " + count + " (" + s1 + " -> " + s2 + "):");
+                        debug(player, "Split move (packet): " + count + " (" + s1 + " -> " + s2 + ")");
                     }
-                    if (!checkPlayerMove(player, loc1, loc2, count++, moveInfo, debug, data, cc, pData, event, true) && processingEvents.containsKey(player.getName())) {
+                    if (!checkPlayerMove(player, loc1, loc2, count++, moveInfo, debug, data, cc, pData, event, true) 
+                        && processingEvents.containsKey(player.getName())) {
                         onMoveMonitorNotCancelled(player, loc1, loc2, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
                         data.joinOrRespawn = false;
-                    } else break;
+                    } 
+                    else {
+                        // Stop processing split moves on set-back.
+                        break;
+                    }
                     // Split too much!
-                    if (count > maxSplit) break;
+                    if (count > maxSplit) {
+                        break;
+                    }
                 }
             } 
             else {
                 legacySplitMove(player, moveInfo, from, loc, to, debug, data, cc, pData, event);
+                if (debug) {
+                    debug(player, "Flying queue is empty. Fallback to Bukkit-based split moves.");
+                }
             }
         }
         // Cleanup.
@@ -631,7 +652,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // 1: Process from -> loc.
         moveInfo.set(player, from, loc, cc.yOnGround);
         if (debug) {
-            debug(player, "Legacy split move: 1 (from -> loc):");
+            debug(player, "Legacy split move: 1 (from -> loc)");
         }
         if (!checkPlayerMove(player, from, loc, 1, moveInfo, debug, data, cc, pData, event, false) && processingEvents.containsKey(player.getName())) {
             // Between -> set data accordingly (compare: onPlayerMoveMonitor).
@@ -641,7 +662,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             moveInfo.set(player, loc, to, cc.yOnGround);
             checkPlayerMove(player, loc, to, 2, moveInfo, debug, data, cc, pData, event, false);
             if (debug) {
-                debug(player, "Legacy split move: 2 (loc -> to):");
+                debug(player, "Legacy split move: 2 (loc -> to)");
             }
         }
     }
@@ -700,8 +721,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * @param pData
      * @param event
      * @param isModernSplitMove False if legacySplitMove is used, or no split move is detected, true otherwise
-     * @return True, if the move is cancelled false otherwise.
-     *         If true, further split moves won't be processed.
+     * @return True, if the move is cancelled, in which case onMoveMonitorNotCancelled won't run.
      */
     private boolean checkPlayerMove(final Player player, final Location from, final Location to, final int multiMoveCount, 
                                     final PlayerMoveInfo moveInfo, final boolean debug, final MovingData data, 
@@ -762,7 +782,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         /////////////////////////////////////
         // Prepare locations for use.      //
         /////////////////////////////////////
-        // TODO: Block flags might not be needed if neither sf nor passable get checked.
         final PlayerLocation pFrom, pTo;
         pFrom = moveInfo.from;
         pTo = moveInfo.to;
@@ -772,12 +791,12 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // Powder snow ground handling 1.17+     //
         ///////////////////////////////////////////
         if (BridgeMisc.hasIsFrozen()) {
-            boolean hasboots = BridgeMisc.hasLeatherBootsOn(player);
-            if (pTo.isOnGround() && !hasboots 
+            boolean hasBoots = BridgeMisc.hasLeatherBootsOn(player);
+            if (pTo.isOnGround() && !hasBoots 
                 && pTo.adjustOnGround(!pTo.isOnGroundDueToStandingOnAnEntity() && !pTo.isOnGround(cc.yOnGround, BlockFlags.F_POWDERSNOW)) && debug) {
                 debug(player, "Powder Snow: Ground collision was detected but the player is un-equipped with leather boots. Reset the from.onGround flag.");
             }
-            if (pFrom.isOnGround() && !hasboots 
+            if (pFrom.isOnGround() && !hasBoots 
                 && pFrom.adjustOnGround(!pFrom.isOnGroundDueToStandingOnAnEntity() && !pFrom.isOnGround(cc.yOnGround, BlockFlags.F_POWDERSNOW)) && debug) {
                 debug(player, "Powder Snow: Ground collision was detected but the player is un-equipped with leather boots. Reset the to.onGround flag.");
             }
@@ -819,7 +838,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // Potion effect "Jump".  //
         ////////////////////////////
         // TODO: Jump amplifier should be set in PlayerMoveData, and/or only get updated for lift off (?).
-        // TODO: same for speed (once medium is introduced).
         final double jumpAmplifier = aux.getJumpAmplifier(player);
         if (jumpAmplifier > data.jumpAmplifier) {
             data.jumpAmplifier = jumpAmplifier;
@@ -1560,6 +1578,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final double amount = guessVelocityAmount(player, data.playerMoves.getCurrentMove(), lastMove, data, cc);
         data.clearActiveHorVel(); // Clear active velocity due to adding actual speed here.
+        data.clearAccounting(); // Forestall potential issues with the old gravity check.
         data.bunnyhopDelay = 0; // Remove bunny hop due to add velocity 
         if (amount > 0.0) data.addHorizontalVelocity(new AccountEntry(tick, amount, cc.velocityActivationCounter, MovingData.getHorVelValCount(amount)));
         data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance, cc.velocityActivationCounter));
@@ -1752,6 +1771,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                                            final long now, final long tick, final CombinedData data, 
                                            final MovingData mData, final MovingConfig mCc, final IPlayerData pData) {
         final String toWorldName = to.getWorld().getName();
+        final boolean debug = pData.isDebugActive(checkType);
         Combined.feedYawRate(player, to.getYaw(), now, toWorldName, data, pData);
         // TODO: maybe even not count vehicles at all ?
         if (player.isInsideVehicle()) {
@@ -1778,30 +1798,23 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             }
             mData.updateTrace(player, to, tick, mcAccess.getHandle());
             if (mData.hasTeleported()) {
-                onPlayerMoveMonitorNotCancelledHasTeleported(player, to, mData, pData, pData.isDebugActive(checkType));
+                if (mData.isTeleportedPosition(to)) {
+                    // Skip resetting, especially if legacy setTo is enabled.
+                    // TODO: Might skip this condition, if legacy setTo is not enabled.
+                    if (debug) debug(player, "Event not cancelled, with teleported (set back) set, assume legacy behavior.");
+                    return;
+                }
+                else if (pData.isPlayerSetBackScheduled()) {
+                    // Skip, because the scheduled teleport has been overridden.
+                    // TODO: Only do this, if cancel is set, because it is not an un-cancel otherwise.
+                    if (debug) debug(player, "Event not cancelled, despite a set back has been scheduled. Cancel set back.");
+                    mData.resetTeleported(); // (PlayerTickListener will notice it's not set.)
+                }
+                else {
+                    if (debug) debug(player, "Inconsistent state (move MONITOR): teleported has been set, but no set back is scheduled. Ignore set back.");
+                    mData.resetTeleported();
+                }
             }
-        }
-    }
-
-
-    private void onPlayerMoveMonitorNotCancelledHasTeleported(final Player player, final Location to, 
-                                                              final MovingData mData, final IPlayerData pData, 
-                                                              final boolean debug) {
-        if (mData.isTeleportedPosition(to)) {
-            // Skip resetting, especially if legacy setTo is enabled.
-            // TODO: Might skip this condition, if legacy setTo is not enabled.
-            if (debug) debug(player, "Event not cancelled, with teleported (set back) set, assume legacy behavior.");
-            return;
-        }
-        else if (pData.isPlayerSetBackScheduled()) {
-            // Skip, because the scheduled teleport has been overridden.
-            // TODO: Only do this, if cancel is set, because it is not an un-cancel otherwise.
-            if (debug) debug(player, "Event not cancelled, despite a set back has been scheduled. Cancel set back.");
-            mData.resetTeleported(); // (PlayerTickListener will notice it's not set.)
-        }
-        else {
-            if (debug) debug(player, "Inconsistent state (move MONITOR): teleported has been set, but no set back is scheduled. Ignore set back.");
-            mData.resetTeleported();
         }
     }
 
@@ -1924,7 +1937,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     if (newTo != null) {
                         // Adjust the teleport to go to the last tracked to-location of the other player.
                         event.setTo(newTo);
-                        // TODO: Consider console, consider debug.
                         NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.TRACE_FILE, player.getName() + " correct untracked teleport destination (" + to + " corrected to " + newTo + ").");
                     }
                 }
@@ -1973,7 +1985,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                                             final MovingData data, final IPlayerData pData) {
         // Prevent cheaters getting rid of flying data (morepackets, other).
         // TODO: even more strict enforcing ?
-        event.setCancelled(false); // TODO: Does this make sense? Have it configurable rather?
+        event.setCancelled(false);
         if (!data.isTeleported(event.getTo())) {
             final Location teleported = data.getTeleported();
             event.setTo(teleported);
@@ -2213,12 +2225,10 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * 
      * @param player
      * @param event
-     * @param message
      * @param extra
      *            Added in the end, with a leading space each.
      */
-    private void debugTeleportMessage(final Player player, final PlayerTeleportEvent event, 
-                                      final Object... extra) {
+    private void debugTeleportMessage(final Player player, final PlayerTeleportEvent event, final Object... extra) {
         final StringBuilder builder = new StringBuilder(128);
         builder.append("TP ");
         builder.append(event.getCause());
@@ -2339,6 +2349,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 // TODO: Differing sub checks, once cancel action...
                 else if (noFallVL(player, "fakefall", data, cc)) {
                     player.setFallDistance(dataDist);
+                    // There are edge (and hard to reproduce) cases where this may happen due to bugs on NCP's side,
+                    // but a legit player should never be able to trigger fakefall many times in a row. So an Improbable check request makes sense.
+                    Improbable.check(player, player.getFallDistance(), System.currentTimeMillis(), "nofall.fakefall",pData);
                     if (dataDamage <= 0.0) {
                         // Cancel the event.
                         event.setCancelled(true);
@@ -2352,9 +2365,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                         fallDistance = dataDist;
                         BridgeHealth.setRawDamage(event, dataDamage);
                     }
-                    // There are edge (and hard to reproduce) cases where this may happen due to bugs on NCP's side,
-                    // but a legit player should never be able to trigger fakefall many times in a row. So an Improbable check request makes sense.
-                    Improbable.check(player, player.getFallDistance(), System.currentTimeMillis(), "nofall.fakefall",pData);
                 }
             }
             // Be sure not to lose that block.
@@ -2372,7 +2382,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Legitimate damage: clear accounting data.
             // TODO: Why only reset in case of !data.noFallSkipAirCheck?
             // TODO: Also reset in other cases (moved too quickly)?
-            else data.vDistAcc.clear();
+            else data.clearAccounting();
         }
         aux.returnPlayerMoveInfo(moveInfo);
         // Fall-back check (skip with jump amplifier).
@@ -2523,7 +2533,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         data.removeAllVelocity();
         data.resetTrace(player, loc, tick, mcAccess.getHandle(), cc); // Might reset to loc instead of set back ?
         // More resetting.
-        data.vDistAcc.clear();
+        data.clearAccounting();
         aux.resetPositionsAndMediumProperties(player, loc, data, cc);
 
         // Enforcing the location.

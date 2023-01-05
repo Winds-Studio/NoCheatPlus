@@ -93,6 +93,7 @@ public class UseEntityAdapter extends BaseAdapter {
     }
 
     private static final int INTERPRETED = 0x01;
+    
     private static final int ATTACK = 0x02;
 
     private final AttackFrequency attackFrequency;

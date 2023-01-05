@@ -548,7 +548,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
 
     /**
-     * Clear accounting data.
+     * Clear the legacy gravity check (vacc) data.
      */
     public void clearAccounting() {
         vDistAcc.clear();
@@ -594,7 +594,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
 
     /**
-     * Clear the data of the new fall check.
+     * Clear the data of the NoFall check.
      */
     public void clearNoFallData() {
         noFallFallDistance = 0;

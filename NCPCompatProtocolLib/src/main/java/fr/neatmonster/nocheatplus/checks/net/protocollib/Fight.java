@@ -57,15 +57,20 @@ public class Fight extends BaseAdapter {
     }
     
     private void handleVelocityPacket(PacketEvent event) {
-        if (event.isPlayerTemporary()) return;
-        if (event.getPacketType() != PacketType.Play.Server.EXPLOSION) return;
-
-        final Player player = event.getPlayer();
-        if (player == null) {
-            counters.add(ProtocolLibComponent.idNullPlayer, 1);
-            return;
+        try {
+            if (event.isPlayerTemporary()) return;
+        } 
+        catch (NoSuchMethodError e) {
+            if (event.getPlayer() == null) {
+                counters.add(ProtocolLibComponent.idNullPlayer, 1);
+                return;
+            }
+            if (DataManager.getPlayerDataSafe(event.getPlayer()) == null) {
+                return;
+            }
         }
-
+        if (event.getPacketType() != PacketType.Play.Server.EXPLOSION) return;
+        final Player player = event.getPlayer();
         final PacketContainer packet = event.getPacket();
         final StructureModifier<Float> floats = packet.getFloat();
 
@@ -80,7 +85,6 @@ public class Fight extends BaseAdapter {
         final Float velY = floats.read(2);
         final Float velZ = floats.read(3);
         if (Math.abs(velX) == 0.0 && Math.abs(velZ) == 0.0 && Math.abs(velY) == 0.0) return;
-
         final IPlayerData pData = DataManager.getPlayerData(player);
         if (!pData.isCheckActive(CheckType.MOVING, player)) return;
         final MovingData data = pData.getGenericInstance(MovingData.class);

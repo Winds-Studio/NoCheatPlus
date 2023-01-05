@@ -46,8 +46,6 @@ public class AirWorkarounds {
 	//           ^ These seem crucial, as landing back on ground would always yield a false positive otherwise.
     // TODO: Review stairs workarounds due to the new shape rework
     // TODO: Review venvHacks,at least cobwebs. (Still needed? -> Looks like it. Review bounding box)
-    // TODO: Aim to remove most oddLiquid cases, replacing them with actual MC equations/formulas.
-	// TODO: Note that the oddLiquid cases refer to the OLD and INCORRECT liquid bounding box, prior to this commit: https://github.com/Updated-NoCheatPlus/NoCheatPlus/commit/9293cde9edd655a61ec9570e0fd6fa0ad53ff44e
     // TODO: Identify which workarounds can be skipped with Slowfall
     /*
      * REMOVED AND TESTED: 
@@ -157,6 +155,7 @@ public class AirWorkarounds {
                 )
                 // 0: Jumping on slimes, change viewing direction at the max. height.
                 // NOTE: Implicitly removed condition: hdist < 0.125
+                // NOTE: Doesn't check for jump amplifier on purpose.
                 || thisMove.yDistance == 0.0 && data.sfZeroVdistRepeat == 1 
                 && (data.isVelocityJumpPhase() || data.hasSetBack() && MathUtil.between(0.0, to.getY() - data.getSetBackY(), LiftOffEnvelope.NORMAL.getMaxJumpHeight(0.0)))
                 && BlockProperties.isSlime(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() - LiftOffEnvelope.NORMAL.getMaxJumpHeight(0.0)), from.getBlockZ()))
@@ -167,7 +166,6 @@ public class AirWorkarounds {
 
     /**
      * Search for velocity entries that have a bounce origin. On match, set the friction jump phase for thisMove/lastMove.
-     * 
      * @param to
      * @param yDistance
      * @param lastMove
@@ -397,6 +395,7 @@ public class AirWorkarounds {
                         // 1: Head is obstructed. 
                         // TODO: Cover this in a more generic way elsewhere (<= friction envelope + obstructed).
                         || lastMove.yDistance >= 0.0 && thisMove.yDistance < Magic.GRAVITY_ODD
+                        && !(thisMove.yDistance == 0.0) // Prevent too easy exploit.
                         && (thisMove.headObstructed || lastMove.headObstructed)
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_4)
                         // 1: Break the block underneath.
@@ -567,10 +566,8 @@ public class AirWorkarounds {
 
 
     /**
-     * Odd vertical movements with negative yDistance. Rather too fast falling cases.
-     * Called after having checked for too big and too short moves, with negative yDistance and yDistDiffEx <= 0.0.
-     * Doesn't require lastMove's data.
-     * 
+     * Player fell faster than estimated (yDistance is negative, yDistDiffEx is negative or 0)<br>
+     * Doesn't require lastMove's data. <br>
      * @param yDistDiffEx Difference from actual yDistance to vAllowedDistance
      * @param data
      * @param from
@@ -639,10 +636,8 @@ public class AirWorkarounds {
 
 
     /**
-     * Odd vertical movements with yDistance >= 0.0.
-     * Called after having checked for too big moves (yDistDiffEx > 0.0).
-     * Doesn't require lastMove's data.
-     * 
+     * Player moved up less than estimated (yDistance is positive or 0, yDistDiffEx is negative or 0)<br>
+     * Doesn't require lastMove's data.<br>
      * @param yDistDiffEx Difference from actual yDistance to vAllowedDistance
      * @param data
      * @param from
@@ -680,6 +675,7 @@ public class AirWorkarounds {
                 && data.ws.use(WRPT.W_M_SF_SHORTMOVE_2)
                 // 0: Head is blocked, thus a shorter move.
                 || (thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed && lastMove.yDistance >= 0.0)
+                && !(thisMove.yDistance == 0.0 && lastMove.yDistance == 0.0)
                 && data.ws.use(WRPT.W_M_SF_SHORTMOVE_3)
                 // 0: Allow too strong decrease
                 || thisMove.yDistance < 1.0 && thisMove.yDistance > 0.9 
@@ -693,10 +689,8 @@ public class AirWorkarounds {
 
 
     /**
-     * Odd vertical movements with yDistDiffEx having returned a positive value (yDistance is bigger than expected.)<br>
-     * Checked first.
+     * Player moved up/down more than estimated (yDistance is not checked, yDistDiffEx is positive and not 0)<br>
      * Needs lastMove's data.
-     * 
      * @param yDistDiffEx Difference from actual yDistance to vAllowedDistance
      * @param data
      * @param from
@@ -755,15 +749,6 @@ public class AirWorkarounds {
                     from.isOnGround(Math.abs(thisMove.yDistance) + 0.001) 
                     // 1:
                     || BlockProperties.isLiquid(to.getTypeId(to.getBlockX(), Location.locToBlock(to.getY() - 0.5), to.getBlockZ()))
-                    // 1: Replaces the former LostGround_Pyramid case
-                    // TBD: In case we remove lostground_edgedesc, uncomment this one.
-                    // || MathUtil.between(0, data.sfJumpPhase, 7)
-                    // && thisMove.setBackYDistance < 0.0 && lastMove.setBackYDistance < 0.0
-                    // && MathUtil.between(Magic.GRAVITY_MAX, yDistDiffEx, Magic.GRAVITY_MAX * 2.5)
-                    // && MathUtil.between(Magic.GRAVITY_MIN, yDistChange, yDistDiffEx - Magic.GRAVITY_VACC)
-                    // && thisMove.yDistance > lastMove.yDistance 
-                    // && thisMove.setBackYDistance < lastMove.setBackYDistance
-                    // && !to.isOnGround()
                 )
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_1)
                 // 0: Special jump (water/edges/assume-ground), too small decrease.
@@ -781,7 +766,6 @@ public class AirWorkarounds {
 
    /**
     * Conditions for exemption from the VDistSB check (Vertical distance to set back)
-    *
     * @param toOnGround
     * @param data
     * @param cc
@@ -826,10 +810,8 @@ public class AirWorkarounds {
     
 
     /**
-     * Odd vertical movements with yDistDiffEx having returned a positive value (yDistance is bigger than expected.)
-     * Checked first with outOfEnvelopeExemptions.
+     * Player moved up/down more than estimated (yDistDiffEx is positive and not 0)<br>
      * Does not require lastMove's data.
-     * 
      * @param from
      * @param to
      * @param resetTo

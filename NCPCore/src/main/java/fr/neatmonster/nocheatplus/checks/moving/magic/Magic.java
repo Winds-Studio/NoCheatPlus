@@ -91,6 +91,8 @@ public class Magic {
     public static final float GRAVITY_VACC = (float) (GRAVITY_MIN * 0.6); // 0.03744
     public static final double GRAVITY_SPAN = GRAVITY_MAX - GRAVITY_MIN; // 0.021
     public static final double SLOW_FALL_GRAVITY = 0.0097; // This is actually 0.01, but this value matches with our gravity formula (lastDelta * friction - gravity)
+    public static final double DEFAULT_SLOW_FALL_GRAVITY = 0.01;
+    public static final float GRAVITY_SLOW_FALL_VACC = (float)(SLOW_FALL_GRAVITY * 0.6);
 
     // Friction factor by medium (move inside of).
     public static final double FRICTION_MEDIUM_AIR = 0.98;
@@ -99,8 +101,8 @@ public class Magic {
     public static final double FRICTION_MEDIUM_ELYTRA_AIR = 0.9800002;
 
     // Horizontal speeds/modifiers. 
-    public static final double WALK_SPEED           = 0.221D;
-    public static final double[] modSwim            = new double[] {
+    public static final double WALK_SPEED = 0.221D;
+    public static final double[] modSwim = new double[] {
             // Horizontal AND vertical with body fully in water
             0.115D / WALK_SPEED,  
             // Horizontal swimming only, 1.13 (Do not multiply with thisMove.walkSpeed)
@@ -109,8 +111,8 @@ public class Magic {
             0.3D / WALK_SPEED, 
             // Horizontal with body out of water (surface level)
             0.146D / WALK_SPEED,}; 
-    public static final double modDownStream        = 0.19D / (WALK_SPEED * modSwim[0]);
-    public static final double[] modDepthStrider    = new double[] {
+    public static final double modDownStream = 0.19D / (WALK_SPEED * modSwim[0]);
+    public static final double[] modDepthStrider = new double[] {
             1.0,
             0.1645 / modSwim[0] / WALK_SPEED,
             0.1995 / modSwim[0] / WALK_SPEED,
@@ -186,33 +188,53 @@ public class Magic {
      * @param data
      * @param isOnGroundOpportune Checked only during block-change activity, via the block-change-tracker. 
      * @param sprinting
+     * @param sneaking
+     * @param fromOnGround
+     * @param toOnGround
      * @return true if is bunnyhop.
      * 
      */
-    public static boolean isBunnyhop(final MovingData data, final boolean isOnGroundOpportune, boolean sprinting) {
+    public static boolean isBunnyhop(final MovingData data, final boolean isOnGroundOpportune, boolean sprinting, boolean sneaking,
+                                     final boolean fromOnGround, final boolean toOnGround) {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         
-        // Ensure the mechanic is not exploited to hop faster, if lowjumping
+        if (data.bunnyhopDelay > 0) {
+            // (Checked first)
+            // This bunnyfly phase hasn't ended yet. Too soon to apply the boost.
+            return false;
+        }
         if (data.sfLowJump) {
+            // Blatant cheating: if low-jumping, deny the boost.
+            return false;
+        }
+        if (!sprinting) {
+            // This mechanic is applied only if the player is sprinting
+            return false;
+        }
+        //  if (sneaking) {
+        //      // Minecraft does not allow players to sprint and sneak at the same time.
+        //      return false;
+        //  }
+        if (fromOnGround && toOnGround && thisMove.yDistance > 0.0) {
+            // Lastly, don't allow players to boost themselves on stepping up blocks.
             return false;
         }
 
         return 
-                // This mechanic is applied only if the player is sprinting
-                sprinting
                 // 0: Motion speed condition. Demand the player to hit the jumping envelope.
-                && (
+                (
                     thisMove.yDistance > data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier) - GRAVITY_SPAN
-                    || thisMove.headObstructed && thisMove.yDistance > GRAVITY_MAX
+                    // Do note that this headObstructed check uses the step-correction leniency method, while the check used to determine
+                    // if the bunnfly phase should be ended sooner (due to the head bump, see SurvivalFly#hdistChecks) does not.
+                    || thisMove.headObstructed && thisMove.yDistance >= 0.1 // 0.1 seems to be the maximum jumping gain if head is obstructed within a 2-blocks high area.
                 )
                 // 0: Ground conditions
                 && (
                     // 1: Ordinary/obvious lift-off.
-                    data.sfJumpPhase == 0 && thisMove.from.onGround && !thisMove.to.onGround // Don't apply if stepping blocks.
-                    // 1: Do allow hopping if a past on ground status is found or this (legitimate) on ground phase was lost 
-                    || data.sfJumpPhase <= 1 && !thisMove.to.onGround
-                    && (thisMove.touchedGroundWorkaround || isOnGroundOpportune) && !lastMove.bunnyHop
+                    data.sfJumpPhase == 0 && thisMove.from.onGround
+                    // 1: Allow hop on lost-ground or if a past on-ground state can be found due to block change activity.
+                    || data.sfJumpPhase <= 1 && (thisMove.touchedGroundWorkaround || isOnGroundOpportune) && !lastMove.bunnyHop
                 )
             ;
     }
@@ -241,6 +263,7 @@ public class Magic {
      * Test if the player is (well) within in-air falling envelope.
      * @param yDistance
      * @param lastYDist
+     * @param lastFrictionVertical
      * @param extraGravity Extra amount to fall faster.
      * @return
      */
@@ -249,9 +272,8 @@ public class Magic {
         if (yDistance >= lastYDist) {
             return false;
         }
-        // TODO: data.lastFrictionVertical (see vDistAir).
         final double frictDist = lastYDist * lastFrictionVertical - GRAVITY_MIN;
-        // TODO: Extra amount: distinguish pos/neg?
+        // Extra amount: distinguish pos/neg?
         return yDistance <= frictDist + extraGravity && yDistance > frictDist - GRAVITY_SPAN - extraGravity;
     }
 
@@ -361,7 +383,7 @@ public class Magic {
         return false;
     }
 
-    /* 
+    /**
      * Fully in-air move.
      * 
      * @param thisMove

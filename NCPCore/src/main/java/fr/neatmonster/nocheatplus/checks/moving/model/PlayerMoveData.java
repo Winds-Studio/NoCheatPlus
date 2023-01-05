@@ -70,24 +70,24 @@ public class PlayerMoveData extends MoveData {
     /** This move was a bunny hop. */
     public boolean bunnyHop;
    
-    /** This move was allowed to step. Set in SurvivalFly.check(vdistrel) */
-    public boolean allowstep;
+    /** The player can potentially step with this move. Set in SurvivalFly.check(vdistrel) */
+    public boolean canStep;
 
-    /** This move was allowed to jump. Set in SurvivalFly.check(vdistrel) */
-    public boolean allowjump;
+    /** The player can potentially jump with this move. Set in SurvivalFly.check(vdistrel) */
+    public boolean canJump;
 
 
     // Meta stuff.
     /**
      * Due to the thresholds for moving events, there could have been other
      * (micro-) moves by the player which could not be checked. One moving event
-     * is split into two moves 1: from -> loc, 2: loc -> to.
+     * is split into several other moves, capped at 9 currently.
      */
     public int multiMoveCount;
     
     /**
      * Mojang introduced a new mechanic in 1.17 which allows player to re-send their position on right clicking.
-     * So there could have been a duplicate move of the one that has just been sent.
+     * So there could have been a duplicate move (to) of the one (from) that has just been sent.
      * This moving event is skipped from being processed.
      * Do note that players cannot send duplicate packets in a row, there has to be a non-duplicate packet in between each duplicate one.
      * (Sequence is: normal -> redundant -> normal (...))
@@ -109,8 +109,8 @@ public class PlayerMoveData extends MoveData {
         hasGravity = true; // Assume one to have gravity rather than the opposite... :)
         // Properties involving the environment.
         bunnyHop = false;
-        allowstep = false;
-        allowjump = false;
+        canStep = false;
+        canJump = false;
         // Bounds set by checks.
         xAllowedDistance = 0.0;
         yAllowedDistance = 0.0;

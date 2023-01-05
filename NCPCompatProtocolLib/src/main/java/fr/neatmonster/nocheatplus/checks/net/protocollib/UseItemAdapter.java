@@ -110,7 +110,19 @@ public class UseItemAdapter extends BaseAdapter {
 
     @Override
     public void onPacketReceiving(final PacketEvent event) {
-        if (event.isPlayerTemporary()) return;
+        try {
+            if (event.isPlayerTemporary()) return;
+        } 
+        catch (NoSuchMethodError e) {
+            if (event.getPlayer() == null) {
+                counters.add(ProtocolLibComponent.idNullPlayer, 1);
+                return;
+            }
+            if (DataManager.getPlayerDataSafe(event.getPlayer()) == null) {
+                StaticLog.logWarning("Failed to fetch player data with " + event.getPacketType() + " for: " + event.getPlayer().toString());
+                return;
+            }
+        }
         if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
             handleDiggingPacket(event);
         } 
@@ -245,20 +257,13 @@ public class UseItemAdapter extends BaseAdapter {
 
     private void handleDiggingPacket(PacketEvent event) {
         Player p = event.getPlayer();       
-        
-        if (p == null) {
-            counters.add(ProtocolLibComponent.idNullPlayer, 1);
-            return;
-        }
         final IPlayerData pData = DataManager.getPlayerDataSafe(p);
-        if (pData == null) {
-            StaticLog.logWarning("Failed to fetch player data with " + event.getPacketType() + " for: " + p.toString());
-            return;
-        }
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         PlayerDigType digtype = event.getPacket().getPlayerDigTypes().read(0);
         // DROP_ALL_ITEMS when dead?
-        if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) data.isUsingItem = false;
+        if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) {
+            data.isUsingItem = false;
+        }
         
         //Advanced check
         if(digtype == PlayerDigType.RELEASE_USE_ITEM) {

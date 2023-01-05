@@ -89,7 +89,8 @@ public class LiquidWorkarounds {
                 }
 
                 // Lenient on marginal violation if speed decreases by 'enough'.
-                // (Observed on 'dirty' phase. Then why not confining by isVelocityJumpPhase?)
+                // (Observed on 'dirty' phase)
+                // Also needed for waterfalls in 1.13+. Hence why it is not confined by isVelocityJumpPhase()
                 if (Math.abs(frictDist - yDistance) <= 2.0 * Magic.GRAVITY_MAX
                     && yDistance < lastMove.yDistance - 4.0 * Math.abs(frictDist - yDistance)) {
                     return yDistance;
@@ -98,6 +99,7 @@ public class LiquidWorkarounds {
                 // Jumping with velocity into water from below, just slightly more decrease than gravity, twice.
                 // (Should be able to do without aw-ww-ww confinement.)
                 // (dirty seems to be set/kept reliably)
+                // Also needed for waterfalls in 1.13+. Hence why it is not confined by isVelocityJumpPhase()
                 if (yDistance > frictDist && yDistance < lastMove.yDistance - Magic.GRAVITY_MAX && data.insideMediumCount <= 1) {
                     return yDistance;
                 }

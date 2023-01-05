@@ -299,8 +299,8 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.COMBINED_ENDERPEARL_PREVENTCLICKBLOCK, true, 785);
         // Improbable
         set(ConfPaths.COMBINED_IMPROBABLE_CHECK , "default", 785);
-        set(ConfPaths.COMBINED_IMPROBABLE_LEVEL, 250, 1154);
-        set(ConfPaths.COMBINED_IMPROBABLE_ACTIONS, "cancel vl>20 log:improbable:8:9:if cancel vl>1500 cancel log:improbable:0:10:if cmdc:kickimprobable:0:5", 1154);
+        set(ConfPaths.COMBINED_IMPROBABLE_LEVEL, 400, 1154);
+        set(ConfPaths.COMBINED_IMPROBABLE_ACTIONS, "cancel vl>50 log:improbable:8:9:if cancel vl>1500 cancel log:improbable:0:10:if cmdc:kickimprobable:0:5", 1154);
         // Invulnerable
         set(ConfPaths.COMBINED_INVULNERABLE_CHECK, true, 785); // Not a check type yet.
         set(ConfPaths.COMBINED_INVULNERABLE_TRIGGERS_ALWAYS, false, 785);
