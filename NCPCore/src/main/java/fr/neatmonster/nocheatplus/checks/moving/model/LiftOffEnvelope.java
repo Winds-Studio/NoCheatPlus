@@ -38,7 +38,6 @@ public enum LiftOffEnvelope {
     /** Like NO_JUMP, just to distinguish from being in web. */
     UNKNOWN(0.0, 0.0, 0.0, 0, false),
     /** Halfed jump gain, meant for the honey block, rather. */
-    // NOTE: Jump height: 0.3 would trigger false positives. While 0.45 is too much
     HALF_JUMP(0.21, 0.4, 0.21, 4, true), 
     /** Nearly ordinary jumping gain (meant for berry bushes)*/
     BERRY_JUMP(0.315, 0.5, 0.315, 0, true), 

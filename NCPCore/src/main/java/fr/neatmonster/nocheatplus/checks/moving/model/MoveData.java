@@ -83,7 +83,9 @@ public class MoveData {
      * Head is obstructed for a living entity, or can't/couldn't move up due to
      * being blocked somehow. Should expect descending next move, if in air.
      * <br>
-     * Set in the moving listener.
+     * This check uses the player's vertical speed as a margin to seek for head obstruction, if the player is ascending.
+     * Otherwise, the "step-correction" margin is used
+     * (See: MovingListener, RichEntityLocation)
      */
     public boolean headObstructed;
 
@@ -106,8 +108,7 @@ public class MoveData {
     public boolean touchedGround;
 
     /**
-     * Set if touchedGround has been set due to applying a workaround
-     * exclusively.
+     * The player touched ground by the means of a lost-ground workaround exclusively
      */
     public boolean touchedGroundWorkaround;
     

@@ -67,7 +67,6 @@ public class Magic {
     public static final double SNEAK_STEP_DISTANCE = 0.05;
     /** EntityLiving, travel */
     public static final float LAVA_HORIZONTAL_INERTIA = 0.5f;
-    public static final double MIN_MOVEMENT_DISTANCE = 0.003;
     /** Result of 0.6^3. */
     public static final float DEFAULT_FRICTION_CUBED = 0.6f * 0.6f * 0.6f; // 0.21600002f;
     /** Result of (0.6 * 0.91)^3. Used by legacy clients. Newer clients use the one above, not inertia. */
@@ -80,6 +79,10 @@ public class Magic {
     public static final double NEGLIGIBLE_SPEED_THRESHOLD = 0.003;
     /** EntityLiving, aiStep */
     public static final double NEGLIGIBLE_SPEED_THRESHOLD_LEGACY = 0.005;
+    /** EntityLiving, jumpInLiquid */
+    public static final double LIQUID_SPEED_GAIN = 0.039;
+    /** EntityLiving, goDownInWater */
+    public static final double LIQUID_GRAVITY = -LIQUID_SPEED_GAIN;
 
 
     // Gravity.
@@ -183,15 +186,18 @@ public class Magic {
     public static final double CHUNK_LOAD_MARGIN_MIN = 3.0;
 
     /**
-     * Test if this move is a bunnyhop (sprint-jump)
+     * Test if this move is a bunnyhop <br>
+     * (Aka: sprint-jump. Increases the player's speed up to roughly twice the usual base speed)
      * 
      * @param data
      * @param isOnGroundOpportune Checked only during block-change activity, via the block-change-tracker. 
-     * @param sprinting
+     * @param sprinting (Required for bunnyhop activation)
      * @param sneaking
      * @param fromOnGround
      * @param toOnGround
-     * @return true if is bunnyhop.
+     * @return If true, a 10-ticks long countdown is activated (this phase is referred to as "bunnyfly")
+     *         during which, this method will return false if called, in order to prevent abuse of the speed boost.<br>
+     *         Cases where the player is allowed/able to bunnyhop sooner than usual are defined in SurvivalFly (hDistRel)
      * 
      */
     public static boolean isBunnyhop(final MovingData data, final boolean isOnGroundOpportune, boolean sprinting, boolean sneaking,
@@ -231,7 +237,7 @@ public class Magic {
                 )
                 // 0: Ground conditions
                 && (
-                    // 1: Ordinary/obvious lift-off.
+                    // 1: Ordinary/obvious lift-off. Without any special mechanic, like BCT
                     data.sfJumpPhase == 0 && thisMove.from.onGround
                     // 1: Allow hop on lost-ground or if a past on-ground state can be found due to block change activity.
                     || data.sfJumpPhase <= 1 && (thisMove.touchedGroundWorkaround || isOnGroundOpportune) && !lastMove.bunnyHop
