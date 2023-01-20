@@ -85,7 +85,7 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         // Shulker boxes.
         for (Material mat : MaterialUtil.SHULKER_BOXES) {
             BlockFlags.addFlags(mat, BlockFlags.F_XZ100 | BlockFlags.SOLID_GROUND);
-            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 2, BlockProperties.secToMs(3.0, 1.45, 0.7, 0.45, 0.3, 0.25, 0.2)));
+            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 2f));
         }
         
         for (Material mat : MaterialUtil.INFESTED_BLOCKS) {
@@ -98,6 +98,7 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
                 "smooth_stone")) {
             BlockInit.setAs(mat, Material.STONE);
         }
+        BlockProperties.setBlockProps("SMOOTH_STONE", BlockProperties.stoneTypeII);
 
         // Wall heads.
         for (Material mat : MaterialUtil.HEADS_WALL) {
@@ -105,9 +106,10 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         }
 
         // Blue ice.
-        BlockInit.setAs("BLUE_ICE", Material.ICE);
-        BlockFlags.addFlags("BLUE_ICE", BlockFlags.F_BLUE_ICE);
-
+        BlockFlags.setFlagsAs("BLUE_ICE", Material.ICE);
+        BlockFlags.addFlags("BLUE_ICE",BlockFlags.F_BLUE_ICE);
+        BlockProperties.setBlockProps("BLUE_ICE", new BlockProps(BlockProperties.woodPickaxe, 2.8f));
+        
         // Wet sponge.
         BlockInit.setAs("WET_SPONGE", Material.SPONGE);
 
@@ -119,12 +121,14 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         BlockInit.setAs("TALL_SEAGRASS", Material.TALL_SEAGRASS);
 
         // Sandstone slabs.
-        BlockInit.setPropsAs("SANDSTONE_SLAB", Material.SANDSTONE);
-        BlockInit.setPropsAs("RED_SANDSTONE_SLAB", Material.SANDSTONE);
+        BlockProperties.setBlockProps("SANDSTONE_SLAB", BlockProperties.stoneTypeII);
+        BlockProperties.setBlockProps("RED_SANDSTONE_SLAB", BlockProperties.stoneTypeII);
 
         // More sandstone.
         BlockInit.setAs("SMOOTH_SANDSTONE", Material.SANDSTONE);
+        BlockProperties.setBlockProps("SMOOTH_SANDSTONE", BlockProperties.stoneTypeII);
         BlockInit.setAs("SMOOTH_RED_SANDSTONE", Material.SANDSTONE);
+        BlockProperties.setBlockProps("SMOOTH_RED_SANDSTONE", BlockProperties.stoneTypeII);
         BlockInit.setAs("CUT_SANDSTONE", Material.SANDSTONE);
         BlockInit.setAs("CUT_RED_SANDSTONE", Material.SANDSTONE);
         BlockInit.setAs("CHISELED_SANDSTONE", Material.SANDSTONE);
@@ -134,26 +138,25 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         BlockInit.setAs("COBBLESTONE_SLAB", BridgeMaterial.BRICK_SLAB);
         BlockInit.setAs("STONE_BRICK_SLAB", BridgeMaterial.BRICK_SLAB);
         BlockInit.setAs("NETHER_BRICK_SLAB", BridgeMaterial.BRICK_SLAB);
-        BlockInit.setAs("PRISMARINE_BRICK_SLAB", BridgeMaterial.BRICK_SLAB);
+        BlockProperties.setBlockProps("PRISMARINE_BRICK_SLAB", BlockProperties.stoneTypeI);
 
         // More slabs.
-        BlockInit.setAs("PRISMARINE_SLAB", BridgeMaterial.STONE_SLAB);
-        BlockInit.setAs("DARK_PRISMARINE_SLAB", BridgeMaterial.STONE_SLAB);
+        BlockProperties.setBlockProps("PRISMARINE_SLAB", BlockProperties.stoneTypeI);
+        BlockInit.setAs("DARK_PRISMARINE_SLAB", "PRISMARINE_SLAB");
         BlockInit.setAs("QUARTZ_SLAB", BridgeMaterial.STONE_SLAB); // TODO: Test.
         BlockInit.setAs("PETRIFIED_OAK_SLAB", BridgeMaterial.STONE_SLAB); // TODO: Test.
 
         // More bricks.
         BlockInit.setAs("PRISMARINE_BRICKS", BridgeMaterial.BRICKS);
-        BlockInit.setAs("MOSSY_STONE_BRICKS", BridgeMaterial.BRICKS);
-        BlockInit.setAs("CHISELED_STONE_BRICKS", BridgeMaterial.BRICKS);
-        BlockInit.setAs("CRACKED_STONE_BRICKS", BridgeMaterial.BRICKS);
+        BlockProperties.setBlockProps("PRISMARINE_BRICKS", BlockProperties.stoneTypeI);
+        BlockInit.setAs("MOSSY_STONE_BRICKS", "PRISMARINE_BRICKS");
+        BlockInit.setAs("CHISELED_STONE_BRICKS", "PRISMARINE_BRICKS");
+        BlockInit.setAs("CRACKED_STONE_BRICKS", "PRISMARINE_BRICKS");
 
         // More brick stairs.
         BlockInit.setAs("PRISMARINE_BRICK_STAIRS", BridgeMaterial.STONE_BRICK_STAIRS);
-
-        // More stairs.
-        BlockInit.setAs("PRISMARINE_STAIRS", Material.COBBLESTONE_STAIRS);
-        BlockInit.setAs("DARK_PRISMARINE_STAIRS", Material.COBBLESTONE_STAIRS);
+        BlockInit.setAs("PRISMARINE_STAIRS", BridgeMaterial.STONE_BRICK_STAIRS);
+        BlockInit.setAs("DARK_PRISMARINE_STAIRS", BridgeMaterial.STONE_BRICK_STAIRS);
 
         // More cobblestone walls.
         BlockInit.setAs("MOSSY_COBBLESTONE_WALL", BridgeMaterial.COBBLESTONE_WALL);
@@ -171,29 +174,29 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         // Mushroom stem: via MaterialUtil collection.
 
         // More quartz blocks.
-        BlockInit.setAs("SMOOTH_QUARTZ", "QUARTZ_BLOCK");
+        BlockInit.setAs("SMOOTH_QUARTZ", "SMOOTH_SANDSTONE");
         BlockInit.setAs("CHISELED_QUARTZ_BLOCK", "QUARTZ_BLOCK");
 
         // Quartz pillar.
         BlockInit.setPropsAs("QUARTZ_PILLAR", "QUARTZ_BLOCK");
 
         // Dried kelp block.
-        BlockProperties.setBlockProps("DRIED_KELP_BLOCK", new BlockProps(BlockProperties.noTool, 0.5f, BlockProperties.secToMs(0.75)));
+        BlockProperties.setBlockProps("DRIED_KELP_BLOCK", new BlockProps(BlockProperties.noTool, 0.5f));
 
         // Conduit.
         // 1.18 - conduit was assigned to the pickaxe in 1.18
         if (ServerVersion.compareMinecraftVersion("1.18") >= 0) {
-            BlockProperties.setBlockProps(Material.CONDUIT, new BlockProperties.BlockProps(BlockProperties.stonePickaxe, 3.0f, BlockProperties.secToMs(4.5, 2.25, 1.15, 0.75, 0.6, 0.5, 0.4)));        
+            BlockProperties.setBlockProps(Material.CONDUIT, new BlockProperties.BlockProps(BlockProperties.stonePickaxe, 3.0f));        
         }
         // Pre 1.18
-        else BlockProperties.setBlockProps("CONDUIT", new BlockProps(BlockProperties.noTool, 3f, BlockProperties.secToMs(4.5)));
+        else BlockProperties.setBlockProps("CONDUIT", new BlockProps(BlockProperties.noTool, 3f));
         
         // Sea Pickle.
         BlockProperties.setBlockProps("SEA_PICKLE", BlockProperties.instantType);
         BlockFlags.addFlags("SEA_PICKLE", BlockFlags.F_GROUND | BlockFlags.F_GROUND_HEIGHT);
 
         // Turtle egg.
-        BlockProperties.setBlockProps("TURTLE_EGG", new BlockProps(BlockProperties.noTool, 0.5f, BlockProperties.secToMs(0.7)));
+        BlockProperties.setBlockProps("TURTLE_EGG", new BlockProps(BlockProperties.noTool, 0.5f));
 
         // Farm land. (Just in case not having multiversion plugin installed)
         BlockFlags.removeFlags(BridgeMaterial.FARMLAND, BlockFlags.F_HEIGHT100);

@@ -30,22 +30,22 @@ public class BlocksMC1_16 implements BlockPropertiesSetup{
         // Soul Fire
         BlockInit.setInstantPassable("SOUL_FIRE");
         // Target
-        BlockProperties.setBlockProps("TARGET", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.45f, BlockProperties.secToMs(0.7, 0.35, 0.15, 0.1, 0.07, 0.07, 0.05)));
+        BlockProperties.setBlockProps("TARGET", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.5f));
         BlockFlags.setFlagsAs("TARGET", Material.OAK_PLANKS);
         // Leaves
         for (Material mat : MaterialUtil.LEAVES) {
-            BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.2f, BlockProperties.secToMs(0.3, 0.15, 0.1, 0.01, 0.01, 0.01, 0.01)));
+            BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.2f));
         }
         // Sponges
-        BlockProperties.setBlockProps("WET_SPONGE", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.6f, BlockProperties.secToMs(0.85, 0.425, 0.25, 0.13, 0.13, 0.1, 0.05)));
-        BlockProperties.setBlockProps(Material.SPONGE, new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.6f, BlockProperties.secToMs(0.85, 0.425, 0.25, 0.13, 0.13, 0.1, 0.05)));
+        BlockProperties.setBlockProps("WET_SPONGE", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.6f));
+        BlockProperties.setBlockProps(Material.SPONGE, new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.6f));
         // Hay block
         BlockInit.setPropsAs("HAY_BLOCK", "TARGET");
         // Dried kelp block
         BlockInit.setPropsAs("DRIED_KELP_BLOCK", "TARGET");
         // ShroomLight
         BlockFlags.setFlagsAs("SHROOMLIGHT", Material.OAK_PLANKS);
-        BlockProperties.setBlockProps("SHROOMLIGHT", new BlockProperties.BlockProps(BlockProperties.woodHoe, 1f, BlockProperties.secToMs(1.45, 0.75, 0.4, 0.25, 0.2, 0.2, 0.12)));
+        BlockProperties.setBlockProps("SHROOMLIGHT", new BlockProperties.BlockProps(BlockProperties.woodHoe, 1f));
         // More Quartz block
         BlockInit.setPropsAs("QUARTZ_BRICKS", "QUARTZ_BLOCK");
         // Soul Soil
@@ -58,7 +58,7 @@ public class BlocksMC1_16 implements BlockPropertiesSetup{
         // BlackStone
         BlockInit.setAs("BLACKSTONE", Material.STONE);
         BlockInit.setAs("GILDED_BLACKSTONE", Material.STONE);
-        BlockInit.setPropsAs("BLACKSTONE_SLAB", Material.STONE);
+        BlockInit.setPropsAs("BLACKSTONE_SLAB", "RED_NETHER_BRICK_STAIRS");
         BlockInit.setPropsAs("BLACKSTONE_STAIRS", Material.STONE);
         BlockInit.setAs("POLISHED_BLACKSTONE_BRICKS", Material.STONE);
         BlockInit.setAs("CRACKED_POLISHED_BLACKSTONE_BRICKS", Material.STONE);
@@ -97,7 +97,7 @@ public class BlocksMC1_16 implements BlockPropertiesSetup{
 
         // Ancient Debris
         BlockFlags.addFlags("ANCIENT_DEBRIS", BlockFlags.FULLY_SOLID_BOUNDS);
-        BlockProperties.setBlockProps("ANCIENT_DEBRIS", new BlockProperties.BlockProps(BlockProperties.diamondPickaxe, 30f, BlockProperties.secToMs(145, 75, 37, 25, 5.6, 5, 12.5)));
+        BlockProperties.setBlockProps("ANCIENT_DEBRIS", new BlockProperties.BlockProps(BlockProperties.diamondPickaxe, 30f, true));
 
         // More Walls
         BlockInit.setPropsAs("BLACKSTONE_WALL",Material.STONE);
@@ -124,7 +124,7 @@ public class BlocksMC1_16 implements BlockPropertiesSetup{
         //Piston
         for (Material mat: new Material[]{BridgeMaterial.PISTON, 
                 BridgeMaterial.PISTON_HEAD, BridgeMaterial.STICKY_PISTON}) {
-            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.15)));
+            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 1.5f));
         }
         
         // Re-add the decrease 8ism flag to lava. (See BlocksMC1_13)

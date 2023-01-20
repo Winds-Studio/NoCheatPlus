@@ -19,6 +19,7 @@ import org.bukkit.Material;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.config.*;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
@@ -41,19 +42,15 @@ public class BlocksMC1_19 implements BlockPropertiesSetup {
 
 
         //
-        BlockProperties.setBlockProps("MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.5f, BlockProperties.secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1, 0.1)));
+        BlockProperties.setBlockProps("MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.5f));
         BlockFlags.setBlockFlags("MUD", BlockFlags.SOLID_GROUND);
         //
-        BlockProperties.setBlockProps("PACKED_MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 1f, BlockProperties.secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.2, 0.15)));
+        BlockProperties.setBlockProps("PACKED_MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 1f));
         BlockFlags.setFlagsAs("PACKED_MUD", Material.DIRT);
         BlockInit.setAs("MUD_BRICKS", Material.ANDESITE);
         BlockInit.setAs("MUD_BRICK_SLAB", Material.ANDESITE_SLAB);
         BlockInit.setAs("MUD_BRICK_STAIRS", Material.ANDESITE_STAIRS);
         BlockInit.setAs("MUD_BRICK_WALL", Material.ANDESITE_WALL);
-        // TODO: Remove those below if hardness overhaul is completed
-        BlockInit.setPropsAs("MUD_BRICK_SLAB", Material.ANDESITE);
-        BlockInit.setPropsAs("MUD_BRICK_STAIRS", Material.ANDESITE);
-        BlockInit.setPropsAs("MUD_BRICK_WALL", Material.ANDESITE);
 
 
         BlockProperties.setBlockProps("FROGSPAWN", BlockProperties.instantType);
@@ -61,25 +58,32 @@ public class BlocksMC1_19 implements BlockPropertiesSetup {
 
         BlockFlags.setFlagsAs("MUDDY_MANGROVE_ROOTS", Material.DIRT);
         //
-        BlockProperties.setBlockProps("MUDDY_MANGROVE_ROOTS", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.7f, BlockProperties.secToMs(1.05, 0.55, 0.3, 0.2, 0.15, 0.15, 0.1)));
+        BlockProperties.setBlockProps("MUDDY_MANGROVE_ROOTS", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.7f));
         BlockFlags.setFlagsAs("MANGROVE_ROOTS", Material.DIRT);
         //
-        BlockProperties.setBlockProps("MANGROVE_ROOTS", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.7f, BlockProperties.secToMs(1.05, 0.55, 0.3, 0.2, 0.15, 0.15, 0.1)));
+        BlockProperties.setBlockProps("MANGROVE_ROOTS", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.7f));
         
         
         BlockFlags.setBlockFlags("SCULK_VEIN", BlockFlags.F_IGN_PASSABLE);
         //
-        BlockProperties.setBlockProps("SCULK_VEIN", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.2f, BlockProperties.secToMs(0.3, 0.15, 0.1, 0.0, 0.0, 0.0, 0.0)));
+        BlockProperties.setBlockProps("SCULK_VEIN", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.2f));
         BlockInit.setPropsAs("SCULK", "SCULK_VEIN");
         BlockFlags.setFlagsAs("SCULK", Material.DIRT);
         BlockFlags.setFlagsAs("SCULK_CATALYST", Material.DIRT);
         //
-        BlockProperties.setBlockProps("SCULK_CATALYST", new BlockProperties.BlockProps(BlockProperties.woodHoe, 3f, BlockProperties.secToMs(4.5, 2.25, 1.15, 0.75, 0.6, 0.5, 0.4)));
+        BlockProperties.setBlockProps("SCULK_CATALYST", new BlockProperties.BlockProps(BlockProperties.woodHoe, 3f));
         BlockFlags.setFlagsAs("REINFORCED_DEEPSLATE", Material.OBSIDIAN);
         BlockProperties.setBlockProps("REINFORCED_DEEPSLATE", new BlockProperties.BlockProps(BlockProperties.noTool, 55f));
         //
-        BlockProperties.setBlockProps("SCULK_SHRIEKER", new BlockProperties.BlockProps(BlockProperties.woodHoe, 3f, BlockProperties.secToMs(4.5, 2.25, 1.15, 0.75, 0.6, 0.5, 0.4)));
+        BlockProperties.setBlockProps("SCULK_SHRIEKER", new BlockProperties.BlockProps(BlockProperties.woodHoe, 3f));
         BlockFlags.setBlockFlags("SCULK_SHRIEKER", BlockFlags.SOLID_GROUND);
+
+        if (ServerVersion.compareMinecraftVersion("1.19.3") >= 0) {
+            BlockInit.setAs("BAMBOO_MOSAIC", Material.OAK_PLANKS);
+            BlockInit.setAs("BAMBOO_BLOCK", Material.OAK_PLANKS);
+            BlockInit.setAs("STRIPPED_BAMBOO_BLOCK", Material.OAK_PLANKS);
+            BlockInit.setAs("CHISELED_BOOKSHELF", Material.BOOKSHELF);
+        }
 
         ConfigFile config = ConfigManager.getConfigFile();
         if (config.getBoolean(ConfPaths.BLOCKBREAK_DEBUG, config.getBoolean(ConfPaths.CHECKS_DEBUG, false)))

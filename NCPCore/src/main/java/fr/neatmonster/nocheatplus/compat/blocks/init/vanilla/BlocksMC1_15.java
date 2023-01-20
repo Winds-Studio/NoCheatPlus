@@ -26,8 +26,8 @@ public class BlocksMC1_15 implements BlockPropertiesSetup{
         // TODO: Is this a good idea to just allow low jump to fix honey block elevator?
         BlockFlags.addFlags("HONEY_BLOCK", BlockFlags.SOLID_GROUND | BlockFlags.F_STICKY | BlockFlags.F_ALLOW_LOWJUMP);
         
-        BlockProperties.setBlockProps("BEEHIVE", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.6f, BlockProperties.secToMs(0.85, 0.425, 0.225, 0.13, 0.11, 0.07, 0.05)));
-        BlockProperties.setBlockProps("BEE_NEST", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.3f, BlockProperties.secToMs(0.4, 0.225, 0.11, 0.05, 0.042, 0.02, 0.01)));
+        BlockProperties.setBlockProps("BEEHIVE", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.6f));
+        BlockProperties.setBlockProps("BEE_NEST", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.3f));
         BlockProperties.setBlockProps("HONEYCOMB_BLOCK", new BlockProperties.BlockProps(BlockProperties.noTool, 0.6f));
         BlockProperties.setBlockProps("HONEY_BLOCK", BlockProperties.instantType);
         ConfigFile config = ConfigManager.getConfigFile();

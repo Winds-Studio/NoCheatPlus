@@ -47,10 +47,10 @@ public class BlocksMC1_9 implements BlockPropertiesSetup {
         BlockProperties.setBlockProps("END_ROD", instant);
 
         BlockFlags.addFlags("CHORUS_PLANT", ground);
-        BlockProperties.setBlockProps("CHORUS_PLANT", instant);
+        BlockProperties.setBlockProps("CHORUS_PLANT", new BlockProps(BlockProperties.woodAxe, 0.4f));
 
         BlockFlags.addFlags("CHORUS_FLOWER", ground);
-        BlockProperties.setBlockProps("CHORUS_FLOWER", instant);
+        BlockProperties.setBlockProps("CHORUS_FLOWER", new BlockProps(BlockProperties.woodAxe, 0.4f));
 
         BlockInit.setAs("PURPUR_BLOCK", BridgeMaterial.STONE_BRICKS);
 
@@ -67,11 +67,12 @@ public class BlocksMC1_9 implements BlockPropertiesSetup {
         BlockInit.setAs("PURPUR_SLAB", BridgeMaterial.STONE_SLAB);
 
         BlockInit.setAs(BridgeMaterial.END_STONE_BRICKS, Material.SANDSTONE);
+        BlockProperties.setBlockProps(BridgeMaterial.END_STONE_BRICKS, new BlockProps(BlockProperties.woodPickaxe, 3f));
 
         BlockInit.setInstantPassable(BridgeMaterial.BEETROOTS);
 
-        BlockInit.setPropsAs(BridgeMaterial.GRASS_PATH, BridgeMaterial.GRASS_BLOCK);
-        BlockFlags.addFlags(BridgeMaterial.GRASS_PATH,  BlockFlags.F_MIN_HEIGHT16_15 | BlockFlags.F_XZ100 | BlockFlags.SOLID_GROUND | BlockFlags.F_GROUND_HEIGHT);
+        BlockProperties.setBlockProps(BridgeMaterial.GRASS_PATH, new BlockProps(BlockProperties.woodSpade, 0.65f));
+        BlockFlags.addFlags(BridgeMaterial.GRASS_PATH, BlockFlags.F_MIN_HEIGHT16_15 | BlockFlags.F_XZ100 | BlockFlags.SOLID_GROUND | BlockFlags.F_GROUND_HEIGHT);
 
         // -> Leave flags as is (like air).
         BlockProperties.setBlockProps("END_GATEWAY", BlockProperties.indestructibleType);

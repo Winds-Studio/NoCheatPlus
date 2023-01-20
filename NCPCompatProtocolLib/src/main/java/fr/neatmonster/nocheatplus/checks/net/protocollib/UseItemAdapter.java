@@ -46,6 +46,7 @@ import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.registry.order.RegistrationOrder.RegisterMethodWithOrder;
 import fr.neatmonster.nocheatplus.event.mini.MiniListener;
@@ -54,7 +55,10 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 
+
 public class UseItemAdapter extends BaseAdapter {
+
+    private final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
     private final static String dftag = "system.nocheatplus.useitemadapter";
     private final static MiniListener<?>[] miniListeners = new MiniListener<?>[] {
         new MiniListener<PlayerItemConsumeEvent>() {
@@ -226,7 +230,7 @@ public class UseItemAdapter extends BaseAdapter {
         //    p.getInventory().setHeldItemSlot(data.olditemslot);
         //    data.changeslot = false;
         //}
-        data.isUsingItem = false;
+        if (e.getPreviousSlot() != e.getNewSlot()) data.isUsingItem = false;
     }
 
     private static boolean hasArrow(final PlayerInventory i, final boolean fw) {
@@ -245,7 +249,7 @@ public class UseItemAdapter extends BaseAdapter {
         final PacketContainer packet = event.getPacket();
         final StructureModifier<Integer> ints = packet.getIntegers();
         // Legacy: pre 1.9
-        if (ints.size() > 0) {
+        if (ints.size() > 0 && !ServerIsAtLeast1_9) {
             final int faceIndex = ints.read(0); // arg 3 if 1.7.10 below
             if (faceIndex <= 5) {
                 data.mightUseItem = false;

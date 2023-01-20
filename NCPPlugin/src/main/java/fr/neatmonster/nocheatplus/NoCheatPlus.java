@@ -827,7 +827,7 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         if (noPerm != null && !noPerm.isEmpty()) {
             final String noPermMsg = ColorUtil.replaceColors(ConfigManager.getConfigFile().getString(ConfPaths.PROTECT_PLUGINS_HIDE_NOPERMISSION_MSG));
             // Setup and add changes to history for undoing.
-            changedCommands.addAll(PermissionUtil.protectCommands(
+            changedCommands.addAll(PermissionUtil.protectCommands(this,
                     Permissions.FILTER_COMMAND.getLowerCaseStringRepresentation(), 
                     noPerm,  true, false, noPermMsg));
         }
@@ -836,7 +836,7 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         if (noCommand != null && !noCommand.isEmpty()) {
             final String noCommandMsg = ColorUtil.replaceColors(ConfigManager.getConfigFile().getString(ConfPaths.PROTECT_PLUGINS_HIDE_NOCOMMAND_MSG));
             // Setup and add changes to history for undoing.
-            changedCommands.addAll(PermissionUtil.protectCommands(
+            changedCommands.addAll(PermissionUtil.protectCommands(this,
                     Permissions.FILTER_COMMAND.getLowerCaseStringRepresentation(), 
                     noCommand,  true, false, noCommandMsg));
         }

@@ -79,6 +79,7 @@ public class BlocksMC1_5 implements BlockPropertiesSetup {
 
         BlockInit.setAs("DROPPER", Material.DISPENSER);
 
+        if (BridgeMaterial.getBlock("wall_sign") != null) BlockInit.setAs("WALL_SIGN", BridgeMaterial.SIGN);
 
         /////////////////////
         // Changed blocks

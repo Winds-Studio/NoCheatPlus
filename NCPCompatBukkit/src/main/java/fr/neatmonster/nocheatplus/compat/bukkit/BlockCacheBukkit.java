@@ -23,6 +23,7 @@ import org.bukkit.entity.EntityType;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 public class BlockCacheBukkit extends BlockCache {
 
@@ -73,7 +74,7 @@ public class BlockCacheBukkit extends BlockCache {
             // TODO: Probably check other ids too before doing this ?
             for (final Entity other : entity.getNearbyEntities(2.0, 2.0, 2.0)){
                 final EntityType type = other.getType();
-                if (type != EntityType.BOAT && type != EntityType.SHULKER){ //  && !(other instanceof Minecart)) 
+                if (!MaterialUtil.isBoat(type) && type != EntityType.SHULKER){ //  && !(other instanceof Minecart)) 
                     continue; 
                 }
                 final double locY = entity.getLocation(useLoc).getY();

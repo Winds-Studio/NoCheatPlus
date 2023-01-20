@@ -35,8 +35,7 @@ public class BlocksMC1_11 implements BlockPropertiesSetup {
 
     @Override
     public void setupBlockProperties(WorldConfigProvider<?> worldConfigProvider) {
-        // Wiki (16-11-25): 17.5, 2.65, 1.32, 0.9, 0.7, 0.45
-        BlockProperties.setBlockProps("OBSERVER", new BlockProps(BlockProperties.woodPickaxe, 6, BlockProperties.secToMs(15.0, 2.2, 1.1, 0.7, 0.55, 0.5, 0.45)));
+        BlockProperties.setBlockProps("OBSERVER", new BlockProps(BlockProperties.woodPickaxe, 3f, true));
         BlockFlags.setBlockFlags("OBSERVER", BlockFlags.FULLY_SOLID_BOUNDS);
         // ALL SORTS OF SHULKER BOXES
 

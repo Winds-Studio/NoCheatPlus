@@ -287,13 +287,13 @@ public class SurvivalFly extends Check {
         }
         else if (from.isInWeb()) {
             // Webs can be placed in liquids.
-            final double[] resultWeb = vDistWeb(player, thisMove, fromOnGround, toOnGround, hDistanceAboveLimit, now, data, cc, from, to, pData, isModernSplitMove, multiMoveCount);
+            final double[] resultWeb = vDistWeb(player, thisMove, fromOnGround, toOnGround, data, cc, from, to, pData, isModernSplitMove, multiMoveCount);
             vAllowedDistance = resultWeb[0];
             vDistanceAboveLimit = resultWeb[1];
         }
         else if (from.isInBerryBush()) {
             // Berry bushes cannot be placed in liquids.
-            final double[] resultBush = vDistBush(player, thisMove, toOnGround, hDistanceAboveLimit, now, data, cc, from, to, fromOnGround, pData, isModernSplitMove, multiMoveCount);
+            final double[] resultBush = vDistBush(player, thisMove, toOnGround, now, data, cc, from, to, fromOnGround, pData, isModernSplitMove, multiMoveCount);
             vAllowedDistance = resultBush[0];
             vDistanceAboveLimit = resultBush[1];
         }
@@ -2179,7 +2179,7 @@ public class SurvivalFly extends Check {
      * @return vAllowedDistance, vDistanceAboveLimit
      */
     private double[] vDistBush(final Player player, final PlayerMoveData thisMove, 
-                               final boolean toOnGround, final double hDistanceAboveLimit, final long now, 
+                               final boolean toOnGround, final long now, 
                                final MovingData data, final MovingConfig cc, final PlayerLocation from, final PlayerLocation to,
                                final boolean fromOnGround, final IPlayerData pData, final boolean isModernSplitMove, final int multiMoveCount) {
         final double yDistance = thisMove.yDistance;

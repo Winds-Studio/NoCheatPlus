@@ -24,6 +24,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 
 import fr.neatmonster.nocheatplus.command.CommandUtil;
@@ -47,7 +48,7 @@ public class PermissionUtil {
         public final PermissionDefault permissionDefault;
         public final  String permissionMessage;
         /**
-         * 
+         *
          * @param command
          * @param label trim + lower case.
          * @param permission
@@ -81,14 +82,14 @@ public class PermissionUtil {
     }
 
     /**
-     * 
+     *
      * @param commands Command white-list.
      * @param permissionBase
      * @param ops
      * @return
      */
-    public static List<CommandProtectionEntry> protectCommands(Collection<String> commands, String permissionBase, boolean ops) {
-        return protectCommands(permissionBase, commands, true, ops);
+    public static List<CommandProtectionEntry> protectCommands(final Plugin plugin, Collection<String> commands, String permissionBase, boolean ops) {
+        return protectCommands(plugin, permissionBase, commands, true, ops);
     }
 
     /**
@@ -99,8 +100,8 @@ public class PermissionUtil {
      * @param ops
      * @return
      */
-    public static List<CommandProtectionEntry> protectCommands(String permissionBase, Collection<String> ignoredCommands, boolean invertIgnored, boolean ops) {
-        return protectCommands(permissionBase, ignoredCommands, invertIgnored, ops, ColorUtil.replaceColors(ConfigManager.getConfigFile().getString(ConfPaths.PROTECT_PLUGINS_HIDE_NOCOMMAND_MSG)));
+    public static List<CommandProtectionEntry> protectCommands(final Plugin plugin, String permissionBase, Collection<String> ignoredCommands, boolean invertIgnored, boolean ops) {
+        return protectCommands(plugin, permissionBase, ignoredCommands, invertIgnored, ops, ColorUtil.replaceColors(ConfigManager.getConfigFile().getString(ConfPaths.PROTECT_PLUGINS_HIDE_NOCOMMAND_MSG)));
     }
 
     /**
@@ -112,7 +113,7 @@ public class PermissionUtil {
      * @param permissionMessage
      * @return
      */
-    public static List<CommandProtectionEntry> protectCommands(final String permissionBase, final Collection<String> ignoredCommands, final boolean invertIgnored, final boolean ops, final String permissionMessage) {
+    public static List<CommandProtectionEntry> protectCommands(final Plugin plugin, final String permissionBase, final Collection<String> ignoredCommands, final boolean invertIgnored, final boolean ops, final String permissionMessage) {
         final Set<String> checked = new HashSet<String>();
         for (String label : ignoredCommands) {
             checked.add(CommandUtil.getCommandLabel(label, false));
@@ -168,6 +169,7 @@ public class PermissionUtil {
             }
             // Change 
             cmdPerm.setDefault(ops ? PermissionDefault.OP : PermissionDefault.FALSE);
+            if (!ops) Bukkit.getServer().getConsoleSender().addAttachment(plugin, cmdPermName, true);
             command.setPermissionMessage(permissionMessage);
         }
         return changed;
@@ -194,7 +196,7 @@ public class PermissionUtil {
     /**
      * Set a permission as child for all the other permissions given in a
      * Collection.
-     * 
+     *
      * @param permissions
      *            Not expected to exist.
      * @param childPermissionName
@@ -202,7 +204,7 @@ public class PermissionUtil {
      *            Default for all generated permissions (child and parent
      *            alike).
      */
-    public static void addChildPermission(final Collection<RegisteredPermission> registeredPermissions, 
+    public static void addChildPermission(final Collection<RegisteredPermission> registeredPermissions,
             final RegisteredPermission registeredChild, final PermissionDefault permissionDefault) {
         final String childPermissionName = registeredChild.getStringRepresentation();
         final PluginManager pm = Bukkit.getPluginManager();
@@ -225,7 +227,7 @@ public class PermissionUtil {
     }
 
     /**
-     * 
+     *
      * @param permissionName
      *            A permission already registered with Bukkit.
      * @param childPermissionSuffix
@@ -237,7 +239,7 @@ public class PermissionUtil {
      * @throws NullPointerException
      *             If no permission is registered for permissionName.
      */
-    public static void addChildPermissionBySuffix(final RegisteredPermission registeredPermission, 
+    public static void addChildPermissionBySuffix(final RegisteredPermission registeredPermission,
             final String childPermissionSuffix, final PermissionRegistry permissionRegistry,
             final PermissionDefault permissionDefault, final boolean childValue) {
         final String permissionName = registeredPermission.getStringRepresentation();

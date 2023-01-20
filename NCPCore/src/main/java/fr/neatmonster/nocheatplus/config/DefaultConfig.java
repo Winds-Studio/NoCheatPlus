@@ -121,9 +121,9 @@ public class DefaultConfig extends ConfigFile {
         // FastBreak
         set(ConfPaths.BLOCKBREAK_FASTBREAK_CHECK, "default", 785);
         set(ConfPaths.BLOCKBREAK_FASTBREAK_STRICT, true, 785);
-        set(ConfPaths.BLOCKBREAK_FASTBREAK_DELAY, 95, 785); 
+        set(ConfPaths.BLOCKBREAK_FASTBREAK_DELAY, 10, 785); 
         set(ConfPaths.BLOCKBREAK_FASTBREAK_MOD_SURVIVAL, 100, 785);
-        set(ConfPaths.BLOCKBREAK_FASTBREAK_GRACE, 2000, 785);
+        set(ConfPaths.BLOCKBREAK_FASTBREAK_GRACE, 500, 785);
         set(ConfPaths.BLOCKBREAK_FASTBREAK_ACTIONS, "cancel vl>5 cancel log:fastbreak:4:2:i vl>50 cancel log:fastbreak:0:2:if cmdc:kickfastbreak:2:5", 1154);
         // Frequency
         set(ConfPaths.BLOCKBREAK_FREQUENCY_CHECK, "default", 785);

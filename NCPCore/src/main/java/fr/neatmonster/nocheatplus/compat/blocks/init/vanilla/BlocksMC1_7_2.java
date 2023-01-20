@@ -53,28 +53,6 @@ public class BlocksMC1_7_2 implements BlockPropertiesSetup{
 
         BlockInit.setAsIfExists("DOUBLE_PLANT", BridgeMaterial.DANDELION);
 
-
-        ////////////////////
-        // Block breaking.
-        ////////////////////
-        final long[] ironTimes = BlockProperties.secToMs(15, 7.5, 1.15, 0.75, 0.56, 0.5, 1.25);
-        final BlockProps ironType = new BlockProps(BlockProperties.woodPickaxe, 3, ironTimes);
-        for (Material mat : new Material[]{Material.LAPIS_ORE, Material.LAPIS_BLOCK, Material.IRON_ORE,}) {
-            BlockProperties.setBlockProps(mat, ironType);
-        }
-        final long[] diamondTimes = BlockProperties.secToMs(15, 7.5, 3.75, 0.75, 0.56, 0.5, 1.25);
-        final BlockProps diamondType = new BlockProps(BlockProperties.woodPickaxe, 3, diamondTimes);
-        for (Material mat : new Material[]{
-            Material.REDSTONE_ORE, 
-            BridgeMaterial.get("glowing_redstone_ore"),
-            Material.EMERALD_ORE, 
-            Material.GOLD_ORE, 
-            Material.DIAMOND_ORE,}) {
-            if (mat != null) {
-                BlockProperties.setBlockProps(mat, diamondType);
-            }
-        }
-
         ConfigFile config = ConfigManager.getConfigFile();
         if (config.getBoolean(ConfPaths.BLOCKBREAK_DEBUG, config.getBoolean(ConfPaths.CHECKS_DEBUG, false)))
         StaticLog.logInfo("Added block-info for Minecraft 1.7.2 blocks.");

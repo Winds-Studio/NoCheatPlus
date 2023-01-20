@@ -107,6 +107,8 @@ public class VehicleEnvelope extends Check {
     
     private final Class<?> strider;
     
+    private final Class<?> camel;
+    
    /**
     * Instanties a new VehicleEnvelope check
     */
@@ -115,6 +117,7 @@ public class VehicleEnvelope extends Check {
         Class<?> clazz = ReflectionUtil.getClass("org.bukkit.entity.AbstractHorse");
         bestHorse = clazz == null ? ReflectionUtil.getClass("org.bukkit.entity.Horse") : clazz;
         strider = ReflectionUtil.getClass("org.bukkit.entity.Strider");
+        camel = ReflectionUtil.getClass("org.bukkit.entity.Camel");
     }
 
 
@@ -303,6 +306,22 @@ public class VehicleEnvelope extends Check {
         // TODO: Further distinguish, best set in CheckDetails.
         if (vehicle instanceof LivingEntity) {
             Double speed = PotionUtil.getPotionEffectAmplifier((LivingEntity)vehicle, PotionEffectType.SPEED);
+            // The most terrible code I ever written due to poor infrastructure. Should be thinking of recode the vehicle check after the hspeed refactor
+            if (camel != null && camel.isAssignableFrom(vehicle.getClass())) {
+                final VehicleMoveData firstPastMove = data.vehicleMoves.getFirstPastMove();
+                double cap = getHDistCap(checkDetails.simplifiedType, cc, thisMove, data);
+                if (!Double.isInfinite(speed)) cap *= (1 + 0.2 * (speed + 1));
+                if (thisMove.hDistance > cap) {
+                    final long current = System.currentTimeMillis();
+                    // TODO: This delay belong to the entity they are riding, not on player!
+                    if (data.timeCamelDash + 2000 < current) {
+                        data.timeCamelDash = current;
+                        return maxDistHorizontal(thisMove, cap * 2.7);
+                    } else {
+                        return maxDistHorizontal(thisMove, firstPastMove.toIsValid ? (firstPastMove.hDistance * 0.98) : cap);
+                    }
+                }
+            }
             if (!Double.isInfinite(speed)) {
                 if (maxDistHorizontal(thisMove, getHDistCap(checkDetails.simplifiedType, cc, thisMove, data) * (1 + 0.2 * (speed + 1)))) {
                     return true;
@@ -555,6 +574,11 @@ public class VehicleEnvelope extends Check {
             // ....
             if (!thisMove.from.onGround && thisMove.to.onGround) checkDetails.gravityTargetSpeed = 0.07;
             // Updated by PlayerMoveEvent, hdist fps when a player want to ride on strider
+        }
+        else if (camel != null && camel.isAssignableFrom(vehicle.getClass())) {
+            checkDetails.canStepUpBlock = true;
+            checkDetails.canClimb = false;
+            checkDetails.canJump = false;
         }
         else if (vehicle instanceof Pig) {
             // TODO: Climbable!

@@ -25,6 +25,8 @@ import fr.neatmonster.nocheatplus.config.ConfigManager;
 import fr.neatmonster.nocheatplus.config.WorldConfigProvider;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties.BlockProps;
 
 /**
  * Blocks for Minecraft 1.10.
@@ -45,7 +47,7 @@ public class BlocksMC1_10 implements BlockPropertiesSetup {
     @Override
     public void setupBlockProperties(WorldConfigProvider<?> worldConfigProvider) {
 
-        BlockInit.setAs(BridgeMaterial.MAGMA_BLOCK, BridgeMaterial.MAGMA_BLOCK);
+        BlockProperties.setBlockProps(BridgeMaterial.MAGMA_BLOCK, new BlockProps(BlockProperties.stonePickaxe, 0.5f, true));
 
         BlockInit.setPropsAs("NETHER_WART_BLOCK", BridgeMaterial.SKELETON_SKULL);
 

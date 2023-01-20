@@ -236,6 +236,12 @@ public class BlockProperties {
         /** Factor 2 = 2 times faster. */
         public final float efficiencyMod;
 
+        /** Indicate block can be harvested by not using tool */
+        public final boolean requireCorrectTool;
+        
+        /** Indicate to use modern module or not */
+        public final boolean pureHardness;
+
         /**
          * Instantiates a new block props.
          *
@@ -246,7 +252,22 @@ public class BlockProperties {
          *            the hardness
          */
         public BlockProps(ToolProps tool, float hardness) {
-            this(tool, hardness, 1);
+            this(tool, hardness, 1, false);
+        }
+
+        /**
+         * Instantiates a new block props.
+         *
+         * @param tool
+         *            The tool type that allows access to breaking times other
+         *            than MaterialBase.NONE.
+         * @param hardness
+         *            the hardness
+         * @param requireCorrectTool
+         *            false if block can be collected using bare hand to mine and vice versa
+         */
+        public BlockProps(ToolProps tool, float hardness, boolean requireCorrectTool) {
+            this(tool, hardness, 1, requireCorrectTool);
         }
 
         /**
@@ -259,15 +280,19 @@ public class BlockProperties {
          *            the hardness
          * @param efficiencyMod
          *            the efficiency mod
+         * @param requireCorrectTool
+         *            false if block can be collected using bare hand to mine and vice versa
          */
-        public BlockProps(ToolProps tool, float hardness, float efficiencyMod) {
+        public BlockProps(ToolProps tool, float hardness, float efficiencyMod, boolean requireCorrectTool) {
+            pureHardness = true;
             this.tool = tool;
             this.hardness = hardness;
+            this.requireCorrectTool = requireCorrectTool;
             breakingTimes = new long[7];
             breakingTimes[0] = (long) (1000f * 5f * hardness);
             boolean notool = tool.materialBase == null || tool.toolType == null || tool.toolType == ToolType.NONE;//|| tool.materialBase == MaterialBase.NONE;
 
-            if (notool) {
+            if (notool || !requireCorrectTool) {
                 breakingTimes[0] *= 0.3;
             }
 
@@ -279,7 +304,7 @@ public class BlockProperties {
                     float speed = MaterialBase.getById(i).breakMultiplier;
                     float damage = speed / hardness;
                     damage /= isRightToolMaterial(null, tool.materialBase, MaterialBase.getById(i), true) ? 30f : 100f;
-                    breakingTimes[i] = damage >= 1 ? 0 : (int) (1 / damage) * 50;
+                    breakingTimes[i] = damage >= 1 ? 0 : Math.round(1 / damage) * 50;
                 }
                 else {
                     breakingTimes[i] = 0;
@@ -319,6 +344,8 @@ public class BlockProperties {
          *            the efficiency mod
          */
         public BlockProps(ToolProps tool, float hardness, long[] breakingTimes, float efficiencyMod) {
+            this.pureHardness = false;
+            this.requireCorrectTool = false;
             this.tool = tool;
             this.breakingTimes = breakingTimes;
             this.hardness = hardness;
@@ -973,21 +1000,6 @@ public class BlockProperties {
     /** Times for instant breaking. */
     public static final long[] instantTimes = secToMs(0);
 
-    /** The Constant leafTimes. */
-    public static final long[] leafTimes = secToMs(0.3);
-
-    /** The glass times. */
-    public static long[] glassTimes = secToMs(0.45);
-
-    /** The Constant gravelTimes. */
-    public static final long[] gravelTimes = secToMs(0.85, 0.4, 0.21, 0.1, 0.1, 0.075, 0.075);
-
-    /** The rails times. */
-    public static long[] railsTimes = secToMs(1.05, 0.505, 0.25, 0.15, 0.1, 0.1, 0.05);
-
-    /** The Constant woodTimes. */
-    public static final long[] woodTimes = secToMs(3, 1.5, 0.75, 0.5, 0.4, 0.35, 0.25);
-
     /** The Constant indestructibleTimes. */
     private static final long[] indestructibleTimes = new long[] {indestructible, indestructible, indestructible, indestructible, indestructible, indestructible, indestructible}; 
 
@@ -995,58 +1007,61 @@ public class BlockProperties {
     public static final BlockProps instantType = new BlockProps(noTool, 0, instantTimes);
 
     /** The Constant glassType. */
-    public static final BlockProps glassType = new BlockProps(noTool, 0.3f, glassTimes, 2f);
+    public static final BlockProps glassType = new BlockProps(noTool, 0.3f);
 
     /** The Constant gravelType. */
-    public static final BlockProps gravelType = new BlockProps(woodSpade, 0.6f, gravelTimes);
+    public static final BlockProps gravelType = new BlockProps(woodSpade, 0.6f);
 
-    /** Stone type blocks. */
-    public static final BlockProps stoneType = new BlockProps(woodPickaxe, 1.45f, secToMs(7.5, 1.1, 0.55, 0.35, 0.25, 0.2 , 0.15));
+    /** Stone type blocks (hardness 1.5f). */
+    public static final BlockProps stoneTypeI = new BlockProps(woodPickaxe, 1.5f, true);
+    
+    /** Stone type blocks (hardness 2f). */
+    public static final BlockProps stoneTypeII = new BlockProps(woodPickaxe, 2f, true);
 
     /** The Constant woodType. */
-    public static final BlockProps woodType = new BlockProps(woodAxe, 2, woodTimes);
+    public static final BlockProps woodType = new BlockProps(woodAxe, 2f);
 
     /** The Constant brickType. */
-    public static final BlockProps brickType = new BlockProps(woodPickaxe, 2);
+    public static final BlockProps brickType = new BlockProps(woodPickaxe, 2f, true);
 
     /** The Constant coalType. */
-    public static final BlockProps coalType = new BlockProps(woodPickaxe, 3);
+    public static final BlockProps coalType = new BlockProps(woodPickaxe, 3f, true);
 
     /** The Constant goldBlockType. */
-    public static final BlockProps goldBlockType = new BlockProps(woodPickaxe, 3, secToMs(15, 7.5, 3.75, 0.7, 0.55, 0.5, 1.2));
+    public static final BlockProps goldBlockType = new BlockProps(woodPickaxe, 3f, true);
 
     /** The Constant ironBlockType. */
-    public static final BlockProps ironBlockType = new BlockProps(woodPickaxe, 5, secToMs(25, 12.5, 1.875, 1.25, 0.95, 0.8, 2.0));
+    public static final BlockProps ironBlockType = new BlockProps(woodPickaxe, 5f, true);
 
     /** The Constant diamondBlockType. */
-    public static final BlockProps diamondBlockType = new BlockProps(woodPickaxe, 5, secToMs(25, 12.5, 6.0, 1.25, 0.95, 0.8, 2.0));
+    public static final BlockProps diamondBlockType = new BlockProps(woodPickaxe, 5f, true);
 
     /** The Constant hugeMushroomType. */
-    public static final BlockProps hugeMushroomType = new BlockProps(woodAxe, 0.2f, secToMs(0.3, 0.15, 0.1, 0.05, 0.05, 0.05, 0.05));
+    public static final BlockProps hugeMushroomType = new BlockProps(woodAxe, 0.2f);
 
     /** The Constant leafType. */
-    public static final BlockProps leafType = new BlockProps(noTool, 0.2f, leafTimes);
+    public static final BlockProps leafType = new BlockProps(noTool, 0.2f);
 
     /** The Constant sandType. */
-    public static final BlockProps sandType = new BlockProps(woodSpade, 0.5f, secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1, 0.1));
+    public static final BlockProps sandType = new BlockProps(woodSpade, 0.5f);
 
     /** The Constant leverType. */
-    public static final BlockProps leverType = new BlockProps(noTool, 0.5f, secToMs(0.75));
+    public static final BlockProps leverType = new BlockProps(noTool, 0.5f);
 
     /** The Constant sandStoneType. */
-    public static final BlockProps sandStoneType = new BlockProps(woodPickaxe, 0.8f);
+    public static final BlockProps sandStoneType = new BlockProps(woodPickaxe, 0.8f, true);
 
     /** The Constant chestType. */
-    public static final BlockProps chestType = new BlockProps(woodAxe, 2.5f, secToMs(3.75, 1.9, 0.95, 0.65, 0.5, 0.4, 0.35));
+    public static final BlockProps chestType = new BlockProps(woodAxe, 2.5f);
 
     /** The Constant woodDoorType. */
-    public static final BlockProps woodDoorType = new BlockProps(woodAxe, 3.0f, secToMs(4.5, 2.25, 1.15, 0.75, 0.6, 0.5, 0.4));
+    public static final BlockProps woodDoorType = new BlockProps(woodAxe, 3.0f);
 
     /** The Constant dispenserType. */
-    public static final BlockProps dispenserType = new BlockProps(woodPickaxe, 3.5f);
+    public static final BlockProps dispenserType = new BlockProps(woodPickaxe, 3.5f, true);
 
     /** The Constant ironDoorType. */
-    public static final BlockProps ironDoorType = new BlockProps(woodPickaxe, 5);
+    public static final BlockProps ironDoorType = new BlockProps(woodPickaxe, 5f, true);
 
     /** The Constant indestructibleType. */
     public static final BlockProps indestructibleType = new BlockProps(noTool, -1f, indestructibleTimes);
@@ -1409,39 +1424,39 @@ public class BlockProperties {
         //////////////////////////////////////////////////////////////////
         // Set block break properties.                                  //
         //////////////////////////////////////////////////////////////////
-        setBlock(Material.LADDER, new BlockProps(noTool, 0.4f, secToMs(0.6), 2.5f));
+        setBlock(Material.LADDER, new BlockProps(noTool, 0.4f));
 
-        setBlock(Material.CACTUS, new BlockProps(noTool, 0.4f, secToMs(0.6)));
+        setBlock(Material.CACTUS, new BlockProps(noTool, 0.4f));
 
-        setBlock(Material.BEACON, new BlockProps(noTool, 25f, secToMs(4.45))); 
+        setBlock(Material.BEACON, new BlockProps(noTool, 3f)); 
 
-        setBlock(Material.DRAGON_EGG, new BlockProps(noTool, 3f, secToMs(4.5))); // Former: coalType.
+        setBlock(Material.DRAGON_EGG, new BlockProps(noTool, 3f)); // Former: coalType.
 
-        setBlock(BridgeMaterial.MELON, new BlockProps(noTool, 1, secToMs(1.45), 3));
+        setBlock(BridgeMaterial.MELON, new BlockProps(noTool, 1));
 
-        setBlock(Material.SPONGE, new BlockProps(noTool, 0.6f, secToMs(0.85)));
+        setBlock(Material.SPONGE, new BlockProps(noTool, 0.6f));
 
-        setBlock(Material.NETHERRACK, new BlockProps(woodPickaxe, 0.4f, secToMs(2, 0.3, 0.15, 0.1, 0.1, 0.05, 0.05)));
+        setBlock(Material.NETHERRACK, new BlockProps(woodPickaxe, 0.4f, true));
 
-        setBlock(Material.STONE_BUTTON,new BlockProps(woodPickaxe, 0.5f, secToMs(0.7, 0.35, 0.15, 0.1, 0.06, 0.05, 0.05)));
+        setBlock(Material.STONE_BUTTON,new BlockProps(woodPickaxe, 0.5f, true));
 
-        setBlock(Material.ICE, new BlockProps(woodPickaxe, 0.5f, secToMs(0.7, 0.35, 0.18, 0.12, 0.09, 0.06, 0.05)));
+        setBlock(Material.ICE, new BlockProps(woodPickaxe, 0.5f));
         
-        setBlock(Material.BREWING_STAND, new BlockProps(woodPickaxe, 0.5f, secToMs(2.5, 0.35, 0.175, 0.12, 0.075, 0.05, 0.05)));
+        setBlock(Material.BREWING_STAND, new BlockProps(woodPickaxe, 0.5f, true));
 
-        setBlock(Material.ENDER_CHEST, new BlockProps(woodPickaxe, 22.5f));
+        setBlock(Material.ENDER_CHEST, new BlockProps(woodPickaxe, 22.5f, true));
 
-        setBlock(Material.SNOW, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.1f, secToMs(0.5, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05)));
+        setBlock(Material.SNOW, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.1f));
 
-        setBlock(Material.SNOW_BLOCK, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.1f, secToMs(1, 0.15, 0.1, 0.05, 0.05, 0.05, 0.05)));
+        setBlock(Material.SNOW_BLOCK, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.2f));
 
-        setBlock(Material.NOTE_BLOCK, new BlockProps(woodAxe, 0.8f, secToMs(1.2, 0.6, 0.3, 0.2, 0.15, 0.1, 0.05)));
+        setBlock(Material.NOTE_BLOCK, new BlockProps(woodAxe, 0.8f));
 
-        setBlock(Material.BOOKSHELF, new BlockProps(woodAxe, 1.5f, secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.2, 0.1)));
+        setBlock(Material.BOOKSHELF, new BlockProps(woodAxe, 1.5f));
 
-        setBlock(BridgeMaterial.COBWEB, new BlockProps(woodSword, 4, secToMs(20, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4)));
+        setBlock(BridgeMaterial.COBWEB, new BlockProps(woodSword, 4, true));
 
-        setBlock(Material.OBSIDIAN, new BlockProps(diamondPickaxe, 50, secToMs(250, 125, 62.5, 41.6, 9.4, 8.3, 20.8)));
+        setBlock(Material.OBSIDIAN, new BlockProps(diamondPickaxe, 50, true));
 
 
         // Instantly breakable types
@@ -1513,9 +1528,9 @@ public class BlockProperties {
 
         // Plates
         for (Material mat : MaterialUtil.WOODEN_PRESSURE_PLATES) {
-            setBlockProps(mat, new BlockProps(woodAxe, 0.5f, secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1, 0.1)));
+            setBlockProps(mat, new BlockProps(woodAxe, 0.5f));
         }
-        setBlock(BridgeMaterial.STONE_PRESSURE_PLATE, new BlockProps(woodPickaxe, 0.5f, secToMs(2.5, 0.4, 0.2, 0.15, 0.1, 0.07, 0.05)));
+        setBlock(BridgeMaterial.STONE_PRESSURE_PLATE, new BlockProps(woodPickaxe, 0.5f, true));
 
         // Sand types
         setBlock(Material.SAND, sandType);
@@ -1549,17 +1564,17 @@ public class BlockProperties {
         
         // All rails
         for (Material mat : MaterialUtil.RAILS) {
-            setBlock(mat, new BlockProps(woodPickaxe, 0.7f, railsTimes));
+            setBlock(mat, new BlockProps(woodPickaxe, 0.7f));
         }
         
         // Infested bricks
         for (Material mat : MaterialUtil.INFESTED_BLOCKS) {
-            setBlock(mat, new BlockProps(noTool, 0.75f, secToMs(1.15)));
+            setBlock(mat, new BlockProps(noTool, 0.75f));
         }
 
         // Wood blocks
         for (Material mat : MaterialUtil.WOOD_BLOCKS) {
-            setBlock(mat, new BlockProps(noTool, 0.8f, secToMs(1.2), 3f));
+            setBlock(mat, new BlockProps(noTool, 0.8f));
         }
 
         // Sandstone types
@@ -1570,12 +1585,12 @@ public class BlockProperties {
         for (Material mat : new Material[] {
             Material.STONE, 
             BridgeMaterial.STONE_BRICKS, 
-            BridgeMaterial.STONE_BRICK_STAIRS,}) {
-            setBlock(mat, stoneType);
+            BridgeMaterial.STONE_BRICK_STAIRS}) {
+            setBlock(mat, stoneTypeI);
         }
 
         // Pumpkin types
-        final BlockProps pumpkinType = new BlockProps(woodAxe, 1, secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.15, 0.1));
+        final BlockProps pumpkinType = new BlockProps(woodAxe, 1f);
         setBlock(BridgeMaterial.SIGN, pumpkinType);
         setBlock(Material.PUMPKIN, pumpkinType);
         setBlock(Material.JACK_O_LANTERN, pumpkinType);
@@ -1650,25 +1665,23 @@ public class BlockProperties {
         }
 
         // Iron types
-        final long[] ironTimes = secToMs(15, 7.5, 1.15, 0.75, 0.6, 0.5, 1.25);
-        final BlockProps ironType = new BlockProps(stonePickaxe, 3, ironTimes);
+        final BlockProps ironType = new BlockProps(stonePickaxe, 3f, true);
         for (Material mat : new Material[] {
             Material.LAPIS_ORE, 
             Material.LAPIS_BLOCK, 
             Material.IRON_ORE,}) {
-            setBlock(mat,  ironType);
+            setBlock(mat, ironType);
         }
 
         // Diamond types
-        final long[] diamondTimes = secToMs(15, 7.5, 3.75, 0.75, 0.6, 0.5, 1.25);
-        final BlockProps diamondType = new BlockProps(ironPickaxe, 3, diamondTimes);
+        final BlockProps diamondType = new BlockProps(ironPickaxe, 3f, true);
         for (Material mat : new Material[] {
             Material.REDSTONE_ORE, 
             Material.EMERALD_ORE, 
             Material.GOLD_ORE, 
             Material.DIAMOND_ORE,
             BridgeMaterial.get("glowing_redstone_ore"),}) {
-            if (mat != null) setBlock(mat,  diamondType);
+            if (mat != null) setBlock(mat, diamondType);
         }
 
         // Gold block types
@@ -1702,14 +1715,14 @@ public class BlockProperties {
         // TODO: Either move all to an extra setup class, or integrate above.
         for (Material mat : MaterialUtil.WOODEN_BUTTONS) {
             //setBlock(mat, leverType);
-            setBlock(mat,new BlockProps(woodAxe, 0.5f, secToMs(0.7, 0.3, 0.15, 0.1, 0.06, 0.05, 0.05)));
+            setBlock(mat,new BlockProps(woodAxe, 0.5f));
         }
-        props = new BlockProps(noTool, 8.5f, secToMs(1.45));
+        props = new BlockProps(noTool, 1f);
         for (Material mat : MaterialUtil.HEADS_GROUND) {
             setBlock(mat, props);
             BlockFlags.setFlag(mat, BlockFlags.F_SOLID | BlockFlags.F_GROUND);
         }
-        setBlock(Material.ANVIL, new BlockProps(woodPickaxe, 5f)); 
+        setBlock(Material.ANVIL, new BlockProps(woodPickaxe, 5f, true)); 
         for (final Material mat : MaterialUtil.FLOWER_POTS) {
             BlockFlags.addFlags(mat, BlockFlags.F_SOLID | BlockFlags.F_GROUND);
             setBlockProps(mat, instantType);
@@ -1734,7 +1747,7 @@ public class BlockProperties {
         BlockFlags.setBlockFlags(Material.BEDROCK, BlockFlags.FULLY_SOLID_BOUNDS);
 
         // Terracotta (hard_clay).
-        props = new BlockProps(BlockProperties.woodPickaxe, 1.25f, BlockProperties.secToMs(6.25, 0.95, 0.5, 0.35, 0.25, 0.2, 0.15));
+        props = new BlockProps(BlockProperties.woodPickaxe, 1.25f, true);
         for (final Material mat : MaterialUtil.TERRACOTTA_BLOCKS) {
             if (mat != null) {
                 BlockProperties.setBlockProps(mat, props);
@@ -1743,7 +1756,7 @@ public class BlockProperties {
         }
 
         // Glazed Terracotta
-        props = new BlockProps(BlockProperties.woodPickaxe, 1.4f, BlockProperties.secToMs(7.0, 1.05, 0.55, 0.35, 0.3, 0.2, 0.15));
+        props = new BlockProps(BlockProperties.woodPickaxe, 1.4f, true);
         for (final Material mat : MaterialUtil.GLAZED_TERRACOTTA_BLOCKS) {
             if (mat != null) {
                 BlockProperties.setBlockProps(mat, props);
@@ -1752,7 +1765,7 @@ public class BlockProperties {
         }
 
         // Carpets.
-        final BlockProps carpetProps = new BlockProps(BlockProperties.noTool, 0.1f, BlockProperties.secToMs(0.15));
+        final BlockProps carpetProps = new BlockProps(BlockProperties.noTool, 0.1f);
         final long carpetFlags = BlockFlags.F_GROUND | BlockFlags.F_CARPET;
         for (final Material mat : MaterialUtil.CARPETS) {
             BlockProperties.setBlockProps(mat, carpetProps);
@@ -1760,7 +1773,7 @@ public class BlockProperties {
         }
 
         // Banners.
-        props = new BlockProps(BlockProperties.woodAxe, 0.4f, BlockProperties.secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.15, 0.1));
+        props = new BlockProps(BlockProperties.woodAxe, 1f);
         for (Material mat : MaterialUtil.BANNERS) {
             BlockFlags.setBlockFlags(mat, 0L);
             setBlockProps(mat, props);
@@ -1768,25 +1781,24 @@ public class BlockProperties {
 
         // Wall banners.
         for (Material mat : MaterialUtil.WALL_BANNERS) {
-            BlockInit.setInstantPassable(mat);
+            setBlockProps(mat, props);
         }
 
         // Shulker boxes
         for (Material mat : MaterialUtil.SHULKER_BOXES) {
-            // Wiki (16-11-25): 9, 4.5, 2.25, 1.5, 1.15, 0.75
-            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 6, BlockProperties.secToMs(10.0, 1.45, 0.7, 0.5, 0.35, 0.2, 0.15)));
+            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 6f));
             BlockFlags.setBlockFlags(mat, BlockFlags.F_SOLID | BlockFlags.F_GROUND);
         }
 
         // Concrete
-        props = new BlockProps(BlockProperties.woodPickaxe, 1.8f, BlockProperties.secToMs(9.0, 1.35, 0.7, 0.45, 0.35, 0.25, 0.2));
+        props = new BlockProps(BlockProperties.woodPickaxe, 1.8f, true);
         for (Material mat : MaterialUtil.CONCRETE_BLOCKS) {
             setBlockProps(mat, props);
             BlockFlags.setFlagsAs(mat, Material.COBBLESTONE);
         }
 
         // Wool blocks.
-        props = new BlockProps(tools.get(Material.SHEARS), 0.8f, secToMs(1.25, 1.25, 1.25, 1.25, 1.25, 1.25, 1.25));
+        props = new BlockProps(tools.get(Material.SHEARS), 0.8f);
         for (Material mat : MaterialUtil.WOOL_BLOCKS) {
             BlockFlags.setFlagsAs(mat, Material.STONE);
             setBlockProps(mat, props);
@@ -2208,6 +2220,7 @@ public class BlockProperties {
         // Inappropriate tool.
         else duration = blockProps.breakingTimes[0];        
 
+        boolean pureHardness = blockProps.pureHardness;
         // Specialties:
         if (toolProps.toolType == ToolType.SHEARS) {
             // (Note: shears are not in the block props, anywhere)
@@ -2216,11 +2229,13 @@ public class BlockProperties {
                 duration = 400;
                 isValidTool = true;
                 isRightTool = true;
+                pureHardness = false;
             }
             else if (MaterialUtil.WOOL_BLOCKS.contains(blockId)) {
                 duration = 240;
                 isValidTool = true;
                 isRightTool = true;
+                pureHardness = false;
             }
             else if (isLeaves(blockId)) {
                 duration = 0; // 0.05 can be 0
@@ -2233,11 +2248,13 @@ public class BlockProperties {
                 isValidTool = true;
                 isRightTool = true;
                 duration = 1000;
+                pureHardness = false;
             }
             else if (blockId == Material.COCOA || blockId == Material.VINE || isLeaves(blockId)) {
                 isValidTool = true;
                 isRightTool = true;
                 duration = 200;
+                pureHardness = false;
             }
             else if (blockId.name().equals("BAMBOO")) {
                 isValidTool = true;
@@ -2246,11 +2263,14 @@ public class BlockProperties {
         }
 
         if (duration > 0) {
-
-            // Reverse version to get hardness base on time map
-            float tick = duration / 50;
-            double damage = 1 / tick;
-            double hardness = 1 / damage / ((isRightTool ? 30 : 100) / (isValidTool ? getToolMultiplier(blockId, blockProps, toolProps) : 1.0));
+            double hardness = blockProps.hardness;
+            double damage;
+            if (!pureHardness) {
+                // Reverse version to get hardness base on time map
+                float tick = duration / 50;
+                damage = 1 / tick;
+                hardness = 1 / damage / ((isRightTool || !blockProps.requireCorrectTool ? 30 : 100) / (isValidTool ? getToolMultiplier(blockId, blockProps, toolProps) : 1.0));
+            }
             // Actual check
             if (hardness > 0.0) {
 
@@ -2281,11 +2301,11 @@ public class BlockProperties {
                 }
                 speed /= getBlockBreakingPenaltyMultiplier(onGround, inWater, aquaAffinity);
                 damage = speed / hardness;
-                damage /= isRightTool ? 30.0 : 100.0;
+                damage /= isRightTool || !blockProps.requireCorrectTool ? 30.0 : 100.0;
                 if (damage > 1) {
                     return 0;
                 }
-                return (int) (1 / damage) * 50;
+                return Math.round(1 / damage) * 50;
             }
         }
         return Math.max(0, duration);

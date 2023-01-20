@@ -30,11 +30,11 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
 
         for (Material mat : MaterialUtil.ALL_CANDLES) {
             BlockFlags.addFlags(mat, BlockFlags.SOLID_GROUND);
-            BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.noTool, 0.1f, BlockProperties.secToMs(0.1)));
+            BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.noTool, 0.1f));
         }
 
-        BlockProperties.setBlockProps(Material.DEEPSLATE_COAL_ORE, new BlockProperties.BlockProps(BlockProperties.stonePickaxe, 4.5f, BlockProperties.secToMs(22.5, 3.35, 1.7, 1.15, 0.85, 0.75, 0.55)));
-        BlockProperties.setBlockProps(Material.DEEPSLATE_GOLD_ORE, new BlockProperties.BlockProps(BlockProperties.ironPickaxe, 4.5f, BlockProperties.secToMs(22.5, 11.25, 5.6, 1.15, 0.85, 0.75, 1.9)));
+        BlockProperties.setBlockProps(Material.DEEPSLATE_COAL_ORE, new BlockProperties.BlockProps(BlockProperties.stonePickaxe, 4.5f, true));
+        BlockProperties.setBlockProps(Material.DEEPSLATE_GOLD_ORE, new BlockProperties.BlockProps(BlockProperties.ironPickaxe, 4.5f, true));
 
         // Deepslate ores + Copper ore
         BlockInit.setPropsAs("DEEPSLATE_IRON_ORE", Material.DEEPSLATE_COAL_ORE);
@@ -52,10 +52,10 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
 
         //Deepslate blocks
         BlockFlags.addFlags(Material.DEEPSLATE, BlockFlags.FULLY_SOLID_BOUNDS);
-        BlockProperties.setBlockProps(Material.DEEPSLATE, new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 3f, BlockProperties.secToMs(15.0, 2.25, 1.125, 0.75, 0.6, 0.5, 0.4)));
+        BlockProperties.setBlockProps(Material.DEEPSLATE, new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 3f, true));
 
         BlockFlags.addFlags(Material.COBBLED_DEEPSLATE, BlockFlags.FULLY_SOLID_BOUNDS);
-        BlockProperties.setBlockProps(Material.COBBLED_DEEPSLATE, new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 3.5f, BlockProperties.secToMs(17.5, 2.65, 1.35, 0.9, 0.7, 0.6, 0.45)));
+        BlockProperties.setBlockProps(Material.COBBLED_DEEPSLATE, new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 3.5f, true));
 
         BlockFlags.addFlags("POLISHED_DEEPSLATE", BlockFlags.FULLY_SOLID_BOUNDS);
         BlockInit.setPropsAs("POLISHED_DEEPSLATE", Material.COBBLED_DEEPSLATE);
@@ -127,57 +127,57 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
         BlockFlags.addFlags("FLOWERING_AZALEA", BlockFlags.F_GROUND);
         // This is temporary ground.
         BlockFlags.addFlags("BIG_DRIPLEAF", BlockFlags.F_GROUND);
-        BlockProperties.setBlockProps("BIG_DRIPLEAF", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f, BlockProperties.secToMs(0.15, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0)));
-        BlockProperties.setBlockProps("BIG_DRIPLEAF_STEM", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f, BlockProperties.secToMs(0.15, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0)));
+        BlockProperties.setBlockProps("BIG_DRIPLEAF", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f));
+        BlockProperties.setBlockProps("BIG_DRIPLEAF_STEM", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f));
 
         BlockFlags.addFlags("BIG_DRIPLEAF_STEM", BlockFlags.F_IGN_PASSABLE);
-        BlockProperties.setBlockProps("GLOW_LICHEN", BlockProperties.instantType);
+        BlockProperties.setBlockProps("GLOW_LICHEN", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.2f));
         BlockFlags.addFlags("GLOW_LICHEN", BlockFlags.F_IGN_PASSABLE);
         BlockFlags.addFlags("CAVE_VINES", BlockFlags.F_CLIMBABLE);
         BlockFlags.addFlags("CAVE_VINES_PLANT", BlockFlags.F_CLIMBABLE);
         
         BlockProperties.setBlockProps("HANGING_ROOTS", BlockProperties.instantType);
-        BlockProperties.setBlockProps("ROOTED_DIRT", new BlockProperties.BlockProps(BlockProperties.noTool, 0.5f, BlockProperties.secToMs(0.75)));
+        BlockProperties.setBlockProps("ROOTED_DIRT", new BlockProperties.BlockProps(BlockProperties.noTool, 0.5f));
 
         //Dripstone
-        BlockProperties.setBlockProps("DRIPSTONE_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(7.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+        BlockProperties.setBlockProps("DRIPSTONE_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
         BlockFlags.addFlags("POINTED_DRIPSTONE", BlockFlags.SOLID_GROUND | BlockFlags.F_VARIABLE);
-        BlockProperties.setBlockProps("POINTED_DRIPSTONE", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+        BlockProperties.setBlockProps("POINTED_DRIPSTONE", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
 
         //Amethyst buds
         BlockFlags.addFlags("SMALL_AMETHYST_BUD", BlockFlags.SOLID_GROUND);
         BlockFlags.addFlags("MEDIUM_AMETHYST_BUD", BlockFlags.SOLID_GROUND);
         BlockFlags.addFlags("LARGE_AMETHYST_BUD", BlockFlags.SOLID_GROUND);
         BlockFlags.addFlags("AMETHYST_CLUSTER", BlockFlags.SOLID_GROUND);
-        BlockProperties.setBlockProps("SMALL_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
-        BlockProperties.setBlockProps("MEDIUM_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
-        BlockProperties.setBlockProps("LARGE_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
-        BlockProperties.setBlockProps("AMETHYST_CLUSTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+        BlockProperties.setBlockProps("SMALL_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
+        BlockProperties.setBlockProps("MEDIUM_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
+        BlockProperties.setBlockProps("LARGE_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
+        BlockProperties.setBlockProps("AMETHYST_CLUSTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
         //Amethyst blocks
-        BlockProperties.setBlockProps("BUDDING_AMETHYST", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(7.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
-        BlockProperties.setBlockProps("AMETHYST_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(7.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+        BlockProperties.setBlockProps("BUDDING_AMETHYST", new BlockProperties.BlockProps(BlockProperties.noTool, 1.5f));
+        BlockProperties.setBlockProps("AMETHYST_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
 
         // Not done
         //Candle cakes
         for (Material mat : MaterialUtil.ALL_CANDLE_CAKE) {
             BlockFlags.addFlags(mat, BlockFlags.F_GROUND);
-            BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.noTool, 0.5f, BlockProperties.secToMs(0.75)));
+            BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.noTool, 0.5f));
         }
 
         //Other blocks
-        BlockProperties.setBlockProps("CALCITE", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 0.75f, BlockProperties.secToMs(3.75, 0.6, 0.3, 0.2, 0.15, 0.15, 0.1)));
-        BlockProperties.setBlockProps("TUFF", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(7.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+        BlockProperties.setBlockProps("CALCITE", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 0.75f, true));
+        BlockProperties.setBlockProps("TUFF", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
         BlockFlags.setBlockFlags("POWDER_SNOW", BlockFlags.F_POWDERSNOW | BlockFlags.F_IGN_PASSABLE | BlockFlags.F_GROUND | BlockFlags.F_GROUND_HEIGHT);
-        BlockProperties.setBlockProps("POWDER_SNOW", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 0.25f, BlockProperties.secToMs(0.4)));
+        BlockProperties.setBlockProps("POWDER_SNOW", new BlockProperties.BlockProps(BlockProperties.noTool, 0.25f));
         BlockInit.setPropsAs("POWDER_SNOW_CAULDRON", Material.CAULDRON);
         BlockInit.setPropsAs("WATER_CAULDRON", Material.CAULDRON);
         BlockInit.setPropsAs("LAVA_CAULDRON", Material.CAULDRON);
-        BlockProperties.setBlockProps("MOSS_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.1f, BlockProperties.secToMs(0.15, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0)));
+        BlockProperties.setBlockProps("MOSS_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.1f));
         BlockFlags.addFlags("LIGHTNING_ROD", BlockFlags.SOLID_GROUND);
-        BlockProperties.setBlockProps("LIGHTNING_ROD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 3.0f, BlockProperties.secToMs(15.0, 7.5, 1.15, 0.75, 0.6, 0.5, 1.25)));
+        BlockProperties.setBlockProps("LIGHTNING_ROD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 3f, true));
         BlockInit.setAs("SMOOTH_BASALT", BridgeMaterial.TERRACOTTA);
         BlockFlags.addFlags("SCULK_SENSOR", BlockFlags.SOLID_GROUND);
-        BlockProperties.setBlockProps("SCULK_SENSOR", new BlockProperties.BlockProps(BlockProperties.woodHoe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+        BlockProperties.setBlockProps("SCULK_SENSOR", new BlockProperties.BlockProps(BlockProperties.woodHoe, 1.5f));
         
         ConfigFile config = ConfigManager.getConfigFile();
         if (config.getBoolean(ConfPaths.BLOCKBREAK_DEBUG, config.getBoolean(ConfPaths.CHECKS_DEBUG, false)))
