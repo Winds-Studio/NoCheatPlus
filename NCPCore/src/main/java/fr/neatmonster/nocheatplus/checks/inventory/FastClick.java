@@ -54,6 +54,7 @@ public class FastClick extends Check {
 
    /**
     * Checks a player.
+    * 
     * @param player
     * @param now Millisec
     * @param view
@@ -92,7 +93,7 @@ public class FastClick extends Check {
         if (inventoryAction != null) {
             amount = getAmountWithAction(view, slot, clicked, clickedMat, cursorMat, cursorAmount, isShiftClick, inventoryAction, data, cc);
         }
-        else if (cursor != null && cc.fastClickTweaks1_5) {
+        else if (cursor != null) {
             // Detect shift-click features indirectly.
             amount = detectTweaks1_5(view, slot, clicked, clickedMat, cursorMat, cursorAmount, isShiftClick, data, cc);
         }
@@ -154,18 +155,19 @@ public class FastClick extends Check {
     
 
    /**
-    * Prevent players from instantly interacting with the cotainer's contents.
+    * Enforce sane timings for interacting with the container and clicking in it.
+    * 
     * @param player
     * @param data
     * @param cc
     */
-    public boolean fastClickChest(final Player player, final InventoryData data, final InventoryConfig cc) {
+    public boolean checkContainerInteraction(final Player player, final InventoryData data, final InventoryConfig cc) {
         boolean cancel = false;
         tags.clear();
-        if (InventoryUtil.hasOpenedContainerRecently(player, cc.chestOpenLimit)) {
+        if (InventoryUtil.isContainerInteractionRecent(player, cc.chestOpenLimit)) {
             // Interaction was too quick, violation.
             tags.add("interact_time");
-            long duration = Math.max(data.lastClickTime - data.containerOpenTime, 20);
+            long duration = Math.max(data.lastClickTime - data.containerInteractTime, 20);
             double violation = (cc.chestOpenLimit / duration) * 100D; // Normalize.
             data.fastClickVL += violation;
             final ViolationData vd = new ViolationData(this, player, data.fastClickVL, violation, cc.fastClickActions);
@@ -178,6 +180,7 @@ public class FastClick extends Check {
 
    /**
     * Detect the inventory tweaks that were introduced in MC 1.5
+    * 
     * @param view
     * @param slot
     * @param clicked
@@ -230,7 +233,7 @@ public class FastClick extends Check {
         }
 
         // Shift click features.
-        if ((inventoryAction.equals("MOVE_TO_OTHER_INVENTORY")) && cursorMat != Material.AIR && cc.fastClickTweaks1_5) {
+        if ((inventoryAction.equals("MOVE_TO_OTHER_INVENTORY")) && cursorMat != Material.AIR) {
             // Let the legacy method do the side condition checks and counting for now.
             return detectTweaks1_5(view, slot, clicked, clickedMat, cursorMat, cursorAmount, isShiftClick, data, cc);
         }

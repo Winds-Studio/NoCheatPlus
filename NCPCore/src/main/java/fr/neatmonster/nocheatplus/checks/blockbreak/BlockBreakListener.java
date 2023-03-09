@@ -118,12 +118,6 @@ public class BlockBreakListener extends CheckListener {
                 );
     }
 
-    /**
-     * We listen to BlockBreak events for obvious reasons.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
     public void onBlockBreak(final BlockBreakEvent event) {
         final long now = System.currentTimeMillis();
@@ -133,17 +127,15 @@ public class BlockBreakListener extends CheckListener {
         final BlockBreakData data = pData.getGenericInstance(BlockBreakData.class);
         final BlockInteractData bdata = pData.getGenericInstance(BlockInteractData.class);
         boolean cancelled = false;
-        
+    
         if (MovingUtil.hasScheduledPlayerSetBack(player)) {
             event.setCancelled(true);
         }
-
         // Cancelled events only leads to resetting insta break.
         if (event.isCancelled()) {
             isInstaBreak = AlmostBoolean.NO;
             return;
         }
-
         // TODO: maybe invalidate instaBreak on some occasions.
         final Block block = event.getBlock();
         if (BlockProperties.isScaffolding(block.getType())) {
@@ -155,7 +147,6 @@ public class BlockBreakListener extends CheckListener {
         final boolean isInteractBlock = !bdata.getLastIsCancelled() && bdata.matchesLastBlock(tick, block);
         final GameMode gameMode = player.getGameMode();
         int skippedRedundantChecks = 0;
-
         // Did the player try to destroy a liquid block? (Not possible)
         if (!cancelled && BlockProperties.isLiquid(block.getType()) && !BlockProperties.isWaterPlant(block.getType())
             && !pData.hasPermission(Permissions.BLOCKBREAK_BREAK_LIQUID, player) 
@@ -273,15 +264,10 @@ public class BlockBreakListener extends CheckListener {
         data.noSwingCount = Math.max(data.noSwingCount - 1, 0);
     }
 
-    /**
-     * We listen to BlockInteract events to be (at least in many cases) able to distinguish between block break events
-     * that were triggered by players actually digging and events that were artificially created by plugins.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
     public void onPlayerInteract(final PlayerInteractEvent event) {
+        // We listen to BlockInteract events to be (at least in many cases) able to distinguish between block break events
+        //  that were triggered by players actually digging and events that were artificially created by plugins.
         // debug(player, "Interact("+event.isCancelled()+"): " + event.getClickedBlock());
         // The following is to set the "first damage time" for a block.
         // Return if it is not left clicking a block. 

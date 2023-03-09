@@ -31,10 +31,6 @@ import fr.neatmonster.nocheatplus.utilities.TickTask;
  */
 public class FlyingFrequency extends Check {
 
-    // Thresholds for firing moving events (CraftBukkit). TODO: Move to some model thing in NCPCore, possibly a ServerConfig?
-    public static final double minMoveDistSq = 1f / 256; // PlayerConnection magic.
-    public static final float minLookChange = 10f;
-
     public FlyingFrequency() {
         super(CheckType.NET_FLYINGFREQUENCY);
     }

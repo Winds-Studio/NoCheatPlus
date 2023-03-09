@@ -150,82 +150,68 @@ public class InventoryUtil {
     //    }
 
     /**
-     * Close one players inventory, if open. This might ignore
-     * InventoryType.CRAFTING (see: hasInventoryOpen).
+     * Check if the player's inventory is open by looking up the current InventoryView type, via player#getOpenInventory().
+     * Note that this method cannot be used to check for one's own inventory, because Bukkit returns CRAFTING as default InventoryView type.
+     * (See InventoryData.firstClickTime)
      *
      * @param player
      *            the player
-     * @return If closed.
-     */
-    public static boolean closeOpenInventory(final Player player) {
-        if (hasInventoryOpen(player) || hasAnyInventoryOpen(player)) {
-            player.closeInventory();
-            return true;
-        } else {
-            return true;
-        }
-    }
-
-    /**
-     * Check if the player's inventory is open by looking up the InventoryView type,
-     * excluding InventoryType.CRAFTING due to the player not sending any packet for their own.
-     *
-     * @param player
-     *            the player
-     * @return true, if successful
+     * @return True, if the opened inventory is of any type that isn't CRAFTING and is not null.
      */
     public static boolean hasInventoryOpen(final Player player) {
         final InventoryView view = player.getOpenInventory();
-        return view != null && view.getType() != InventoryType.CRAFTING;
+        return view != null && view.getType() != InventoryType.CRAFTING; // Exclude the CRAFTING inv type.
     }
 
    /**
-    * Check if the player's inventory is open (including their own) by
-    * looking up the first time an inventory click was registered. Resets once
-    * we receive an InventoryCloseEvent (which the player sends for their own inventory).
+    * Check if the player has opened any kind of inventory (including their own).
+    * If the inventory status cannot be assumed from player#getOpenInventory() (see hasInventoryOpen(player)), look up if we have registered the first inventory click time.
     * 
     * @param player
     *            the player
-    * @return true, if successful
+    * @return True, if inventory status is known, or can be assumed with InventoryData.firstClickTime
     */
     public static boolean hasAnyInventoryOpen(final Player player) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData iData = pData.getGenericInstance(InventoryData.class);
-        return iData.firstClickTime != 0;
+        return hasInventoryOpen(player) || iData.firstClickTime != 0; 
     }
     
    /**
-    * Test if players have recently opened an inventory.
-    * Rather meant to check if they opened their own.
+    * Test the player has recently opened an inventory of any type (own, containers).
     * 
     * @param player
-    * @param timeAge In milliseconds to be considered as 'recent activity'
-    * @return True if the player has had recent inventory activity, 
-    *         false if they've been in their own inventory for some time (beyond age).
+    * @param timeAge In milliseconds to be considered as 'recent activity' (inclusive)
+    * @return True if the inventory has been opened within the specified time-frame.
+    *         False if they've been in the inventory for some time (beyond age).
+    * @throws IllegalArgumentException If the timeAge parameter is negative
     */
     public static boolean hasOpenedInvRecently(final Player player, final long timeAge) {
+        if (timeAge < 0) {
+            throw new IllegalArgumentException("timeAge cannot be negative.");
+        }
         final long now = System.currentTimeMillis();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData iData = pData.getGenericInstance(InventoryData.class);
-        return iData.firstClickTime != 0 && (now - iData.firstClickTime <= timeAge);     
+        return hasAnyInventoryOpen(player) && (now - iData.firstClickTime <= timeAge);     
     }
     
-   /**
-    * Test if the player has recently interacted with an inventory that's a container type.
+   /** 
+    * Checks if the time between interaction and inventory click is recent.
     * 
     * @param player
-    * @param timeAge In milliseconds between the BLOCK interaction and inventory click 
-    *                to be considered as 'recent activity' (Excluded)
-    * @return true if the time between interaction and inventory click is too recent, false otherwise (beyond age).
+    * @param timeAge In milliseconds between the BLOCK interaction and inventory click to be considered as 'recent activity' (exclusive)
+    * @return True if the time between interaction and inventory click is too recent, false otherwise (beyond age).
+    * @throws IllegalArgumentException If the timeAge parameter is negative
     */
-    public static boolean hasOpenedContainerRecently(final Player player, final long timeAge) {
+    public static boolean isContainerInteractionRecent(final Player player, final long timeAge) {
+        if (timeAge < 0) {
+            throw new IllegalArgumentException("timeAge cannot be negative.");
+        }
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData iData = pData.getGenericInstance(InventoryData.class);
-        return 
-                // This represents an error, will need to investigate why the times get set to 0.
-                (iData.containerOpenTime != 0 || iData.lastClickTime != 0) 
-                && Math.abs(iData.lastClickTime - iData.containerOpenTime) < timeAge;
-
+        // The player first interacts with the container, then clicks in its inventory, so interaction should always be smaller than click time
+        return iData.lastClickTime - iData.containerInteractTime < timeAge;
     }
 
     /**
@@ -252,21 +238,25 @@ public class InventoryUtil {
     }
 
     /**
-     * Test if the item is consumable, like food, potions, milk bucket.
+     * Test if the ItemStack is consumable, like food, potions, milk bucket.
      *
      * @param stack
-     *            May be null.
+     *            May be null, would return false.
      * @return true, if is consumable
      */
     public static boolean isConsumable(final ItemStack stack) {
-        return stack == null ? false : isConsumable(stack.getType());
+        if (stack == null) {
+            return false;
+        }
+        return isConsumable(stack.getType());
     }
 
     /**
-     * Test if the inventory type can hold items.
+     * Test if the InventoryType can hold items.
+     * Furnaces and brewing stands are excluded for convenience since they can only hold a single item.
      *
      * @param stack
-     *            May be null.
+     *            May be null, would return false.
      * @return true, if is container
      */
     public static boolean isContainerInventory(final InventoryType type) {
@@ -281,15 +271,14 @@ public class InventoryUtil {
     }
 
     /**
-     * Test if the item is consumable, like food, potions, milk bucket.
+     * Test if the Material is consumable, like food, potions, milk bucket.
      *
      * @param type
-     *            May be null.
+     *            May be null, would return false.
      * @return true, if is consumable
      */
     public static boolean isConsumable(final Material type) {
-        return type != null &&
-                (type.isEdible() || type == Material.POTION || type == Material.MILK_BUCKET);
+        return type != null && (type.isEdible() || type == Material.POTION || type == Material.MILK_BUCKET);
     }
 
     /**

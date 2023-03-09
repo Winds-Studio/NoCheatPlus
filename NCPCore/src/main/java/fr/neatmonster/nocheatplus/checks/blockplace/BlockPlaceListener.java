@@ -125,11 +125,15 @@ public class BlockPlaceListener extends CheckListener {
     private final Location useLoc = new Location(null, 0, 0, 0);
 
     private final Counters counters = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class);
+
     private final int idBoatsOnWaterOnly = counters.registerKey("boatsonwateronly");
+
     private final int idEnderPearl = counters.registerKey("throwenderpearl");
 
     private final Class<?> blockMultiPlaceEvent = ReflectionUtil.getClass("org.bukkit.event.block.BlockMultiPlaceEvent");
+
     private final boolean hasGetReplacedState = ReflectionUtil.getMethodNoArgs(BlockPlaceEvent.class, "getReplacedState", BlockState.class) != null;
+
     public final List<BlockFace> faces;
 
     @SuppressWarnings("unchecked")
@@ -162,12 +166,6 @@ public class BlockPlaceListener extends CheckListener {
                 );
     }
 
-    /**
-     * We listen to BlockPlace events for obvious reasons.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onBlockPlace(final BlockPlaceEvent event) {
         final Block block = event.getBlockPlaced();
@@ -394,13 +392,6 @@ public class BlockPlaceListener extends CheckListener {
         }
     }
 
-    /**
-     * We listen to PlayerAnimation events because it is (currently) equivalent to "player swings arm" and we want to
-     * check if they did that between block breaks.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerAnimation(final PlayerAnimationEvent event) {
         // Just set a flag to true when the arm was swung.
@@ -408,12 +399,6 @@ public class BlockPlaceListener extends CheckListener {
         data.noSwingCount = Math.max(data.noSwingCount - 1, 0);
     }
 
-    /**
-     * We listener to PlayerInteract events to prevent players from spamming the server with monster eggs.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
     public void onPlayerInteract(final PlayerInteractEvent event) {
         if (event.isCancelled()) {
@@ -423,8 +408,8 @@ public class BlockPlaceListener extends CheckListener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        final Player player = event.getPlayer();
 
+        final Player player = event.getPlayer();
         final ItemStack stack = Bridge1_9.getUsedItem(player, event);
         if (stack == null) {
             return;
@@ -471,6 +456,7 @@ public class BlockPlaceListener extends CheckListener {
         if (BlockProperties.isWater(relMat)) {
             return;
         }
+
         // TODO: Add a check type for exemption?
         if (!pData.hasPermission(Permissions.BLOCKPLACE_BOATSONWATERONLY, player)) {
             final Result previousUseBlock = event.useInteractedBlock();
@@ -483,12 +469,6 @@ public class BlockPlaceListener extends CheckListener {
         }
     }
 
-    /**
-     * We listen to ProjectileLaunch events to prevent players from launching projectiles too quickly.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onProjectileLaunch(final ProjectileLaunchEvent event) {
         // The shooter needs to be a player.
@@ -497,11 +477,7 @@ public class BlockPlaceListener extends CheckListener {
         if (player == null) {
             return;
         }
-
-        if (!DataManager.getPlayerData(player).isCheckActive(CheckType.BLOCKPLACE, player)) return;
-
         if (MovingUtil.hasScheduledPlayerSetBack(player)) {
-            // TODO: Should log.
             event.setCancelled(true);
             return;
         }
@@ -579,8 +555,6 @@ public class BlockPlaceListener extends CheckListener {
                 counters.addPrimaryThread(idEnderPearl, 1);
             }
         }
-
-        // Cancelled ?
         if (cancel) {
             event.setCancelled(true);
         }
@@ -599,10 +573,9 @@ public class BlockPlaceListener extends CheckListener {
 
         if (player.isSprinting()) {
             data.sprintTime = TickTask.getTick();
-        } else if (player.isSneaking()) {
+        } 
+        else if (player.isSneaking()) {
             data.sneakTime = TickTask.getTick();
         }
-
     }
-
 }

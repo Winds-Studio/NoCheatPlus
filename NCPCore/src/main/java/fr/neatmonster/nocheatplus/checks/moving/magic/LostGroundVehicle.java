@@ -271,7 +271,7 @@ public class LostGroundVehicle {
         z2 = fMin * z2 + z1;
         // Finally test for ground.
         // (We don't add another xz-margin here, as the move should cover ground.)
-        if (BlockProperties.isOnGroundShuffled(blockCache, x1, y1, z1, x2, y1, z2, boxMarginHorizontal, yOnGround, 0.0)) {
+        if (BlockProperties.isOnGroundShuffled(world, blockCache, x1, y1, z1, x2, y1, z2, boxMarginHorizontal, yOnGround, 0.0)) {
             //data.sfLastAllowBunny = true; // TODO: Maybe a less powerful flag (just skipping what is necessary).
             // TODO: data.fromY for set back is not correct, but currently it is more safe (needs instead: maintain a "distance to ground").
             return applyLostGround(vehicle, new Location(world, x2, y2, z2), true, data.vehicleMoves.getCurrentMove(), data, "edge" + tag, tags, mcAccess); // Maybe true ?

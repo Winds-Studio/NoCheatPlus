@@ -6,7 +6,6 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.access.IViolationInfo;
-import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.hooks.IFirst;
 import fr.neatmonster.nocheatplus.hooks.NCPHook;
@@ -94,8 +93,6 @@ public class ViolationFrequencyHook implements NCPHook, IFirst {
             if (lastViolatedMoveCount <= config.lastViolatedMoveCount) {
                 // A too small violation (lower than noAdditionVL) has recently happened after another, do increase the violation.
                 data.survivalFlyVL += config.amountToAdd;
-                // Experimental, but extra punihsing.
-                Improbable.check(player, config.amountToAdd / 10f, System.currentTimeMillis(), "sf.VL.frequency", pData);
                 if (config.debug) {
                     builder.append("SurvivalFly: ");
                     builder.append("VL=" + StringUtil.fdec1.format(info.getTotalVl()));

@@ -139,12 +139,6 @@ public class BlockInteractListener extends CheckListener {
                 );
     }
 
-    /**
-     * We listen to PlayerInteractEvent events for obvious reasons.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
     public void onPlayerInteract(final PlayerInteractEvent event) {
         final Player player = event.getPlayer();

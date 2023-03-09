@@ -55,7 +55,10 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 
-
+/**
+ * Adapter for listening to packets and events relevant for item use.
+ * (Minecraft nor Bukkit provide a method to know if the player is using an item, so we have to do it ourselves)
+ */
 public class UseItemAdapter extends BaseAdapter {
 
     private final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
@@ -97,10 +100,7 @@ public class UseItemAdapter extends BaseAdapter {
 
     private static int timeBetweenRL = 70;
     private static PacketType[] initPacketTypes() {
-        final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(
-                PacketType.Play.Client.BLOCK_DIG,
-                PacketType.Play.Client.BLOCK_PLACE
-                ));
+        final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(PacketType.Play.Client.BLOCK_DIG, PacketType.Play.Client.BLOCK_PLACE));
         return types.toArray(new PacketType[types.size()]);
     }
 
@@ -135,14 +135,14 @@ public class UseItemAdapter extends BaseAdapter {
         }
     }
 
-    private static void onItemConsume(final PlayerItemConsumeEvent e){
+    private static void onItemConsume(final PlayerItemConsumeEvent e) {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.isUsingItem = false;        
     }
 
-    private static void onInventoryOpen(final InventoryOpenEvent e){
+    private static void onInventoryOpen(final InventoryOpenEvent e) {
         if (e.isCancelled()) return;
         final Player p = (Player) e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
@@ -150,7 +150,7 @@ public class UseItemAdapter extends BaseAdapter {
         data.isUsingItem = false;        
     }
 
-    private static void onItemInteract(final PlayerInteractEvent e){
+    private static void onItemInteract(final PlayerInteractEvent e) {
         if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
@@ -270,7 +270,7 @@ public class UseItemAdapter extends BaseAdapter {
         }
         
         //Advanced check
-        if(digtype == PlayerDigType.RELEASE_USE_ITEM) {
+        if (digtype == PlayerDigType.RELEASE_USE_ITEM) {
             data.isUsingItem = false;
             long now = System.currentTimeMillis();
             if (data.releaseItemTime != 0) {

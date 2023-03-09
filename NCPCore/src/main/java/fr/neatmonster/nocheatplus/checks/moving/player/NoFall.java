@@ -49,6 +49,7 @@ import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
+import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
@@ -76,7 +77,7 @@ public class NoFall extends Check {
     /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
     private static final Location useLoc2 = new Location(null, 0, 0, 0);
 
-    private final Random random = new Random();
+    private final Random random = CheckUtils.getRandom();
 
     private final static boolean ServerIsAtLeast1_12 = ServerVersion.compareMinecraftVersion("1.12") >= 0;
 
@@ -189,12 +190,13 @@ public class NoFall extends Check {
      * @param player
      * @param block
      * @param newState the BlockState of new block
-     * @param interact if fire PlayerInteractEvent
-     * @param entityChangeBlock if fire EntityChangeBlockEvent
-     * @param fade if fire BlockFadeEvent
-     * @return if can change the block
+     * @param interact If to fire PlayerInteractEvent
+     * @param entityChangeBlock If to fire EntityChangeBlockEvent
+     * @param fade if to fire BlockFadeEvent
+     * @return true if the block can be changed
      */
-    private boolean canChangeBlock(final Player player, final Block block, final BlockState newState,
+    @SuppressWarnings("deprecation")
+	private boolean canChangeBlock(final Player player, final Block block, final BlockState newState,
                                    final boolean interact, final boolean entityChangeBlock, final boolean fade) {
         if (interact) {
             final PlayerInteractEvent interactEvent = new PlayerInteractEvent(player, Action.PHYSICAL, null, block, BlockFace.SELF);

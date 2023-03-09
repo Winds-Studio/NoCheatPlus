@@ -37,6 +37,9 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 
+/**
+ * Adapter for the UseEntity NMS packet
+ */
 public class UseEntityAdapter extends BaseAdapter {
 
     private static class LegacyReflectionSet {
@@ -104,10 +107,8 @@ public class UseEntityAdapter extends BaseAdapter {
         super(plugin, PacketType.Play.Client.USE_ENTITY);
         this.checkType = CheckType.NET_ATTACKFREQUENCY;
         // Add feature tags for checks.
-        if (NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().isActiveAnywhere(
-                CheckType.NET_ATTACKFREQUENCY)) {
-            NCPAPIProvider.getNoCheatPlusAPI().addFeatureTags(
-                    "checks", Arrays.asList(AttackFrequency.class.getSimpleName()));
+        if (NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().isActiveAnywhere(CheckType.NET_ATTACKFREQUENCY)) {
+            NCPAPIProvider.getNoCheatPlusAPI().addFeatureTags("checks", Arrays.asList(AttackFrequency.class.getSimpleName()));
         }
         attackFrequency = new AttackFrequency();
         NCPAPIProvider.getNoCheatPlusAPI().addComponent(attackFrequency);
@@ -128,7 +129,8 @@ public class UseEntityAdapter extends BaseAdapter {
     public void onPacketReceiving(final PacketEvent event) {
         try {
             if (event.isPlayerTemporary()) return;
-        } catch(NoSuchMethodError e) {}
+        }
+        catch(NoSuchMethodError e) {}
         final long time = System.currentTimeMillis();
         final Player player = event.getPlayer();
         if (player == null) {
@@ -136,8 +138,9 @@ public class UseEntityAdapter extends BaseAdapter {
             return;
         }
         final IPlayerData pData = DataManager.getPlayerDataSafe(player);
-        if (pData == null) return;
-
+        if (pData == null) {
+            return;
+        }
         final NetData data = pData.getGenericInstance(NetData.class);
         // Always set last received time.
         data.lastKeepAliveTime = time;
@@ -168,7 +171,7 @@ public class UseEntityAdapter extends BaseAdapter {
                 final StructureModifier<EntityUseAction> actions = packet.getEntityUseActions();
                 final StructureModifier<WrappedEnumEntityUseAction> enumActions = packet.getEnumEntityUseActions();
                 if (actions.size() == 1 && actions.read(0) == EntityUseAction.ATTACK
-                || enumActions.size() == 1 && enumActions.read(0).equals(WrappedEnumEntityUseAction.attack())) {
+                    || enumActions.size() == 1 && enumActions.read(0).equals(WrappedEnumEntityUseAction.attack())) {
                     packetInterpreted = true;
                     isAttack = true;
                 }
@@ -201,7 +204,6 @@ public class UseEntityAdapter extends BaseAdapter {
         if (cancel) {
             event.setCancelled(true);
         }
-
     }
 
     private int getAction_legacy(final PacketContainer packetContainer) {

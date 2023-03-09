@@ -169,7 +169,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
      *            Damage after applying modifiers.
      * @param tick
      * @param data
-     * @return
+     * @return True, if the hit needs to be canceled.
      */
     private boolean handleNormalDamage(final Player player, final boolean attackerIsFake,
                                        final Entity damaged, final boolean damagedIsFake,
@@ -476,7 +476,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
                 }
             }
             if (thisPassed) {
-                // TODO: Log/set estimated latency.
                 violation = false;
                 latencyEstimate = now - entry.getTime();
                 successEntry = entry;
@@ -507,12 +506,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         return cancelled;
     }
 
-    /**
-     * We listen to EntityDamage events for obvious reasons.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onEntityDamage(final EntityDamageEvent event) {
 
@@ -795,12 +788,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         return new double[] {xVelocity, yVelocity, zVelocity};
     }
 
-    /**
-     * We listen to death events to prevent a very specific method of doing godmode.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityDeathEvent(final EntityDeathEvent event) {
         // Only interested in dying players.
@@ -813,12 +800,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         }
     }
 
-    /**
-     * We listen to PlayerAnimation events because it is used for arm swinging.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerAnimation(final PlayerAnimationEvent event) {
         final FightData data = DataManager.getGenericInstance(event.getPlayer(), FightData.class);
@@ -828,7 +809,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onEntityRegainHealthLow(final EntityRegainHealthEvent event) {
-
         final Entity entity = event.getEntity();
         if (!(entity instanceof Player)) {
             return;
@@ -855,7 +835,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityRegainHealth(final EntityRegainHealthEvent event) {
-
         final Entity entity = event.getEntity();
         if (!(entity instanceof Player)) {
             return;
@@ -880,15 +859,14 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
     }
 
     @Override
-    public void playerJoins(final Player player) {
-    }
-
+    public void playerJoins(final Player player) {}
+    
     @Override
     public void playerLeaves(final Player player) {
         final FightData data = DataManager.getGenericInstance(player, FightData.class);
         data.angleHits.clear();
     }
-
+    
     @EventHandler(ignoreCancelled = false, priority = EventPriority.MONITOR)
     public void onItemHeld(final PlayerItemHeldEvent event) {
         final Player player = event.getPlayer();

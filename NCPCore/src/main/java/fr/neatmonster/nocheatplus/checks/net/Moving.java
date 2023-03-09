@@ -71,6 +71,7 @@ public class Moving extends Check {
     public boolean check(final Player player, final DataPacketFlying packetData, final NetData data, final NetConfig cc, 
                          final IPlayerData pData, final Plugin plugin) {
         // TODO: This will trigger if the client is waiting for chunks to load (Slow fall, on join or after a teleport)
+        // TODO Replace this check with a packet-sync thing: Sync flying packets with a PlayerMoveEvent, flag incoming packets which don't fire any move event.
         boolean cancel = false;
         final long now = System.currentTimeMillis();
         final boolean debug = pData.isDebugActive(CheckType.NET_MOVING);
@@ -85,10 +86,14 @@ public class Moving extends Check {
             final Location knownLocation = player.getLocation(useLoc);
             /** Claimed Location sent by the client */
             final Location packetLocation = new Location(null, packetData.getX(), packetData.getY(), packetData.getZ());
-            final double hDistanceDiff = TrigUtil.distance(knownLocation, packetLocation);
-            final double yDistanceDiff = Math.abs(knownLocation.getY() - packetLocation.getY());
+            //final double distanceSq = TrigUtil.distanceSquared(knownLocation, packetLocation);
+            final double yDistance = Math.abs(knownLocation.getY() - packetLocation.getY());
+            final double hDistance = TrigUtil.xzDistance(knownLocation, packetLocation);
+            final double distance = TrigUtil.distance(knownLocation, packetLocation);
 
-            if (yDistanceDiff > 100.0 || hDistanceDiff > 100.0) {
+            // 100 it's the minimum [Math.max(100, config distance)]distance for the 'moved too quickly' check to fire
+            // See PlayerConnection.java
+            if (yDistance > 100.0 || distance > 100.0/*distanceSq > 100.0 || hDistance > 100.0*/) {
                 data.movingVL++ ;
                 tags.add("invalid_pos");
                 final ViolationData vd = new ViolationData(this, player, data.movingVL, 1.0, cc.movingActions);
@@ -98,41 +103,6 @@ public class Moving extends Check {
             else {
                 data.movingVL *= 0.98;
             }
-
-            // Request a setback
-            if (cancel) {
-                // Player might be freezed by canceling, set back might turn it to normal
-                int task = -1;
-                task = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                    /** Use the first valid setback location that we can get a hold of */
-                    final Location newTo = mData.hasSetBack() ? mData.getSetBack(knownLocation) :
-                                           mData.hasMorePacketsSetBack() ? mData.getMorePacketsSetBack() :
-                                           knownLocation;
-                                           //null;
-                    // Unsafe position. Null world or world not updated world
-                    if (newTo == null) {
-                        // (Kick the player due to crash exploit potential)
-                        StaticLog.logSevere("[NoCheatPlus] Could not restore location for " + player.getName() + ", kicking them.");
-                        CheckUtils.kickIllegalMove(player, pData.getGenericInstance(MovingConfig.class));
-                    } 
-                    else {
-                        // Mask player teleport as a set back.
-                        mData.prepareSetBack(newTo);
-                        player.teleport(LocUtil.clone(newTo), BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
-                        // Request an Improbable update, unlikely that this is legit.
-                        TickTask.requestImprobableUpdate(player.getUniqueId(), 1.0f);
-                        if (debug) {
-                            debug(player, "Set back player: " + player.getName() + ":" + LocUtil.simpleFormat(newTo));
-                        }
-                    }
-                });
-                if (task == -1) {
-                    StaticLog.logWarning("[NoCheatPlus] Failed to schedule task for player: " + player.getName());
-                }
-                mData.resetTeleported(); // Cleanup, just in case.
-            }
-            // Cleanup
-            useLoc.setWorld(null);
         }
 
         if (debug) {
@@ -147,9 +117,9 @@ public class Moving extends Check {
             else {
             	builder.append("Empty packet (no position)");
             }
-            useLoc.setWorld(null);
             NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, builder.toString());
         }
+        useLoc.setWorld(null);
         return cancel;
     }
 }

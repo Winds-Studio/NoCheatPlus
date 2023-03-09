@@ -17,6 +17,7 @@ package fr.neatmonster.nocheatplus.checks.fight;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.actions.ParameterName;
@@ -74,7 +75,9 @@ public class ImpossibleHit extends Check {
             tags.add("look_mismatch");
         }
         // Can't attack with inventory open.
-        else if (InventoryUtil.hasAnyInventoryOpen(player)) {
+        else if (InventoryUtil.hasAnyInventoryOpen(player) && player.getGameMode() != GameMode.CREATIVE
+            && !InventoryUtil.hasOpenedInvRecently(player, 1500)) {
+            // Skip only if the player has opened the inventory for 1.5 secs.
             violation = true;
             tags.add("inventoryopen");
         }

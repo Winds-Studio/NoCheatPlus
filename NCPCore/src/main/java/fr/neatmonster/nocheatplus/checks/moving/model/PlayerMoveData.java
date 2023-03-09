@@ -46,17 +46,17 @@ public class PlayerMoveData extends MoveData {
 
     // Bounds set by checks.
     /**
-     * Allowed x distance only. Set in SurvivalFly.check(hDistChecks)
+     * Estimated X distance only. Set in SurvivalFly.
      */
     public double xAllowedDistance;
 
     /**
-     * Allowed z distance only. Set in SurvivalFly.check(hDistChecks)
+     * Estimated Z distance only. Set in SurvivalFly.
      */
     public double zAllowedDistance;
 
     /**
-     * Allowed horizontal distance. Set in SurvivalFly.check.
+     * Allowed horizontal distance. Set in SurvivalFly.
      */
     public double hAllowedDistance;
 

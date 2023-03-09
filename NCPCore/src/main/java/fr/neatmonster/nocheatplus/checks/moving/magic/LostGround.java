@@ -39,9 +39,8 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 
 
-
 /**
- * Lost ground workarounds.
+ * Determine if the player should have touched the ground with this movement.
  * @See <a href="https://bugs.mojang.com/browse/MC-90024">Mojang's issue tracker</a> 
  * 
  * @author asofold
@@ -208,7 +207,7 @@ public class LostGround {
                 // Generic could step.
                 // TODO: Possibly confine margin depending on side, moving direction (see client code).
                 if (from.isOnGround(1.0) && thisMove.hDistance <= thisMove.hAllowedDistance * 1.1
-                    && BlockProperties.isOnGroundShuffled(to.getBlockCache(), from.getX(), from.getY() + cc.sfStepHeight, from.getZ(), to.getX(), 
+                    && BlockProperties.isOnGroundShuffled(to.getWorld(), to.getBlockCache(), from.getX(), from.getY() + cc.sfStepHeight, from.getZ(), to.getX(), 
                                                           to.getY(), to.getZ(), 0.1 + from.getBoxMarginHorizontal(), to.getyOnGround(), 0.0)) {
                     return applyLostGround(player, from, false, thisMove, data, "couldstep", tags);
                 }
@@ -219,7 +218,7 @@ public class LostGround {
                     if (
                         // (thisMove.yDistance == MathUtil.negate(lastMove.yDistance) || MathUtil.between(0.0, yDistChange, Magic.GRAVITY_SPAN - to.getyOnGround())) 
                         lostGroundEdgeAsc(player, from.getBlockCache(), from.getWorld(), from.getX(), from.getY(), from.getZ(), from.getBoxMarginHorizontal(), 
-                                             from.getyOnGround(), lastMove, data, "asc1", tags, from.getMCAccess())) {
+                                          from.getyOnGround(), lastMove, data, "asc1", tags, from.getMCAccess())) {
                         return true;
                     }
                     // Special cases: similar to couldstep, with 0 y-distance but slightly above any ground nearby (no micro move!).
@@ -374,7 +373,7 @@ public class LostGround {
 
         // Finally test for ground.
         // (We don't add another xz-margin here, as the move should cover ground.)
-        if (BlockProperties.isOnGroundShuffled(blockCache, x1, y1, z1, x2, y1 + (data.snowFix ? 0.125 : 0.0), z2, boxMarginHorizontal + (data.snowFix ? 0.1 : 0.0), yOnGround, 0.0)) {
+        if (BlockProperties.isOnGroundShuffled(world, blockCache, x1, y1, z1, x2, y1 + (data.snowFix ? 0.125 : 0.0), z2, boxMarginHorizontal + (data.snowFix ? 0.1 : 0.0), yOnGround, 0.0)) {
             // TODO: data.fromY for set back is not correct, but currently it is more safe (needs instead: maintain a "distance to ground").
             return applyLostGround(player, new Location(world, x2, y2, z2), true, data.playerMoves.getCurrentMove(), data, "edge" + tag, tags, mcAccess);
         } 

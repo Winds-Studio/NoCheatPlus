@@ -141,7 +141,7 @@ public class FightConfig extends ACheckConfig {
         impossibleHitImprobableWeight = (float) config.getDouble(ConfPaths.FIGHT_IMPOSSIBLEHIT_IMPROBABLE_WEIGHT);
         impossibleHitActions = config.getOptimizedActionList(ConfPaths.FIGHT_IMPOSSIBLEHIT_ACTIONS, Permissions.FIGHT_IMPOSSIBLEHIT);
 
-        reachSurvivalDistance = config.getDouble(ConfPaths.FIGHT_REACH_SURVIVALDISTANCE, 3.5, 6.0, 4.4);
+        reachSurvivalDistance = config.getDouble(ConfPaths.FIGHT_REACH_SURVIVALDISTANCE, 3.5, 6.0, 4.1);
         reachPenalty = config.getLong(ConfPaths.FIGHT_REACH_PENALTY);
         reachPrecision = config.getBoolean(ConfPaths.FIGHT_REACH_PRECISION);
         reachReduce = config.getBoolean(ConfPaths.FIGHT_REACH_REDUCE);
@@ -155,7 +155,7 @@ public class FightConfig extends ACheckConfig {
 
         cancelDead = config.getBoolean(ConfPaths.FIGHT_CANCELDEAD);
 		loopMaxLatencyTicks = config.getInt(ConfPaths.FIGHT_MAXLOOPLETENCYTICKS, 1, 15, 8);
-        AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.FIGHT_PVP_KNOCKBACKVELOCITY, AlmostBoolean.MAYBE);
+        AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.FIGHT_KNOCKBACKVELOCITY, AlmostBoolean.MAYBE);
         knockBackVelocityPvP = ref == AlmostBoolean.MAYBE ? Bugs.shouldPvpKnockBackVelocity() : ref.decide();
     }
 }

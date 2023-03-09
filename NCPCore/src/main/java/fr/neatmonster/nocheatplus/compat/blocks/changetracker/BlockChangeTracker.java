@@ -820,7 +820,7 @@ public class BlockChangeTracker {
      * @param ignoreFlags
      * @return
      */
-    public boolean isOnGround(final BlockCache blockCache, 
+    public boolean isOnGround(final World world, final BlockCache blockCache, 
             final BlockChangeReference ref, final int tick, final UUID worldId,
             final double minX, final double minY, final double minZ, 
             final double maxX, final double maxY, final double maxZ, 
@@ -853,7 +853,7 @@ public class BlockChangeTracker {
                     }
                     boolean shouldBreak = true; // Indicate no better than abort-y-iteration found.
                     do {
-                        switch(BlockProperties.isOnGround(blockCache, minX, minY, minZ, maxX, maxY, maxZ, 
+                        switch(BlockProperties.isOnGround(world, blockCache, minX, minY, minZ, maxX, maxY, maxZ, 
                                 ignoreFlags, x, y, z, 
                                 onGroundReference.getNode(), onGroundReference.getNodeAbove())) {
                                     case YES:

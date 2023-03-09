@@ -15,6 +15,7 @@
 package fr.neatmonster.nocheatplus.checks.inventory;
 
 import org.bukkit.Material;
+import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.inventory.InventoryView;
 
 import fr.neatmonster.nocheatplus.checks.access.ACheckData;
@@ -26,7 +27,6 @@ import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
 public class InventoryData extends ACheckData {
 
     // Violation levels.
-    public double invMoveVL;
     public double fastClickVL;
     public double instantBowVL;
     public double fastConsumeVL;
@@ -37,11 +37,18 @@ public class InventoryData extends ACheckData {
     // Data shared between the checks.
     /** Remember the last time an inventory click happened. Always updates with each click */
     public long lastClickTime = 0;
-    /** Remember the time at which a containter was interacted with */
-    public long containerOpenTime = 0;
     /**
-     * Remember when the player clicked in an inventory for the first time. Intention is to see if players could have opened their inventory:
-     * It resets when we receive an InventoryCloseEvent or other events that would forcibly close the player's inv (for false positives).
+     * Remember the last time at which a containter was interacted with (Does NOT concern the inventory opening time; interaction comes first) <br>.
+     * The time should be set at the same priority level of InventoryData.lastClickTime.
+     * (Otherwise an accidental / by 0 may occour with the interactin check in FastClick, if lastClickTime has already been set and containerInteractTime has yet to be set).
+     */
+    public long containerInteractTime = 0;
+    /**
+     * Assumption for estimating if the player's own inventory is open:
+     * When opening one's own inventory, no information is sent to the server, but a packet will always be sent for closing any kind of inventory (own included)<br>
+     * The client also sends information to the server upon clicking into the inventory. <br>
+     * With this premise, we can register the time when the player initally clicked in the inventory and just assume that it will stay open from that moment on, until we receive an InventoryCloseEvent by Bukkit.<br>
+     * This estimation method however comes with a drawback: the first inventory click will always be ignored.<br>
      * See: https://www.spigotmc.org/threads/detecting-when-player-opens-their-own-inv.397535/#post-3563623
      */
     public long firstClickTime;
@@ -62,6 +69,6 @@ public class InventoryData extends ACheckData {
     public Material fastConsumeFood;
     public long fastConsumeInteract;
     
-    // Data of the InventoryMove check.
-    public long lastMoveEvent = 0;
+    // Data of the Open check.
+    public SlotType clickedSlotType = null;
 }

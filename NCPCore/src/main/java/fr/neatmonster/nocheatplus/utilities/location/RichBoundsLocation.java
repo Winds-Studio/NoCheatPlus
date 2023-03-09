@@ -63,8 +63,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /** The player coordinates. */
     double x, y, z;
 
-    /** The pitch. */
-    float yaw, pitch; // TODO: -> entity ?
+    /** The rotation. */
+    float yaw, pitch; 
 
     /** Bounding box. */
     double minX, maxX, minY, maxY, minZ, maxZ;
@@ -75,7 +75,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /** Vertical margin for the bounding box (y towards top). */
     double boxMarginVertical;
 
-    // TODO: Check if onGround can be completely replaced by onGroundMinY and notOnGroundMaxY.
     /** Minimal yOnGround for which the player is on ground. No extra xz/y margin.*/
     double onGroundMinY = Double.MAX_VALUE;
     
@@ -87,7 +86,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
     // TODO: primitive+isSet? AlmostBoolean?
     // TODO: All properties that can be set should have a "checked" flag, thus resetting the flag suffices.
-
     // TODO: nodeAbove ?
 
     /** Type node for the block at the position. */
@@ -123,7 +121,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /** Is the player in water logged block?. */
     Boolean inWaterLogged = null;
 
-    /** Is the player is web?. */
+    /** Is the player in web?. */
     Boolean inWeb = null;
 
     /** Is the player on ice?. */
@@ -731,6 +729,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     
     /**
      * Check if the moved AABB collides with a block with the given flags
+     * 
      * @param xMargin
      *             Parameter to move the bounding box along the X axis
      * @param yMargin
@@ -1060,7 +1059,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                     //NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "*** fetch onground std");
                     // Full on-ground check (blocks).
                     // Note: Might check for half-block height too (getTypeId), but that is much more seldom.
-                    onGround = BlockProperties.isOnGround(blockCache, minX, minY - yOnGround, minZ, maxX, minY, maxZ, 0L);
+                    onGround = BlockProperties.isOnGround(world, blockCache, minX, minY - yOnGround, minZ, maxX, minY, maxZ, 0L);
                 }
             }
             else {
@@ -1095,7 +1094,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isOnGround(final double yOnGround) {
         if (notOnGroundMaxY >= yOnGround) return false;
         else if (onGroundMinY <= yOnGround) return true;
-        return  isOnGround(yOnGround, 0D, 0D, 0L);
+        return isOnGround(yOnGround, 0D, 0D, 0L);
     }
     
     /**
@@ -1109,7 +1108,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isOnGround(final long ignoreFlags) {
         // Full on-ground check (blocks).
-        return BlockProperties.isOnGround(blockCache, minX, minY - yOnGround, minZ, maxX, minY, maxZ, ignoreFlags);
+        return BlockProperties.isOnGround(world, blockCache, minX, minY - yOnGround, minZ, maxX, minY, maxZ, ignoreFlags);
     }
 
     /**
@@ -1173,7 +1172,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             }
         }
         //NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "*** Fetch on-ground: yOnGround=" + yOnGround + " xzM=" + xzMargin + " yM=" + yMargin + " ign=" + ignoreFlags);
-        final boolean onGround = BlockProperties.isOnGround(blockCache, minX - xzMargin, minY - yOnGround - yMargin, minZ - xzMargin, maxX + xzMargin, minY + yMargin, maxZ + xzMargin, ignoreFlags);
+        final boolean onGround = BlockProperties.isOnGround(world, blockCache, minX - xzMargin, minY - yOnGround - yMargin, minZ - xzMargin, maxX + xzMargin, minY + yMargin, maxZ + xzMargin, ignoreFlags);
         if (ignoreFlags == 0) {
             if (onGround) {
                 if (xzMargin <= 0 && yMargin == 0) {
@@ -1205,22 +1204,22 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                                              final BlockChangeTracker blockChangeTracker, final BlockChangeReference blockChangeRef,
                                              final int tick) {
         // TODO: Consider updating onGround+dist cache.
-        return blockChangeTracker.isOnGround(blockCache, blockChangeRef, tick, world.getUID(), 
+        return blockChangeTracker.isOnGround(world, blockCache, blockChangeRef, tick, world.getUID(), 
                 minX, minY - yOnGround, minZ, maxX, maxY, maxZ, ignoreFlags);
     }
 
     /**
-     * Check if solid blocks hit the box.
+     * Check if blocks with the attached flags hit the box.
      *
      * @param xzMargin
      *            the xz margin
      * @param yMargin
      *            the y margin
-     * @return true, if is next to solid
+     * @param flags
+     * @return true, if is next to this block
      */
-    public boolean isNextToSolid(final double xzMargin, final double yMargin) {
-        // TODO: Adjust to check block flags ?
-        return BlockProperties.collides(blockCache, minX - xzMargin, minY - yMargin, minZ - xzMargin, maxX + xzMargin, maxY + yMargin, maxZ + xzMargin, BlockFlags.F_SOLID);
+    public boolean isNextToBlock(final double xzMargin, final double yMargin, final long flags) {
+        return BlockProperties.collides(blockCache, minX - xzMargin, minY - yMargin, minZ - xzMargin, maxX + xzMargin, maxY + yMargin, maxZ + xzMargin, flags);
     }
 
     /**

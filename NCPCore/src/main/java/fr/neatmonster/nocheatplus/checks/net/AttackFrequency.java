@@ -32,6 +32,7 @@ public class AttackFrequency extends Check {
     /**
      * Checks a player
      * (Checks hasBypass on violation only)
+     * 
      * @param player
      * @param time milliseconds
      * @param data
@@ -87,9 +88,9 @@ public class AttackFrequency extends Check {
             tags = "sec_eight";
         }
 
-        //        if (data.debug) {
-        //            player.sendMessage("AttackFrequency: " + data.attackFrequencySeconds.toLine());
-        //        }
+        if (pData.isDebugActive(CheckType.NET_ATTACKFREQUENCY)) {
+            player.sendMessage("AttackFrequency: " + data.attackFrequencySeconds.toLine());
+        }
 
         boolean cancel = false;
         if (maxVL > 0.0) {

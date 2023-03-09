@@ -212,7 +212,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
                 api.removeComponent(adapter); // Bit heavy, but consistent.
             } catch (Throwable t) {
                 StaticLog.logWarning("Failed to unregister packet level hook: " + adapter.getClass().getName());
-            }// TODO Auto-generated method stub
+            }
 
         }
         registeredPacketAdapters.clear();
@@ -273,10 +273,8 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
             final Player player = event.getPlayer();
             final IPlayerData pData = DataManager.getPlayerData(player);
             final NetData data = pData.getGenericInstance(NetData.class);
-            if (pData.isCheckActive(CheckType.NET_FLYINGFREQUENCY, player)) {
-                // Register expected location for comparison with outgoing packets.
-                data.teleportQueue.onTeleportEvent(to.getX(), to.getY(), to.getZ(), to.getYaw(), to.getPitch());
-            }
+            // Register expected location for comparison with outgoing packets.
+            data.teleportQueue.onTeleportEvent(to.getX(), to.getY(), to.getZ(), to.getYaw(), to.getPitch());
             data.clearFlyingQueue();
         }
     }

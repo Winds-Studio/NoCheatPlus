@@ -18,12 +18,25 @@ import java.util.LinkedList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
+import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.access.ACheckData;
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.checks.net.model.TeleportQueue;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.components.debug.IDebugPlayer;
+import fr.neatmonster.nocheatplus.logging.StaticLog;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
+import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
+import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 
 /**
  * Data for net checks. Some data structures may not be thread-safe, intended
@@ -113,6 +126,48 @@ public class NetData extends ACheckData {
     public void onLeave(Player player) {
         teleportQueue.clear();
         clearFlyingQueue();
+    }
+    
+    /**
+     * Safely request a set back from MovingData.
+     * 
+     * @param player
+     * @param idp
+     * @param plugin
+     * @param checkType
+     */
+    public void requestSetBack(final Player player, final IDebugPlayer idp, final Plugin plugin, final CheckType checkType) {
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        /** Last known location of the server that has been registerd by Bukkit. */
+        final Location knownLocation = player.getLocation();
+        final MovingData mData = pData.getGenericInstance(MovingData.class);
+        int task = -1;
+        task = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+            /** Get the first set-back location that might be available */
+            final Location setBackLoc = mData.hasSetBack() ? mData.getSetBack(knownLocation) :
+                                        mData.hasMorePacketsSetBack() ? mData.getMorePacketsSetBack() :
+                                        // Shouldn't happen. If it does, the location is likely to be null
+                                        knownLocation;
+            // Unsafe position. Location hasn't been updated yet.    
+            if (setBackLoc == null) {
+                // (Kick the player due to crash exploit potential i.e.: with extremely long blink cheat distances)
+                StaticLog.logSevere("[NoCheatPlus] Could not restore set back location for " + player.getName() + ", kicking them.");
+                CheckUtils.kickIllegalMove(player, pData.getGenericInstance(MovingConfig.class));
+            } 
+            else {
+                // Mask player teleport as a set back.
+                mData.prepareSetBack(setBackLoc);
+                player.teleport(LocUtil.clone(setBackLoc), BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
+                if (pData.isDebugActive(checkType)) {
+                    idp.debug(player, "Set back player (packet) " + player.getName() + ":" + LocUtil.simpleFormat(setBackLoc));
+                }
+           }
+        });
+        if (task == -1) {
+            StaticLog.logWarning("[NoCheatPlus] Failed to schedule packet set back task for player: " + player.getName());
+        }
+        // Cleanup
+        mData.resetTeleported();
     }
 
     /**
