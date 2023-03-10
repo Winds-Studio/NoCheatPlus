@@ -3411,24 +3411,26 @@ public class BlockProperties {
     public static void applyConfig(final RawConfigFile config, final String pathPrefix) {
         // Breaking time overrides for specific side conditions.
         ConfigurationSection section = config.getConfigurationSection(pathPrefix + ConfPaths.SUB_BREAKINGTIME);
-        for (final String input : section.getKeys(false)) {
-            try {
-                BlockProperties.setBreakingTimeOverride(new BlockBreakKey().fromString(input.trim()), section.getLong(input));
+        if (section != null) {
+            // Breaking times
+            for (final String input : section.getKeys(false)) {
+                try {
+                    BlockProperties.setBreakingTimeOverride(new BlockBreakKey().fromString(input.trim()), section.getLong(input));
+                }
+                catch (Exception e) {
+                    StaticLog.logWarning("Bad breaking time override (" + pathPrefix + ConfPaths.SUB_BREAKINGTIME + "): " + input);
+                    StaticLog.logWarning(e);
+                }
             }
-            catch (Exception e) {
-                StaticLog.logWarning("Bad breaking time override (" + pathPrefix + ConfPaths.SUB_BREAKINGTIME + "): " + input);
-                StaticLog.logWarning(e);
-            }
-        }
-
-        // Allow instant breaking.
-        for (final String input : config.getStringList(pathPrefix + ConfPaths.SUB_ALLOWINSTANTBREAK)) {
-            final Material id = RawConfigFile.parseMaterial(input);
-            if (id == null) {
-                StaticLog.logWarning("Bad block id (" + pathPrefix + ConfPaths.SUB_ALLOWINSTANTBREAK + "): " + input);
-            }
-            else {
-                setBlockProps(id, instantType);
+            // Allow instant breaking.
+            for (final String input : config.getStringList(pathPrefix + ConfPaths.SUB_ALLOWINSTANTBREAK)) {
+                final Material id = RawConfigFile.parseMaterial(input);
+                if (id == null) {
+                    StaticLog.logWarning("Bad block id (" + pathPrefix + ConfPaths.SUB_ALLOWINSTANTBREAK + "): " + input);
+                }
+                else {
+                    setBlockProps(id, instantType);
+                }
             }
         }
 
@@ -3481,6 +3483,8 @@ public class BlockProperties {
                 StaticLog.logInfo("Overriding block-flags was not entirely successful, all available flags: \n" + StringUtil.join(BlockFlags.flagNameMap.values(), "|"));
             }
         }
+        
+        // Minimal y coordinate
         minWorldY = config.getInt(pathPrefix + ConfPaths.SUB_BLOCKCACHE_WORLD_MINY); 
     }
 

@@ -296,7 +296,7 @@ public class MovingFlying extends BaseAdapter {
             && !pData.hasBypass(CheckType.NET_MOVING, player)) {
             cancel = true;
             // Also request a set back here
-            data.requestSetBack(player, this, plugin, CheckType.NET_FLYINGFREQUENCY);
+            data.requestSetBack(player, this, plugin, CheckType.NET_MOVING);
         }
         
         // Illegal pitch check
