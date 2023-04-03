@@ -299,7 +299,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             data.prepareSetBack(newTo); // Should be enough. 
             player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
         }
-        // Reset bed ...
+        // Player was sleeping and is now out of the bed, reset.
         else data.wasInBed = false;
     }
 
@@ -368,6 +368,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerToggleSprint(final PlayerToggleSprintEvent event) {
+        // IgnoreCancelled = true... Not sure, sprinting is client-sided, so cancelling won't do anything.
         if (!event.isSprinting()) DataManager.getGenericInstance(event.getPlayer(), MovingData.class).timeSprinting = 0;
     }
 
@@ -995,7 +996,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     /**
      * Split the incoming move event into two different moves, by using player#getLocation() exclusively. <br>
-     * This is an inaccurate split, as without ProtocolLib, we cannot tell how many moves have been skipped between the event.getFrom/To() and player#getLocation()
+     * This is an inaccurate split, as without ProtocolLib, we cannot tell how many moves have been skipped between the event#getFrom/To() and player#getLocation().
+     * So, checking for distances (or anything that has to do with coordinates) during such phases should be avoided.
      * 
      * @param player
      * @param moveInfo

@@ -79,7 +79,8 @@ public class Open extends Check implements IDisableListener {
 
     /**
      * Enforce a closed inventory on this event/action, without checking for any specific condition. <br>
-     * This check contains the isEnabled checking (!). Inventory is closed if set in the config.
+     * This check contains the isEnabled checking (!). Inventory is closed if set in the config. <br>
+     * Also resets inventory opening time and interaction time.
      * 
      * @param player
      * @return If cancelling some event is opportune (open inventory and cancel flag set).
@@ -99,17 +100,14 @@ public class Open extends Check implements IDisableListener {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
         if (cc.openClose) {
-            // NOTE: On closing the inventory, an event will fire.
-            // If the player has an item on the cursor, closing the inventory will force the item to drop, causing a drop event.
-            // WorldGuard might kick the player for this, due to the event being blacklisted.
-            // NCP will still detect an open inventory and attempt to close it, resulting in a loop.
-            // Fix attempt (blind) stores the uuid of a player and skips further nested closing of inventories.
-            // https://github.com/NoCheatPlus/NoCheatPlus/commit/a41ff38c997bcca780da32681e92216880e9e1b0
+            // NOTE about UUID stuff: https://github.com/NoCheatPlus/NoCheatPlus/commit/a41ff38c997bcca780da32681e92216880e9e1b0
             final UUID id = player.getUniqueId();
             if ((this.nestedPlayer == null || !id.equals(this.nestedPlayer))) {
                 // (The second condition represents an error, but we don't handle alternating things just yet.)
                 this.nestedPlayer = id;
                 player.closeInventory();
+                pData.getGenericInstance(InventoryData.class).inventoryOpenTime = 0;
+                pData.getGenericInstance(InventoryData.class).containerInteractTime = 0;
                 this.nestedPlayer = null;
                 return true;
             }
@@ -192,7 +190,7 @@ public class Open extends Check implements IDisableListener {
                 || (thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.0001))
             )
             // Cannot press the space bar if the inventory is open
-            || thisMove.canJump && thisMove.to.getY() > thisMove.from.getY()
+            || thisMove.canJump && thisMove.to.getY() > thisMove.from.getY() && thisMove.yDistance > 0.0
             // Obviously, you cannot press WASD keys if the inventory is open.
             || thisMove.hAllowedDistance >= lastMove.hAllowedDistance 
             || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.0001)

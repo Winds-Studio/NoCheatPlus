@@ -151,8 +151,8 @@ public class InventoryUtil {
 
     /**
      * Check if the player's inventory is open by looking up the current InventoryView type, via player#getOpenInventory().
-     * Note that this method cannot be used to check for one's own inventory, because Bukkit returns CRAFTING as default InventoryView type.
-     * (See InventoryData.firstClickTime)
+     * Note that this method cannot be used to check for one's own inventory, because Bukkit returns CRAFTING/CREATIVE as default InventoryView type.
+     * (See InventoryData.inventoryOpenTime)
      *
      * @param player
      *            the player
@@ -160,7 +160,7 @@ public class InventoryUtil {
      */
     public static boolean hasInventoryOpen(final Player player) {
         final InventoryView view = player.getOpenInventory();
-        return view != null && view.getType() != InventoryType.CRAFTING; // Exclude the CRAFTING inv type.
+        return view != null && view.getType() != InventoryType.CRAFTING && view.getType() != InventoryType.CREATIVE; // Exclude the CRAFTING and CREATIVE inv type.
     }
 
    /**
@@ -169,12 +169,12 @@ public class InventoryUtil {
     * 
     * @param player
     *            the player
-    * @return True, if inventory status is known, or can be assumed with InventoryData.firstClickTime
+    * @return True, if inventory status is known, or can be assumed with InventoryData.inventoryOpenTime
     */
     public static boolean hasAnyInventoryOpen(final Player player) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData iData = pData.getGenericInstance(InventoryData.class);
-        return hasInventoryOpen(player) || iData.firstClickTime != 0; 
+        return hasInventoryOpen(player) || iData.inventoryOpenTime != 0; 
     }
     
    /**
@@ -193,7 +193,7 @@ public class InventoryUtil {
         final long now = System.currentTimeMillis();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData iData = pData.getGenericInstance(InventoryData.class);
-        return hasAnyInventoryOpen(player) && (now - iData.firstClickTime <= timeAge);     
+        return hasAnyInventoryOpen(player) && (now - iData.inventoryOpenTime <= timeAge);     
     }
     
    /** 
@@ -253,7 +253,7 @@ public class InventoryUtil {
 
     /**
      * Test if the InventoryType can hold items.
-     * Furnaces and brewing stands are excluded for convenience since they can only hold a single item.
+     * Containers with just 1 or 2 slots are excluded for convenience (performing checks for those would be over doing it).
      *
      * @param stack
      *            May be null, would return false.
@@ -268,6 +268,7 @@ public class InventoryUtil {
                             // For legacy servers... Ugly.
                             || type.toString().equals("SHULKER_BOX")
                             || type.toString().equals("BARREL"));
+        // TODO: Add enchanting table to nerf AutoEnchant cheats?
     }
 
     /**

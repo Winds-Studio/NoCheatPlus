@@ -18,15 +18,15 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
@@ -36,11 +36,9 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -51,16 +49,12 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
-import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
@@ -76,7 +70,7 @@ import fr.neatmonster.nocheatplus.stats.Counters;
 import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
-import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
 
@@ -87,6 +81,7 @@ import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
  */
 public class InventoryListener  extends CheckListener implements JoinLeaveListener {
     
+    // Checks
     /** More Inventory check */
     private final MoreInventory moreInv = addCheck(new MoreInventory());
 
@@ -99,6 +94,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
     /** The open check */
     private final Open open = addCheck(new Open());
     
+    // Other/Auxiliary stuff
     private boolean keepCancel = false;
 
     private final boolean hasInventoryAction;
@@ -148,7 +144,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
     public void onEntityShootBow(final EntityShootBowEvent event) {
         // Only if a player shot the arrow.
         if (event.getEntity() instanceof Player) {
-
             final Player player = (Player) event.getEntity();
             final IPlayerData pData = DataManager.getPlayerData(player);
             if (instantBow.isEnabled(player, pData)) {
@@ -183,7 +178,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         // Only if a player ate food.
         if (event.getEntity() instanceof Player) {
             final Player player = (Player) event.getEntity();
-            final IPlayerData pData = DataManager.getPlayerData(player);
+            DataManager.getPlayerData(player);
             if (player.isDead() && BridgeHealth.getHealth(player) <= 0.0) {
                 // Eat after death.
                 event.setCancelled(true);
@@ -192,8 +187,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         }
     }
 
-    @SuppressWarnings("deprecation")
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onInventoryClick(final InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) {
             return;
@@ -212,29 +206,34 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         if (pData.isDebugActive(checkType)) {
             outputDebugInventoryClick(player, slot, event, inventoryAction);
         }
-        if (slot == InventoryView.OUTSIDE || slot < 0) {
-            // This is used by CHECKS
-            data.lastClickTime = now;
-            // This is used to determine if the player could have opened their own inventory
-            if (data.firstClickTime == 0) {
-                data.firstClickTime = now;
-                if (pData.isDebugActive(CheckType.INVENTORY)) {
-                    debug(player, "On inventory click (outside): register time of the first click (assume inventory is open)");
-                }
+        // Set this one as soon as we can and regardless if the click was cancelled or not.
+        // NOTE: that ignoreCancelled is set to true, so even a cancelled click will register the click time.
+        if (data.inventoryOpenTime == 0) {
+            data.inventoryOpenTime = now;
+            if (pData.isDebugActive(CheckType.INVENTORY)) {
+                debug(player, "*** On inventory click: register time of the first click (assume inventory is open)");
             }
+        }
+        if (event.isCancelled()) {
+            // Previously: ignoreCancelled = true
+            // We still want to know if the player clicked in the inventory (even if cancelled) for the inventory-open estimate above.
+            return;
+        }
+        if (slot == InventoryView.OUTSIDE || slot < 0) {
+            // Set and return, not interested in these clicks.
+            data.lastClickTime = now;
             return;
         }
 
         final ItemStack cursor = event.getCursor();
         final ItemStack clicked = event.getCurrentItem();
         boolean cancel = false;
-        
         // Fast inventory manipulation check.
         if (fastClick.isEnabled(player, pData)) {
-
             if (!((event.getView().getType().equals(InventoryType.CREATIVE) || player.getGameMode() == GameMode.CREATIVE) && cc.fastClickSpareCreative)) {
                 boolean check = true;
                 try {
+                    // Exempted inventories are not checked.
                     check = !cc.inventoryExemptions.contains(ChatColor.stripColor(event.getView().getTitle()));
                 }
                 catch (final IllegalStateException e) {
@@ -242,124 +241,53 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
                     check = true; 
                 }
                 
-                // Check for too quick interactions first (we don't need to check for fast clicking if the interaction is inhumanly fast)
-                if (check && InventoryUtil.isContainerInventory(event.getInventory().getType())
-                    && fastClick.checkContainerInteraction(player, data, cc)) {
-                    cancel = true;
-                    keepCancel = true;
-                }
-                // Then check for too fast inventory clicking
-                if (check && fastClick.check(player, now, event.getView(), slot, cursor, clicked, event.isShiftClick(), 
-                                            inventoryAction, data, cc, pData)) {  
-                    cancel = true;
+                if (check) {
+                    // Check for too quick interactions first (we don't need to check for fast clicking if the interaction is inhumanly fast)
+                    if (InventoryUtil.isContainerInventory(event.getInventory().getType())
+                        && fastClick.checkContainerInteraction(player, data, cc)) {
+                        cancel = true;
+                        keepCancel = true;
+                    }
+                    // Then check for too fast inventory clicking
+                    if (!cancel && fastClick.check(player, now, event.getView(), slot, cursor, clicked, event.isShiftClick(), 
+                                                            inventoryAction, data, cc, pData)) {  
+                        cancel = true;
+                    }
                 }
             }
         }
         
-        // This is used by CHECKS
         data.lastClickTime = now;
         data.clickedSlotType = event.getSlotType();
-        // This is used to determine if the player could have opened their own inventory
-        if (data.firstClickTime == 0) {
-            data.firstClickTime = now;
-            if (pData.isDebugActive(CheckType.INVENTORY)) {
-                debug(player, "On inventory click: register time of the first click (assume inventory is open)");
-            }
-        }
         // Cancel the event.
         if (cancel || keepCancel) {
             event.setCancelled(true);
-            // pData.requestUpdateInventory();
         }
     }
     
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInventoryClose(final InventoryCloseEvent event) {
+        // NOTE: ignoreCancelled is kept to false here. Cancelled events won't reset data.
+        // NOTE: Priority level -> same as opening time.
         final HumanEntity entity = event.getPlayer();
         if (entity instanceof Player) {
             final Player player = (Player) entity;
             if (player != null) {
                 final IPlayerData pData = DataManager.getPlayerData(player);
                 final InventoryData data = pData.getGenericInstance(InventoryData.class);
-                data.firstClickTime = 0;
+                data.inventoryOpenTime = 0;
                 data.containerInteractTime = 0;
                 if (pData.isDebugActive(CheckType.INVENTORY)) {
-                    debug(player, "On inventory close: reset timing data.");
+                    debug(player, "*** Inventory is now closed: reset timing data.");
                 }
             }
         }
         keepCancel = false;
     }
-    
 
-    /**
-     * Debug inventory classes. Contains information about classes, to indicate
-     * if cross-plugin compatibility issues can be dealt with easily.
-     * 
-     * @param player
-     * @param slot
-     * @param event
-     */
-    private void outputDebugInventoryClick(final Player player, final int slot, final InventoryClickEvent event, 
-                                           final String action) {
-        // TODO: Consider only logging where different from expected (CraftXY, more/other viewer than player). 
-
-        final StringBuilder builder = new StringBuilder(512);
-        final InventoryData data = DataManager.getPlayerData(player).getGenericInstance(InventoryData.class);
-        builder.append("Inventory click: slot: " + slot);
-        builder.append(" , Inventory has been opened for: " + (System.currentTimeMillis() - data.firstClickTime));
-        builder.append(" , Time between inventory click and last interaction time: " + (data.lastClickTime - data.containerInteractTime));
-
-        // Viewers.
-        builder.append(" , Viewers: ");
-        for (final HumanEntity entity : event.getViewers()) {
-            builder.append(entity.getName());
-            builder.append("(");
-            builder.append(entity.getClass().getName());
-            builder.append(")");
-        }
-
-        // Inventory view.
-        builder.append(" , View: ");
-        final InventoryView view = event.getView();
-        builder.append(view.getClass().getName());
-
-        // Bottom inventory.
-        addInventory(view.getBottomInventory(), view, " , Bottom: ", builder);
-
-        // Top inventory.
-        addInventory(view.getBottomInventory(), view, " , Top: ", builder);
-        
-        if (action != null) {
-            builder.append(" , Action: ");
-            builder.append(action);
-        }
-
-        // Event class.
-        builder.append(" , Event: ");
-        builder.append(event.getClass().getName());
-
-        // Log debug.
-        debug(player, builder.toString());
-    }
-
-    private void addInventory(final Inventory inventory, final InventoryView view, final String prefix,
-            final StringBuilder builder) {
-        builder.append(prefix);
-        if (inventory == null) {
-            builder.append("(none)");
-        }
-        else {
-            String name = view.getTitle();
-            builder.append(name);
-            builder.append("/");
-            builder.append(inventory.getClass().getName());
-        }
-    }
-
-    @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.LOWEST)
     public final void onPlayerInteract(final PlayerInteractEvent event) {
-    	final Player player = event.getPlayer();
+        final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
@@ -370,7 +298,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             if (BlockProperties.isContainer(event.getClickedBlock().getType())) {
                 data.containerInteractTime = System.currentTimeMillis();
                 if (pData.isDebugActive(CheckType.INVENTORY)) {
-                    debug(player, "Interacted with a container: register the interaction time.");
+                    debug(player, "*** Interacted with a container: register the interaction time.");
                 }
             }
         } 
@@ -408,8 +336,9 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             data.fastConsumeFood = null;
         }
     }
-
-    @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
+    
+    // TODO: Why is this handler inside the INVENTORY listener!?
+    @EventHandler(priority = EventPriority.LOWEST)
     public final void onPlayerInteractEntity(final PlayerInteractEntityEvent event) {
         final Player player = event.getPlayer();
         if (player.getGameMode() == GameMode.CREATIVE || !DataManager.getPlayerData(player).isCheckActive(CheckType.INVENTORY, player)) {
@@ -427,9 +356,10 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         }
     }
     
-    @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
-    public final void onPlayerInventoryOpen(final InventoryOpenEvent event) {
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    public final void onContainerOpen(final InventoryOpenEvent event) {
         // Possibly already prevented by block + entity interaction.
+        // NOTE: ignoreCancelled is kept true. Denied openings won't register timing data.
         final long now = System.currentTimeMillis();
         final HumanEntity entity = event.getPlayer();
         if (entity instanceof Player) {
@@ -440,13 +370,16 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
                 if (MovingUtil.hasScheduledPlayerSetBack(player)) {
                     // Don't allow players to open inventories on set-backs.
                     event.setCancelled(true);
-                    data.firstClickTime = 0;
+                    data.inventoryOpenTime = 0; // Just to be sure
+                    if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                        debug(player, "Attempted to open a container during set back processing: reset timing data and prevent opening.");
+                    }
                 }
-                else if (data.firstClickTime == 0) {
+                else if (data.inventoryOpenTime == 0) {
                     // Only set the inventory opening time, if a setback is not scheduled.
-                	data.firstClickTime = now;
+                    data.inventoryOpenTime = now;
                      if (pData.isDebugActive(CheckType.INVENTORY)) {
-                        debug(player, "Container is open (InventoryOpenEvent): register time.");
+                        debug(player, "*** Container is now open (InventoryOpenEvent): register time.");
                     }
                 }
             }
@@ -468,146 +401,160 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
     
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangedWorld(final PlayerChangedWorldEvent event) {
+        // Data is reset regardless of cancellation state (better safe than sorry)
         final Player player = event.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        open.check(event.getPlayer());
-        data.firstClickTime = 0;
-        data.containerInteractTime = 0;
-        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-            debug(player, "Force-close inventory on changing worlds and reset timings data.");
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(player, "Force-close inventory on changing worlds.");
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onBreakingBlocks(final BlockBreakEvent event) {
+        final Player player = event.getPlayer();
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        // Can't break blocks with inventory open.
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(player, "Force-close inventory on breaking blocks.");
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onPlacingBlocks(final BlockPlaceEvent event) {
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        // Can't place blocks with inventory open.
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(event.getPlayer(), "Force-close inventory on placing blocks.");
+            }
         }
     }
     
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerPortal(final PlayerPortalEvent event) {
         // Note: ignore cancelother setting.
-    	final Player player = event.getPlayer();
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        open.check(event.getPlayer());
-        data.firstClickTime = 0;
-        data.containerInteractTime = 0;
-        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-            debug(player, "Force-close inventory on using a portal and reset timings data.");
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(event.getPlayer(), "Force-close inventory on using a portal.");
+            }
         }
     }
     
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawn(final PlayerRespawnEvent event) {
-        final Player player = event.getPlayer();
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        open.check(event.getPlayer());
-        data.firstClickTime = 0;
-        data.containerInteractTime = 0;
-        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-            debug(player, "Force-close inventory on respawn and reset timings data.");
+        // NOTE: Data is reset regardless of cancellation state (better safe than sorry)
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(event.getPlayer(), "Force-close inventory on respawning.");
+            }
         }
     }
     
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(final EntityDeathEvent event) {
+        // NOTE: Data is reset regardless of cancellation state (better safe than sorry)
         final LivingEntity entity = event.getEntity();
         if (entity instanceof Player) {
             final Player player = (Player) entity;
             if (player != null) {
                 final IPlayerData pData = DataManager.getPlayerData(player);
-                final InventoryData data = pData.getGenericInstance(InventoryData.class);
-                open.check(player);
-                data.firstClickTime = 0;
-                data.containerInteractTime = 0;
-                if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                    debug(player, "Force-close inventory on death and reset timings data.");
+                pData.getGenericInstance(InventoryData.class);
+                if (open.check(player)) {
+                    if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                        debug(player, "Force-close inventory on death.");
+                    }
                 }
             }
         }
     }
     
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerSleep(final PlayerBedEnterEvent event) {
-        final Player player = event.getPlayer();
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        open.check(player);
-        data.firstClickTime = 0;
-        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-            debug(player, "Force-close inventory on sleeping and reset timings data.");
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(event.getPlayer(), "Force-close inventory on sleeping.");
+            }
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerWake(final PlayerBedLeaveEvent event) {
-        final Player player = event.getPlayer();
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        open.check(player);
-        data.firstClickTime = 0;
-        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-            debug(player, "Force-close inventory on waking up and reset timings data.");
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(event.getPlayer(), "Force-close inventory on waking up.");
+            }
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onEntityPortal(final EntityPortalEnterEvent event) {
         // Check passengers flat for now.
         final Entity entity = event.getEntity();
         if (entity instanceof Player) {
-        	final IPlayerData pData = DataManager.getPlayerData((Player) entity);
-            final InventoryData data = pData.getGenericInstance(InventoryData.class);
-            open.check((Player) entity);
-            data.firstClickTime = 0;
-            data.containerInteractTime = 0;
-            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                debug((Player) entity, "Force-close inventory on using a portal (entity) and reset timings data.");
+            final IPlayerData pData = DataManager.getPlayerData((Player) entity);
+            if (open.check((Player) entity)) {
+                if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                    debug((Player) entity, "Force-close inventory on using a portal (entity).");
+                }
             }
         }
         else {
             for (final Entity passenger : handleVehicles.getHandle().getEntityPassengers(entity)) {
                 if (passenger instanceof Player) {
-                    // Note: ignore cancelother setting.
-                    open.check((Player) passenger);
+                	final IPlayerData pData = DataManager.getPlayerData((Player) entity);
+                    if (open.check((Player) passenger)) {
+                        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                            debug((Player) passenger, "Force-close inventory of passenger on using a portal, passenger: " + passenger.toString());
+                        }
+                    }
                 }
             }
         }
     }
     
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerMove(final PlayerMoveEvent event) {
-        final Player player = event.getPlayer();
         final Location from = event.getFrom();
         final Location to = event.getTo();
         final boolean PoYdiff = from.getPitch() != to.getPitch() || from.getYaw() != to.getYaw();
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        if (pData == null) {
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (MovingUtil.hasScheduledPlayerSetBack(event.getPlayer())) {
+            // On 1.8 set back technique is different, as we do not cancel the event.
             return;
         }
-        final InventoryData iData = pData.getGenericInstance(InventoryData.class);
+        //pData.getGenericInstance(InventoryData.class);
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
-        final Inventory inv = player.getOpenInventory().getTopInventory();
-        if (moreInv.isEnabled(player, pData) 
-            && moreInv.check(player, cData, pData, inv.getType(), inv, PoYdiff)) {
+        final Inventory inv = event.getPlayer().getOpenInventory().getTopInventory();
+        if (moreInv.isEnabled(event.getPlayer(), pData) 
+            && moreInv.check(event.getPlayer(), cData, pData, inv.getType(), inv, PoYdiff)) {
             for (int i = 1; i <= 4; i++) {
                 final ItemStack item = inv.getItem(i);
                 // Ensure air-clicking is not detected... :)
                 if (item != null && !BlockProperties.isAir(item.getType())) {
-                    // Note: dropItemsNaturally does not fire InvDrop events, simply close the inventory
-                    player.closeInventory();
+                    // NOTE: dropItemsNaturally does not fire InvDrop events, so don't use it here. Simply close the inventory,
+                    event.getPlayer().closeInventory();
                     if (pData.isDebugActive(CheckType.INVENTORY_MOREINVENTORY)) {
-                        debug(player, "On PlayerMoveEvent: force-close inventory on MoreInv detection.");
+                        debug(event.getPlayer(), "On PlayerMoveEvent: force-close inventory on MoreInv detection.");
                     }
                     break;
                 }
             }
         }
         // Determine if the inventory should be closed.
-        if (cc.openCancelOnMove && !pData.hasBypass(CheckType.INVENTORY_OPEN, player)) {
-            if (InventoryUtil.hasAnyInventoryOpen(player) && open.shouldCloseInventory(player, pData)) {
-                // Force-close
-                open.check(player);
+        if (cc.openCancelOnMove && !pData.hasBypass(CheckType.INVENTORY_OPEN, event.getPlayer())) {
+            if (InventoryUtil.hasAnyInventoryOpen(event.getPlayer()) && open.shouldCloseInventory(event.getPlayer(), pData)) {
+                event.getPlayer().closeInventory(); // Do not call open.check() here.
                 if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                    debug(player, "On PlayerMoveEvent: force-close open inventory.");
+                    debug(event.getPlayer(), "Player is actively moving: force-close open inventory.");
                 }
             }
         }
@@ -615,15 +562,12 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
     
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerTeleport(final PlayerTeleportEvent event) {
-        // Note: ignore cancelother setting.
-        open.check(event.getPlayer());
-        final Player player = event.getPlayer();
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        data.firstClickTime = 0; 
-        data.containerInteractTime = 0;
-        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-            debug(player, "Force-close inventory on teleporting and reset timings data.");
+        // NOTE: Data is reset regardless of cancellation state (better safe than sorry)
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(event.getPlayer(), "Force-close inventory on teleporting.");
+            }
         }
     }
 
@@ -632,7 +576,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         // Just to be sure...
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        data.firstClickTime = 0;
+        data.inventoryOpenTime = 0;
         if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
             debug(player, "Reset inventory timings data on join.");
         }
@@ -641,12 +585,74 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
     @Override
     public void playerLeaves(Player player) {
         final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        data.firstClickTime = 0;
-        data.containerInteractTime = 0;
-        open.check(player);
-        if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-            debug(player, "Force-close inventory on leaving the server and reset timings data.");
+        if (open.check(player)) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(player, "Force-close inventory on leaving the server.");
+            }
+        }
+    }
+
+    /**
+     * Debug inventory classes. Contains information about classes, to indicate
+     * if cross-plugin compatibility issues can be dealt with easily.
+     * 
+     * @param player
+     * @param slot
+     * @param event
+     */
+    private void outputDebugInventoryClick(final Player player, final int slot, final InventoryClickEvent event, 
+                                           final String action) {
+        // TODO: Consider only logging where different from expected (CraftXY, more/other viewer than player). 
+
+        final StringBuilder builder = new StringBuilder(512);
+        final InventoryData data = DataManager.getPlayerData(player).getGenericInstance(InventoryData.class);
+        builder.append("Inventory click: slot: " + slot);
+        builder.append(" , Inventory has been opened for: " + MathUtil.toSeconds(System.currentTimeMillis() - data.inventoryOpenTime) + " secs");
+        builder.append(" , Time between inventory click and last interaction time: " + MathUtil.toSeconds(data.lastClickTime - data.containerInteractTime) + " ms");
+
+        // Viewers.
+        builder.append(" , Viewers: ");
+        for (final HumanEntity entity : event.getViewers()) {
+            builder.append(entity.getName());
+            builder.append("(");
+            builder.append(entity.getClass().getName());
+            builder.append(")");
+        }
+
+        // Inventory view.
+        builder.append(" , View: ");
+        final InventoryView view = event.getView();
+        builder.append(view.getClass().getName());
+
+        // Bottom inventory.
+        addInventory(view.getBottomInventory(), view, " , Bottom: ", builder);
+
+        // Top inventory.
+        addInventory(view.getBottomInventory(), view, " , Top: ", builder);
+        
+        if (action != null) {
+            builder.append(" , Action: ");
+            builder.append(action);
+        }
+
+        // Event class.
+        builder.append(" , Event: ");
+        builder.append(event.getClass().getName());
+
+        // Log debug.
+        debug(player, builder.toString());
+    }
+
+    private void addInventory(final Inventory inventory, final InventoryView view, final String prefix, final StringBuilder builder) {
+        builder.append(prefix);
+        if (inventory == null) {
+            builder.append("(none)");
+        }
+        else {
+            String name = view.getTitle();
+            builder.append(name);
+            builder.append("/");
+            builder.append(inventory.getClass().getName());
         }
     }
 }

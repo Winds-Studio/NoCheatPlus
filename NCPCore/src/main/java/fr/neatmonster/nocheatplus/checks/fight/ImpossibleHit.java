@@ -75,9 +75,9 @@ public class ImpossibleHit extends Check {
             tags.add("look_mismatch");
         }
         // Can't attack with inventory open.
-        else if (InventoryUtil.hasAnyInventoryOpen(player) && player.getGameMode() != GameMode.CREATIVE
-            && !InventoryUtil.hasOpenedInvRecently(player, 1500)) {
-            // Skip only if the player has opened the inventory for 1.5 secs.
+        else if (InventoryUtil.hasAnyInventoryOpen(player) && !InventoryUtil.hasOpenedInvRecently(player, 1200)) {
+            // Skip only if the player has opened the inventory for 1.2 secs.
+            // TODO: Maybe move this one to the InventoryListener as an Open subcheck: simply closing on attacking is less invasive than cancelling the hit, gameplay-wise.
             violation = true;
             tags.add("inventoryopen");
         }

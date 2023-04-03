@@ -45,13 +45,15 @@ public class InventoryData extends ACheckData {
     public long containerInteractTime = 0;
     /**
      * Assumption for estimating if the player's own inventory is open:
-     * When opening one's own inventory, no information is sent to the server, but a packet will always be sent for closing any kind of inventory (own included)<br>
+     * When opening one's own inventory, no information is sent to the server, but a packet will always be sent on closing any kind of inventory (own included)<br>
      * The client also sends information to the server upon clicking into the inventory. <br>
      * With this premise, we can register the time when the player initally clicked in the inventory and just assume that it will stay open from that moment on, until we receive an InventoryCloseEvent by Bukkit.<br>
      * This estimation method however comes with a drawback: the first inventory click will always be ignored.<br>
      * See: https://www.spigotmc.org/threads/detecting-when-player-opens-their-own-inv.397535/#post-3563623
+     * 
+     * 0 time = closed inventory
      */
-    public long firstClickTime;
+    public long inventoryOpenTime;
 
     // Data of the fast click check.
     public final ActionFrequency fastClickFreq = new ActionFrequency(5, 200L);
