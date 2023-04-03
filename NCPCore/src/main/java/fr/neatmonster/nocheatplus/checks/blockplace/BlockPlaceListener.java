@@ -191,7 +191,7 @@ public class BlockPlaceListener extends CheckListener {
     
         boolean cancelled = false;
 
-        final IPlayerData pData = DataManager.getPlayerData(player); // TODO: Use for data + config getting etc.
+        final IPlayerData pData = DataManager.getPlayerData(player);
         final BlockPlaceData data = pData.getGenericInstance(BlockPlaceData.class);
         final BlockPlaceConfig cc = pData.getGenericInstance(BlockPlaceConfig.class);
         final BlockInteractData bdata = pData.getGenericInstance(BlockInteractData.class);

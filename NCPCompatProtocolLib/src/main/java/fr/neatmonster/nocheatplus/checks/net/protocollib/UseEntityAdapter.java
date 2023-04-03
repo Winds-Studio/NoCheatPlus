@@ -184,7 +184,7 @@ public class UseEntityAdapter extends BaseAdapter {
             }
         }
         if (!packetInterpreted) {
-            StaticLog.logWarning("[NoCheatPlus] Attack packet couldn't be interpreted. Skipping AttackFrequency.");
+            // StaticLog.logWarning("Attack packet couldn't be interpreted. Skipping AttackFrequency.");
             // TODO: Log warning once, if the packet could not be interpreted.
             return;
         }

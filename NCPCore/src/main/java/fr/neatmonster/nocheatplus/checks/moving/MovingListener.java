@@ -957,18 +957,19 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 // Maximum amount by which a single PlayerMoveEvent can be split.
                 int maxSplit = 9;
                 for (int i = 0; i < j-1; i++) {
-                    final Location loc1 = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ());
-                    final Location loc2 = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i+1].getX(), queuePos[i+1].getY(), queuePos[i+1].getZ());
-                    // Set the movement information of the skipped moves.
-                    moveInfo.set(player, loc1, loc2, cc.yOnGround);
+                    /** The 'from' location skipped by Bukkit in the flying queue */
+                    final Location packetFrom = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ());
+                    /** The 'to' location skipped by Bukkit in the flying queue. Use Bukkit's "to" if reached the maximum split */
+                    final Location packetTo = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i+1].getX(), queuePos[i+1].getY(), queuePos[i+1].getZ());
+                    moveInfo.set(player, packetFrom, packetTo, cc.yOnGround);
                     if (debug) {
                         final String s1 = count == 1 ? "from" : "loc";
                         final String s2 = i == j - 2 || count >= maxSplit ? "to" : "loc";
                         debug(player, "Split move (packet): " + count + " (" + s1 + " -> " + s2 + ")");
                     }
-                    if (!checkPlayerMove(player, loc1, loc2, count++, moveInfo, debug, data, cc, pData, event, true) 
+                    if (!checkPlayerMove(player, packetFrom, packetTo, count++, moveInfo, debug, data, cc, pData, event, true) 
                         && processingEvents.containsKey(player.getName())) {
-                        onMoveMonitorNotCancelled(player, loc1, loc2, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
+                        onMoveMonitorNotCancelled(player, packetFrom, packetTo, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
                         data.joinOrRespawn = false;
                     } 
                     else {
