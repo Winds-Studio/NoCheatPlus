@@ -23,6 +23,7 @@ import java.util.Set;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -670,11 +671,48 @@ public class SurvivalFly extends Check {
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.to.getX() - lastMove.from.getX() : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.to.getZ() - lastMove.from.getZ() : 0.0;
         // When a WASD key is pressed, these are set to 1 or -1, depending on the movement direction.
-        // They are then multiplied by 0.98 before being passed to the travel() method.         
+        // They are then multiplied by 0.98 before being passed to the travel() method.
         /** xXa: left = 0.98, right = -0.98 */
-        float strafe = 0.98f;
-        /** zZa: forward = 0.98, backwards = -0.98 */
-        float forward = 0.98f;
+        float strafe = 0.0f;
+        String strafeDir = "";
+        /** zZa: forward = 0.98, backwards = -0.98) */
+        float forward = 0.0f;
+        String forwardDir = "";
+        
+        // 1: Attempt to calculate the player's input (placeholder method, needs to be replaced)
+        // TODO: Input vector (press ASWD) is independent on how player look(a.k.a yaw) so this one likely wrong
+        // (Inspired from this thread: https://www.spigotmc.org/threads/player-movement-direction.389134/)
+        Vector movementDirection = new Vector(to.getX()-from.getX(), 0.0, to.getZ()-from.getZ());
+        Vector yawDirection = TrigUtil.getHorizontalDirection(to.getYaw());
+        // Differentiate left from right / forward from backwards
+        final boolean isVectorDir = movementDirection.clone().crossProduct(yawDirection).dot(new Vector(0, 1, 0)) >= 0;
+        final double angle = ((isVectorDir ? -1 : 1) * TrigUtil.angle(movementDirection, yawDirection));
+        if (debug) {
+            player.sendMessage("[SurvivalFly] (updateHorizontalSpeed) Input angle: " + angle);
+        }
+        if (MathUtil.inRange(0.0, angle, Math.PI / 2.5)
+            || MathUtil.inRange(-(Math.PI / 2.5), angle, 0.0)) {
+            forward = 0.98f;
+            forwardDir = "FORWARD";
+        }
+        else if (angle > Math.PI / 1.8 || angle < -(Math.PI / 1.8)) {
+            forward = -0.98f;
+            forwardDir = "BACKWARDS";
+        }
+
+        if (MathUtil.inRange(0.2, angle, Math.PI / 1.8)
+            || MathUtil.inRange(Math.PI / 1.8, angle, Math.PI / 1.2)) {
+            strafe = 0.98f;
+            strafeDir = "LEFT";
+        }
+        else if (MathUtil.inRange(-(Math.PI / 1.8), angle, -0.2)
+                || MathUtil.inRange(-(Math.PI / 1.2), angle, -(Math.PI / 1.8))) {
+            strafe = -0.98f;
+            strafeDir = "RIGHT";
+        }
+        if (debug) {
+            player.sendMessage("[SurvivalFly] (updateHorizontalSpeed) Estimated direction: " + forwardDir +" | "+ strafeDir);
+        }
         // TODO: Brute-force through all possible combinations of movements (8 - left/right/backwards/forward/b-left/b-right/f-left/f-right)
 
 
@@ -732,64 +770,17 @@ public class SurvivalFly extends Check {
         // If sneaking, the game moves the player by steps to check if they reach an edge to back them off.
         // From EntityHuman, maybeBackOffFromEdge
         // (Do this before the negligible speed threshold reset)
-        if (sneakingOnGround && thisMove.yDistance <= 0.0 && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
-            double step = Magic.SNEAK_STEP_DISTANCE; 
-           
-            // Use NCP's definition of 'solid' because Minecraft's isSolid() would return true for signs.
-            while (thisMove.xAllowedDistance != 0.0 && !from.collidesWithMovedAABB(thisMove.xAllowedDistance, -cc.sfStepHeight, 0.0, BlockFlags.F_SOLID | BlockFlags.F_GROUND)) {
-                if (debug) { 
-                    debug(player, "[SurvivalFly] (updateHorizontalSpeed) maybeBackOffFromEdge: free underneath (X)");
-                }
-                if (thisMove.xAllowedDistance < step && thisMove.xAllowedDistance >= -step) {
-                    thisMove.xAllowedDistance = 0.0;
-                }
-                else if (thisMove.xAllowedDistance > 0.0) {
-                    thisMove.xAllowedDistance -= step;
-                }
-                else thisMove.xAllowedDistance += step;   
-            }
-            while (thisMove.zAllowedDistance != 0.0 && !from.collidesWithMovedAABB(0.0, -cc.sfStepHeight, thisMove.zAllowedDistance, BlockFlags.F_SOLID | BlockFlags.F_GROUND)) {
-                if (debug) { 
-                    debug(player, "[SurvivalFly] (updateHorizontalSpeed) maybeBackOffFromEdge: free underneath (Z)");
-                }
-                if (thisMove.zAllowedDistance < step && thisMove.zAllowedDistance >= -step) {
-                    thisMove.zAllowedDistance = 0.0;
-                }
-                else if (thisMove.zAllowedDistance > 0.0D) {
-                    thisMove.zAllowedDistance -= step;
-                }
-                else thisMove.zAllowedDistance += step;
-            }
-            while (thisMove.xAllowedDistance != 0.0 && thisMove.zAllowedDistance != 0.0 
-                   && !from.collidesWithMovedAABB(thisMove.xAllowedDistance, -cc.sfStepHeight, thisMove.zAllowedDistance, BlockFlags.F_SOLID | BlockFlags.F_GROUND)) {
-                if (debug) { 
-                    debug(player, "[SurvivalFly] (updateHorizontalSpeed) maybeBackOffFromEdge: free underneath (XZ)");
-                }
-                if (thisMove.xAllowedDistance < step && thisMove.xAllowedDistance >= -step) {
-                    thisMove.xAllowedDistance = 0.0;
-                }   
-                else if (thisMove.xAllowedDistance > 0.0) {
-                    thisMove.xAllowedDistance -= step;
-                }
-                else thisMove.xAllowedDistance += step;
-                       
-                if (thisMove.zAllowedDistance < step && thisMove.zAllowedDistance >= -step) {
-                    thisMove.zAllowedDistance = 0.0;
-                }
-                else if (thisMove.zAllowedDistance > 0.0) {
-                    thisMove.zAllowedDistance -= step;
-                }
-                else thisMove.zAllowedDistance += step;
-            }
-        }
+        // TODO: IMPLEMENT
 
         // Apply pushing speed
         // From Entity.java.push()
         if (ServerIsAtLeast1_9 && CollisionUtil.isCollidingWithEntities(player, true)) {
-            // Likely a better way to do this...
-            // (Does it need to be done for each entity actually?)
-            // (here, the game would also subtract speed to the pushing entity)
-            for (Entity entity : player.getNearbyEntities(0.15, 0.0, 0.15)) {
+            for (Entity entity : player.getNearbyEntities(0.01, 0.0, 0.01)) {
+                if (!entity.isValid() || entity.getType() == EntityType.BOAT 
+                    || entity.getType() == EntityType.ARMOR_STAND) {
+                    continue;
+                    // There could be other/alive entities, don't break.
+                }
                 final Location eLoc = entity.getLocation(useLoc);
                 double xDistToEntity = eLoc.getX() - from.getX();
                 double zDistToEntity = eLoc.getZ() - from.getZ();
@@ -811,11 +802,40 @@ public class SurvivalFly extends Check {
                     tags.add("hpush");
                     break;
                 }
-                //  else {
-                //      continue;
-                //  }
             }
         }
+
+        // Modifiers to be applied on normal ground only.
+        if (!from.isInLiquid()) {
+            if (Magic.isBunnyhop(data, useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick), sprinting, sneaking, fromOnGround, toOnGround)) {
+                thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
+                thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
+                data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY; 
+                thisMove.bunnyHop = true;
+                tags.add("bunnyhop");
+                // Keep up the Improbable, but don't feed anything.
+                Improbable.update(System.currentTimeMillis(), pData);
+            }
+            if (from.isOnClimbable() && lastMove.from.onClimbable) {
+                // Minecraft caps horizontal speed if on climbable, for whatever reason.
+                thisMove.xAllowedDistance = MathUtil.clamp(thisMove.xAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
+                thisMove.zAllowedDistance = MathUtil.clamp(thisMove.zAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
+            }
+            if (onGround) {
+                // Ground speed modifier.
+                thisMove.xAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
+                thisMove.zAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
+            }
+        }
+        else {
+            // Apply liquid pushing speed.
+            final Vector liquidFlowVector = from.getLiquidPushingVector(player, thisMove.xAllowedDistance, thisMove.zAllowedDistance);
+            thisMove.xAllowedDistance += liquidFlowVector.getX();
+            thisMove.zAllowedDistance += liquidFlowVector.getZ();
+            // NCP liquid speed modifier.
+            thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
+            thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
+        }     
         
         // Before calculating the acceleration, check if momentum is below the negligible speed threshold and cancel it.
         if (ServerIsAtLeast1_9) {
@@ -840,11 +860,7 @@ public class SurvivalFly extends Check {
         // getInputVector, entity.java
         // This is the vanilla equation to set the player (new) horizontal speed (cast to a double because the client does it).
         double inputSq = MathUtil.square((double)strafe) + MathUtil.square((double)forward);
-        if (inputSq < 1.0E-7) {
-            // return;
-            // Do nothing, let stuck-speed be applied still.
-        } 
-        else {
+        if (inputSq >= 1.0E-7) {
             // Vec3d normalization
             if (inputSq > 1.0) {
                 double distance = Math.sqrt(inputSq);
@@ -863,39 +879,11 @@ public class SurvivalFly extends Check {
             float CosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
             thisMove.xAllowedDistance += strafe * (double)CosYaw - forward * (double)SinYaw;
             thisMove.zAllowedDistance += forward * (double)CosYaw + strafe * (double)SinYaw;
-        }
+        } 
 
         // Stuck speed after update for accuracy's sake. 
         thisMove.xAllowedDistance *= (double) data.lastStuckInBlockHorizontal;
         thisMove.zAllowedDistance *= (double) data.lastStuckInBlockHorizontal;
-        
-        // Modifiers to be applied on normal ground only.
-        if (!from.isInLiquid()) {
-            if (Magic.isBunnyhop(data, useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick), sprinting, sneaking, fromOnGround, toOnGround)) {
-                thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
-                thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
-                data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY; 
-                thisMove.bunnyHop = true;
-                tags.add("bunnyhop");
-                // Keep up the Improbable, but don't feed anything.
-                Improbable.update(System.currentTimeMillis(), pData);
-            }
-            if (from.isOnClimbable() && lastMove.from.onClimbable) {
-                // Minecraft caps horizontal speed if on climbable, for whatever reason.
-                thisMove.xAllowedDistance = MathUtil.clamp(thisMove.xAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
-                thisMove.zAllowedDistance = MathUtil.clamp(thisMove.zAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
-            }
-            if (onGround) {
-                // Ground speed modifier.
-                thisMove.xAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
-                thisMove.zAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
-            }
-        }
-        else {
-            // NCP liquid speed modifier.
-            thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
-            thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
-        }                
    }
 
 
@@ -920,6 +908,85 @@ public class SurvivalFly extends Check {
         // Do we need to add lost-ground/false-on-ground cases for horizontal speed as well !?
         final boolean onGround = fromOnGround || thisMove.touchedGroundWorkaround;
         double hDistanceAboveLimit = 0.0;
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Determine if the bunnyhop delay should be reset or prolonged (bunnyfly). These checks need to be run before the estimation //                   //
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // (NCP mechanic, not vanilla. We decide when players can bunnyhop because we use our own collision system for on ground judgement)
+        if (data.bunnyhopDelay > 0) {
+            // Do prolong bunnyfly if the player is yet to touch the ground
+            if (data.bunnyhopDelay == 1 && !toOnGround && !to.isResetCond()) {
+                data.bunnyhopDelay++;
+                tags.add("bunnyfly(keep)");
+                // NOTE: Later, feed the extra ticks to the Improbable to punish long-jumping.
+            }
+            else if (data.bunnyhopDelay <= 9) {
+                // (10 represents a bunnyhop)
+                tags.add("bunnyfly(" + data.bunnyhopDelay + ")");
+            }
+            
+            final double speedAttributeMultiplier = attributeAccess.getHandle().getSpeedAttributeMultiplier(player) == Double.MAX_VALUE ? 1.0f : attributeAccess.getHandle().getSpeedAttributeMultiplier(player);
+            // Catch obviously illegal hops, despite being detected by the estimation anyway. Might get removed.
+            if (lastMove.hDistance > thisMove.hDistance) {
+                final double deceleration = lastMove.hDistance - thisMove.hDistance;
+                if (thisMove.hDistance < thisMove.hAllowedDistance
+                    // 0.287 is the base sprinting speed taken from the previous hSpeed limit.
+                    && data.bunnyhopDelay == 9 && deceleration < Magic.bunnySlopeSlowdown(data) * (lastMove.hDistance - (0.287 * speedAttributeMultiplier * data.lastBlockSpeedMultiplier * data.lastStuckInBlockHorizontal))
+                    && !(thisMove.headObstructed || lastMove.headObstructed && lastMove.toIsValid && thisMove.yDistance > 0.0)) {
+                    tags.add("bunnyslope");
+                    // Not decelerating enough.
+                    // Feed the lower deceleration to Improbable and request a check
+                    Improbable.check(player, (float)(lastMove.hDistance - thisMove.hDistance), System.currentTimeMillis(), "moving.survivalfly.bunnyslope", pData);
+                }
+            }
+            else {
+                // Assume hDistRel to take care of illegal accelerations in-air
+            }
+            
+            // Reset cases:
+            // (Do note that this uses a much lower leniency margin, unlike thisMove#headObstructed, it only considers the nearest point of collision)
+            if (from.isHeadObstructed(jumpGainMargin, false) && !data.sfLowJump) {
+                // Reset the delay on head bump, because the player will end up back on ground sooner than usual.
+                // Here (theoretically), a cheater could -after bumping head with a solid block- attempt to descend faster than legit to get a new bunnyhop boost. (thus increasing horizontal speed at faster rate than legit).
+                // Catching irregular vertical motions is the job of vDistRel and VAcc however. 
+                data.bunnyhopDelay = 0;
+                if (debug) {
+                    debug(player, "(hDistRel): Head collision detected. Reset bunnyfly (should expect a new bunnyhop soon after).");
+                }
+            }
+            else if (from.isAboveStairs() && to.isNextToBlock(0.3, 0.1, BlockFlags.F_STAIRS) && !lastMove.bunnyHop
+                    && !data.sfLowJump && thisMove.to.getY() > data.playerMoves.getPastMove(Magic.BUNNYHOP_MAX_DELAY - data.bunnyhopDelay).from.getY()) {
+                // Only if the player is next to a flight of stairs and current altitude is higher than the bunnyhop altitude
+                // NOTE: Margins are random. Perhaps the horizontal one (0.3) is a bit much
+                data.bunnyhopDelay = 0;
+                if (debug) {
+                    debug(player, "(hDistRel): Reset bunnyfly after 1 tick due to the player being on stairs (double hop due to auto-jump).");
+                }
+            }
+            else if (fromOnGround && !lastMove.bunnyHop && !data.sfLowJump) {
+                if (from.isOnHoneyBlock() && data.bunnyhopDelay <= 4) {
+                    data.bunnyhopDelay = 0;
+                    if (debug) {
+                        debug(player, "(hDistRel): Early reset of bunnyfly due to the player jumping on a honey block.");
+                    }
+                }
+                else if (from.isInWeb() && data.bunnyhopDelay <= 7) {
+                    data.bunnyhopDelay = 0;
+                    if (debug) {
+                        debug(player, "(hDistRel): Early reset of bunnyfly due to the player jumping in webs.");
+                    }
+                }
+                else if (data.bunnyhopDelay <= 6 && !thisMove.headObstructed 
+                        // The player actually jumped up a slope: this movement has a higher altitude than the bunnyhop move.
+                        && thisMove.from.getY() > data.playerMoves.getPastMove(Magic.BUNNYHOP_MAX_DELAY - data.bunnyhopDelay).from.getY()) {
+                    // (Ground check is checked above)
+                    data.bunnyhopDelay = 0;
+                    if (debug) {
+                        debug(player, "(hDistRel): Early reset of bunnyfly due to the player jumping up a slope.");
+                    }
+                }
+            }
+        }
 
 
         //////////////////////////////////////////////////////////////
@@ -958,7 +1025,7 @@ public class SurvivalFly extends Check {
                 // 1.8 (and below) clients will use cubed inertia, not cubed friction here. The difference isn't significant except for blocking speed and bunnyhopping on soul sand, which are both slower on 1.8
                 float acceleration = onGround ? data.walkSpeed * ((ServerIsAtLeast1_13 ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (data.lastFrictionHorizontal * data.lastFrictionHorizontal * data.lastFrictionHorizontal)) : Magic.AIR_ACCELERATION;
                 if (sprinting) {//&& !sneaking) {
-                    // (Apparently players can now sprint while sneaking !?)
+                    // NOTE: (Apparently players can now sprint while sneaking !?)
                     // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
                     // Multiplying by 1.3f seems to cause precision loss, so use the total multiply result.
                     acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).
@@ -968,12 +1035,12 @@ public class SurvivalFly extends Check {
             }
         }
         else {
-            // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (the ProtocolLib-less split move mechanic can only aid so much)
+            // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (and without ProtocolLib, it's nearly impossible to achieve precision here)
             // Besides, no need to predict speed for a move that has been slowed down so much to the point of being considered micro..
             thisMove.xAllowedDistance = thisMove.to.getX() - thisMove.from.getX();
             thisMove.zAllowedDistance = thisMove.to.getZ() - thisMove.from.getZ();
             if (debug) {
-                debug(player, "[SurvivalFly] (hDistRel): Skip speed prediction on micro move (legacy).");
+                debug(player, "(hDistRel): Skip speed prediction on micro move (legacy).");
             }
         }
         
@@ -996,91 +1063,12 @@ public class SurvivalFly extends Check {
         }
         else if (hDistDiffEx < 0.000009) {
             // Accuracy margin
+            // (Too ambitious? :) )
         }
         else {
             // At this point, a violation.
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, hDistDiffEx);
             tags.add("hdistrel");
-        }
-
-
-        //////////////////////////////////////////////////////////////////////////////////////////////
-        // Determine if the bunnyhop delay should be reset or prolonged (bunnyfly)                  //
-        //////////////////////////////////////////////////////////////////////////////////////////////
-        // (NCP mechanic, not vanilla. We decide when players can bunnyhop because we use our own collision system for on ground judgement)
-        if (data.bunnyhopDelay > 0) {
-            // Do prolong bunnyfly if the player is yet to touch the ground
-            if (data.bunnyhopDelay == 1 && !toOnGround && !to.isResetCond()) {
-                data.bunnyhopDelay++;
-                tags.add("bunnyfly(keep)");
-                // NOTE: Later, feed the extra ticks to the Improbable to punish long-jumping.
-            }
-            else if (data.bunnyhopDelay <= 9) {
-                // (10 represents a bunnyhop)
-                tags.add("bunnyfly(" + data.bunnyhopDelay + ")");
-            }
-            
-            final double speedAttributeMultiplier = attributeAccess.getHandle().getSpeedAttributeMultiplier(player) == Double.MAX_VALUE ? 1.0f : attributeAccess.getHandle().getSpeedAttributeMultiplier(player);
-            // Speed can only decrease after a bunnyhop.
-            if (lastMove.hDistance > thisMove.hDistance) {
-                final double deceleration = lastMove.hDistance - thisMove.hDistance;
-                if (thisMove.hDistance < thisMove.hAllowedDistance
-                    // 0.287 is the base sprinting speed taken from the previous hSpeed limit.
-                    && data.bunnyhopDelay == 9 && deceleration < Magic.bunnySlopeSlowdown(data) * (lastMove.hDistance - (0.287 * speedAttributeMultiplier * data.lastBlockSpeedMultiplier * data.lastStuckInBlockHorizontal))
-                    && !(thisMove.headObstructed || lastMove.headObstructed && lastMove.toIsValid && thisMove.yDistance > 0.0)) {
-                    tags.add("bunnyslope");
-                    // Not decelerating enough.
-                    // Feed the lower deceleration to Improbable and request a check
-                    Improbable.check(player, (float)(lastMove.hDistance - thisMove.hDistance), System.currentTimeMillis(), "moving.survivalfly.bunnyslope", pData);
-                }
-            }
-            else {
-                // Assume hDistRel to take care of illegal accelerations in-air
-            }
-            
-            // Reset cases
-            // (Do note that this uses a much lower leniency margin, unlike thisMove#headObstructed, it only considers the nearest point of collision)
-            if (from.isHeadObstructed(jumpGainMargin, false) && !data.sfLowJump) {
-                // Reset the delay on head bump, because the player will end up back on ground sooner than usual.
-                // Here (theoretically), a cheater could -after bumping head with a solid block- attempt to descend faster than legit to get a new bunnyhop boost. (thus increasing horizontal speed at faster rate than legit).
-                // Catching irregular vertical motions is the job of vDistRel and VAcc however. 
-                data.bunnyhopDelay = 0;
-                if (debug) {
-                    debug(player, "[SurvivalFly] (hDistRel): Head collision detected. Reset bunnyfly (should expect a new bunnyhop soon after).");
-                }
-            }
-            else if (fromOnGround && !lastMove.bunnyHop && !data.sfLowJump) {
-                final PlayerMoveData pastMoveOnLowerSlope = data.playerMoves.getPastMove(Magic.BUNNYHOP_MAX_DELAY - data.bunnyhopDelay);
-                if (from.isOnHoneyBlock() && data.bunnyhopDelay <= 4) {
-                    data.bunnyhopDelay = 0;
-                    if (debug) {
-                        debug(player, "[SurvivalFly] (hDistRel): Early reset of bunnyfly due to the player jumping on a honey block.");
-                    }
-                }
-                else if (from.isInWeb() && data.bunnyhopDelay <= 7) {
-                    data.bunnyhopDelay = 0;
-                    if (debug) {
-                        debug(player, "[SurvivalFly] (hDistRel): Early reset of bunnyfly due to the player jumping in webs.");
-                    }
-                }
-                else if (data.bunnyhopDelay <= 6 && !thisMove.headObstructed 
-                        // The player actually jumped up a slope: this movement has a higher altitude than the bunnyhop move.
-                        && thisMove.from.getY() > data.playerMoves.getPastMove(Magic.BUNNYHOP_MAX_DELAY - data.bunnyhopDelay).from.getY()) {
-                    // (Ground check is chcked above)
-                    data.bunnyhopDelay = 0;
-                    if (debug) {
-                        debug(player, "[SurvivalFly] (hDistRel): Early reset of bunnyfly due to the player jumping up a slope.");
-                    }
-                }
-                else if (to.isAboveStairs() && to.isNextToBlock(0.5, 0.2, BlockFlags.F_STAIRS)) {
-                    // Only if the player is next to a flight of stairs
-                    // NOTE: Margins are random. Perhaps the horizontal one (0.5) is a bit much
-                    data.bunnyhopDelay = 0;
-                    if (debug) {
-                        debug(player, "[SurvivalFly] (hDistRel): Reset bunnyfly after 1 tick due to the player being on stairs (double hop due to auto-jump).");
-                    }
-                }
-            }
         }
 
 
@@ -1614,8 +1602,9 @@ public class SurvivalFly extends Check {
         ///////////////////////////////////////////////////////////////////////////////////////
         if (!VEnvHack && data.sfJumpPhase > maxJumpPhase && !data.isVelocityJumpPhase()) {
 
-            if (yDistance < 0.0) {
+            if (yDistance < Magic.GRAVITY_MIN) {
                 // Ignore falling, and let accounting deal with it.
+                // (Use minimum gravity as a mean of leniency)
             }
             else if (resetFrom) {
                 // Ignore bunny etc.
@@ -2256,7 +2245,7 @@ public class SurvivalFly extends Check {
             // Allow jumping motion
             else vAllowedDistance = data.liftOffEnvelope.getMinJumpGain(data.jumpAmplifier, data.lastStuckInBlockVertical);
             vDistanceAboveLimit = yDistance - vAllowedDistance;
-            tags.add("vsnow");
+            tags.add("snowjump");
         }
         else if (BridgeMisc.hasLeatherBootsOn(player)) {
             // If equipped with leather boots, allow climbing motion or jump motion
@@ -2347,7 +2336,7 @@ public class SurvivalFly extends Check {
         // Estimate the allowed motion (per-move distance check) //
         ///////////////////////////////////////////////////////////
         // Minecraft bug: sbyte overflow with levitation level at or above 127
-        if (LevitationLevel > 126) {
+        if (LevitationLevel >= 126) {
             // Using /effect minecraft:levitation 255 negates all sort of gravitational force on the player
             // Levitation level over 127 = fall down at a fast or slow rate, depending on the value.
             vAllowedDistance = thisMove.yDistance; // Not ideal, but what can we do. We can't account for each and every vanilla bullshit... Let EXTREME_MOVE catch absurd distances and call it a day.

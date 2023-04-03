@@ -42,6 +42,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
@@ -70,6 +71,7 @@ import fr.neatmonster.nocheatplus.utilities.collision.PassableAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.collision.PassableRayTracing;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
@@ -890,7 +892,7 @@ public class BlockProperties {
     }
 
     /**
-     * Test if the block is a containter.
+     * Test if is a containter.
      *
      * @param mat
      *            the mat.
@@ -1065,7 +1067,7 @@ public class BlockProperties {
     }
 
     /** Liquid height if no solid/full blocks are above. */
-    protected static final double LIQUID_HEIGHT_LOWERED = 8 / 9f;
+    public static final double LIQUID_HEIGHT_LOWERED = 8 / 9f;
 
     /** Properties by block type.*/
     protected static final Map<Material, BlockProps> blocks = new HashMap<Material, BlockProps>();
@@ -1107,7 +1109,7 @@ public class BlockProperties {
     public static final ToolProps diamondPickaxe = new ToolProps(ToolType.PICKAXE, MaterialBase.DIAMOND);
 
     /** Times for instant breaking. */
-    public static final long[] instantTimes = secToMs(0);
+    public static final long[] instantTimes = MathUtil.secToMs(0);
 
     /** The Constant indestructibleTimes. */
     private static final long[] indestructibleTimes = new long[] {indestructible, indestructible, indestructible, indestructible, indestructible, indestructible, indestructible}; 
@@ -2004,39 +2006,6 @@ public class BlockProperties {
     }
 
     /**
-     * Sec to ms.
-     *
-     * @param s1
-     *            the s1
-     * @param s2
-     *            the s2
-     * @param s3
-     *            the s3
-     * @param s4
-     *            the s4
-     * @param s5
-     *            the s5
-     * @param s6
-     *            the s6
-     * @return the long[]
-     */
-    public static long[] secToMs(final double s1, final double s2, final double s3, final double s4, final double s5, final double s6, final double s7) {
-        return new long[] { (long) (s1 * 1000d), (long) (s2 * 1000d), (long) (s3 * 1000d), (long) (s4 * 1000d), (long) (s5 * 1000d), (long) (s6 * 1000d), (long) (s7 * 1000d) };
-    }
-
-    /**
-     * Sec to ms.
-     *
-     * @param s1
-     *            the s1
-     * @return the long[]
-     */
-    public static long[] secToMs(final double s1) {
-        final long v = (long) (s1 * 1000d);
-        return new long[]{v, v, v, v, v, v, v};
-    }
-
-    /**
      * Gets the tool props.
      *
      * @param stack
@@ -2650,7 +2619,59 @@ public class BlockProperties {
     }
 
     /**
-     * Auxiliary check for if this block is climbable and allows climbing up.
+     * Get the liquid level at the given block location
+     * 
+     * @param access
+     * @param x
+     * @param y
+     * @param z
+     * @return the level
+     * 
+     */
+    public static double getLiquidHeight(final BlockCache access, final int x, final int y, final int z) {
+        double liquidHeight;
+        final IBlockCacheNode node = access.getOrCreateBlockCacheNode(x, y, z, false);
+        final IBlockCacheNode nodeAbove = access.getOrCreateBlockCacheNode(x, y + 1, z, false);
+        final long aboveFlags = BlockFlags.getBlockFlags(nodeAbove.getType());
+        final long flags = BlockFlags.getBlockFlags(node.getType());
+        if ((flags & BlockFlags.F_LAVA) != 0) {
+            if (nodeAbove != null && (aboveFlags & BlockFlags.F_LAVA) != 0) {
+                // Lava above, full block height
+                liquidHeight = 1;
+            } 
+            else {
+                // Level-dependant height otherwise
+                final int data = node.getData(access, x, y, z);
+                if (data >= 8) {
+                    liquidHeight = LIQUID_HEIGHT_LOWERED;
+                } 
+                else liquidHeight = (8 - data / 9f);
+            }
+        } 
+        else if ((flags & BlockFlags.F_WATER) != 0) {
+            if (nodeAbove != null && (aboveFlags & BlockFlags.F_WATER) != 0) {
+                // Water above, full block height
+                liquidHeight = 1;
+            } 
+            else {
+                // Level-dependant height otherwise
+                final int data = node.getData(access, x, y, z);
+                final double[] bounds = node.getBounds(access, x, y, z);
+                if ((data & 8) == 8) {
+                    liquidHeight = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
+                } 
+                else liquidHeight = (8 - data / 9f);
+            }
+        } 
+        else {
+            // Not a liquid.
+            liquidHeight = 0.0;
+        }
+        return liquidHeight;
+    }
+
+    /**
+     * Legacy auxiliary check for: if this block is climbable and allows climbing up.
      * Does not account for jumping off ground etc.
      *
      * @param cache
@@ -3508,7 +3529,7 @@ public class BlockProperties {
      *            the max z
      * @param flags
      *            Block flags (@see
-     *            fr.neatmonster.nocheatplus.utilities.BlockProperties).
+     *            fr.neatmonster.nocheatplus.utilities.BlockFlags).
      * @return If any block has the flags.
      */
     public static final boolean hasAnyFlags(final BlockCache access, final double minX, 
@@ -3591,7 +3612,7 @@ public class BlockProperties {
      * @param maxZ
      *            the max z
      * @param flags
-     *            The flags to match.
+     *            The flags to match to the collected flags.
      * @return true, if successful
      */
     public static final boolean collides(final BlockCache access, final double minX, final double minY, final double minZ, 
@@ -3610,11 +3631,11 @@ public class BlockProperties {
                 for (int y = iMaxY; y >= iMinY; y--) {
                     final IBlockCacheNode node = access.getOrCreateBlockCacheNode(x, y, z, false);
                     final Material id = node.getType();
-                    final long cFlags = BlockFlags.getBlockFlags(id);
-                    if ((cFlags & flags) != 0) {
+                    final long collectedFlags = BlockFlags.getBlockFlags(id);
+                    if ((collectedFlags & flags) != 0) {
                         // Might collide.
                         if (node.hasNonNullBounds().decideOptimistically() 
-                            && collidesBlock(access, minX, minY, minZ, maxX, maxY, maxZ, x, y, z, node, nodeAbove, cFlags)) {
+                            && collidesBlock(access, minX, minY, minZ, maxX, maxY, maxZ, x, y, z, node, nodeAbove, collectedFlags)) {
                             return true;
                         }
                     }
@@ -4249,7 +4270,7 @@ public class BlockProperties {
         // Judge if the block collision can be considered as "ground"     //
         ////////////////////////////////////////////////////////////////////
         // Handle special blocks.
-        final Block block = world.getBlockAt(x, y, z);
+        /*final Block block = world.getBlockAt(x, y, z);
         if (block != null) {
             // Player collided but the leaf has an unstable tilt.
             final BlockData blockData = block.getState().getBlockData();
@@ -4260,7 +4281,7 @@ public class BlockProperties {
                     return AlmostBoolean.NO;
                 }
             }
-        }
+        }*/
         // Check if the collided block can be passed through with the bounding box (wall-climbing. Disregard the ignore flag).
         if (isPassableWorkaround(access, x, y, z, minX - x, minY - y, minZ - z, node, maxX - minX, maxY - minY, maxZ - minZ, minX, minY, minZ, maxX, maxY, maxZ, 1.0)) {
             if ((flags & BlockFlags.F_GROUND_HEIGHT) == 0 || getGroundMinHeight(access, x, y, z, node, flags) > maxY - y) { // TODO: height >= ?
@@ -4280,13 +4301,7 @@ public class BlockProperties {
                 return AlmostBoolean.MAYBE; 
             }
         }        
-        // The commented out part below looks wrong.
-        //        // TODO: Keep an eye on this one for exploits.
-        //        if (y != iMaxY && !variable) {
-        //            // Ground found and the block above is passable, no need to check above.
-        //            return AlmostBoolean.YES;
-        //        }
-        
+
         // (Collided block is solid and the player is not inside of it)
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Judge if the block above allows this block collision to be ground (against wall-climbing) ensure nodeAbove is set.  // 
@@ -4316,6 +4331,13 @@ public class BlockProperties {
         }
         boolean variable = (flags & BlockFlags.F_VARIABLE) != 0;
         variable |= (aboveFlags & BlockFlags.F_VARIABLE) != 0;
+        // The commented out part below looks wrong.
+        //        // TODO: Keep an eye on this one for exploits.
+        //        if (y != iMaxY && !variable) {
+        //            // Ground found and the block above is passable, no need to check above.
+        //            return AlmostBoolean.YES;
+        //        }
+        
         // In case the block above has the GROUND flag, check if it is the same id/material of the collided block (walls)
         if (!variable && id == aboveId) {
             if (isFullBounds(bounds)) {
@@ -4413,9 +4435,7 @@ public class BlockProperties {
 
     /**
      * Check if the move given by from and to is leading downstream. Currently
-     * only the x-z move is regarded, no envelope/consistency checks are
-     * performed here, such as checking if the block is liquid at all, nor if
-     * the move makes sense. performed here.
+     * only the x-z move is regarded, no tight envelope/consistency check is done here.
      *
      * @param from
      *            the from
@@ -4424,6 +4444,14 @@ public class BlockProperties {
      * @return true, if is down stream
      */
     public static final boolean isDownStream(final PlayerLocation from, final PlayerLocation to) {
+        if (!from.isInLiquid() && !to.isInLiquid()) {
+            // Clearly cannot be moving downstream, if not in a liquid.
+            return false;
+        }
+        if (from.isSubmerged(0.75)) {
+            // Player is almost submerged in liquid, so they are not moving downstream.
+            return false;
+        }
         return isDownStream(from.getBlockCache(), from.getBlockX(), from.getBlockY(), from.getBlockZ(), 
                             from.getData(), to.getX() - from.getX(), to.getZ() - from.getZ());
     }
@@ -4453,38 +4481,38 @@ public class BlockProperties {
         if ((data & 0x8) == 0) {
             // not falling.
             if ((dX > 0)) {
-                if (data < 7 && BlockProperties.isLiquid(access.getType(x + 1, y, z)) && access.getData(x + 1, y, z) > data) {
+                if (data < 7 && isLiquid(access.getType(x + 1, y, z)) && access.getData(x + 1, y, z) > data) {
                     return true;
                 }
-                else if (data > 0 && BlockProperties.isLiquid(access.getType(x - 1, y, z)) && access.getData(x - 1, y, z) < data) {
+                else if (data > 0 && isLiquid(access.getType(x - 1, y, z)) && access.getData(x - 1, y, z) < data) {
                     // reverse direction.
                     return true;
                 }
             } 
             else if (dX < 0) {
-                if (data < 7 && BlockProperties.isLiquid(access.getType(x - 1, y, z)) && access.getData(x - 1, y, z) > data) {
+                if (data < 7 && isLiquid(access.getType(x - 1, y, z)) && access.getData(x - 1, y, z) > data) {
                     return true;
                 }
-                else if (data > 0 && BlockProperties.isLiquid(access.getType(x + 1, y, z)) && access.getData(x + 1, y, z) < data) {
+                else if (data > 0 && isLiquid(access.getType(x + 1, y, z)) && access.getData(x + 1, y, z) < data) {
                     // reverse direction.
                     return true;
                 }
             }
 
             if (dZ > 0) {
-                if (data < 7 && BlockProperties.isLiquid(access.getType(x, y, z + 1)) && access.getData(x, y, z + 1) > data) {
+                if (data < 7 && isLiquid(access.getType(x, y, z + 1)) && access.getData(x, y, z + 1) > data) {
                     return true;
                 }
-                else if (data > 0 && BlockProperties.isLiquid(access.getType(x , y, z - 1)) && access.getData(x, y, z - 1) < data) {
+                else if (data > 0 && isLiquid(access.getType(x , y, z - 1)) && access.getData(x, y, z - 1) < data) {
                     // reverse direction.
                     return true;
                 }
             }
             else if (dZ < 0) {
-                if (data < 7 && BlockProperties.isLiquid(access.getType(x, y, z - 1)) && access.getData(x, y, z - 1) > data) {
+                if (data < 7 && isLiquid(access.getType(x, y, z - 1)) && access.getData(x, y, z - 1) > data) {
                     return true;
                 }
-                else if (data > 0 && BlockProperties.isLiquid(access.getType(x , y, z + 1)) && access.getData(x, y, z + 1) < data) {
+                else if (data > 0 && isLiquid(access.getType(x , y, z + 1)) && access.getData(x, y, z + 1) < data) {
                     // reverse direction.
                     return true;
                 }
