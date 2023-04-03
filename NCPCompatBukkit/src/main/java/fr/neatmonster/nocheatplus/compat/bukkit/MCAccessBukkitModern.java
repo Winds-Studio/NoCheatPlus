@@ -43,10 +43,10 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
     protected ReflectLivingEntity reflectLivingEntity = null;
     protected final Map<Material, BukkitShapeModel> shapeModels = new HashMap<Material, BukkitShapeModel>();
 
-    // Blocks that can automatic fetch bounding box from API
+    // Blocks that can be fetched automatically from from the Bukkit API
     private static final BukkitShapeModel MODEL_AUTO_FETCH = new BukkitFetchableBound();
 
-    // Blocks that form from multi-bounds
+    // Blocks that are formed from multiple bounding boxes
     private static final BukkitShapeModel MODEL_BREWING_STAND = new BukkitStatic(
         // Bottom rod
         0.0625, 0.0, 0.0625, 0.9375, 0.125, 0.9375,
@@ -215,7 +215,8 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         for (Material mat : BridgeMaterial.getAllBlocks(
             "azalea", "flowering_azalea",
             "sculk_sensor", "pointed_dripstone",
-            "stonecutter", "chain")) {
+            "stonecutter", "chain", "pink_petals", "frogspawn",
+            "torchflower", "decorated_pot")) {
             addModel(mat, MODEL_AUTO_FETCH);
         }
 

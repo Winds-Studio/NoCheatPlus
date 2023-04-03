@@ -50,9 +50,20 @@ public class MaterialUtil {
     ///////////////////////
 
     private static final List<String> woodTypes = Arrays.asList(
-            "acacia", "birch", "dark_oak", "jungle", "oak", "spruce", "warped", "crimson", "mangrove", "bamboo",
+            "acacia", "birch", "dark_oak", "jungle", "oak", "spruce", "warped", "crimson", "mangrove", "bamboo", "cherry",
             "wood" // Legacy
             );
+
+    private final static List<EntityType> collectTypesBySuffix(String prefix) {
+        prefix = prefix.toLowerCase();
+        final List<EntityType> res = new LinkedList<EntityType>();
+        for (final EntityType type : EntityType.values()) {
+            if (type.name().toLowerCase().endsWith(prefix)) {
+                res.add(type);
+            }
+        }
+        return res;
+    }
 
     /**
      * Get a new set containing the given set, as well as all non-null results
@@ -121,8 +132,7 @@ public class MaterialUtil {
     public static void dumpStaticSets(final Class<?> clazz, final Level level) {
         final StringBuilder builder = new StringBuilder(6000);
         for (Field field : clazz.getDeclaredFields()) {
-            if (Modifier.isStatic(field.getModifiers()) 
-                    && Modifier.isPublic(field.getModifiers())) {
+            if (Modifier.isStatic(field.getModifiers()) && Modifier.isPublic(field.getModifiers())) {
                 try {
                     Object obj = field.get(clazz);
                     if (obj instanceof Set<?>) {
@@ -206,31 +216,21 @@ public class MaterialUtil {
                     "legacy"), "bed_block"));
 
     public static final Set<Material> BOATS;
+    public static final Set<Material> ALL_SEEDS;
     static {
         HashSet<Material> temp = new HashSet<Material>();
+        HashSet<Material> seedsTemp = new HashSet<Material>();
         if (BridgeMaterial.get("boat") != null) {
             temp.add(BridgeMaterial.get("boat"));
         }
+        seedsTemp.addAll(InventoryUtil.collectItemsBySuffix("_SEEDS"));
         temp.addAll(InventoryUtil.collectItemsByPrefix("BOAT_"));
         temp.addAll(InventoryUtil.collectItemsBySuffix("_BOAT"));
         BOATS = Collections.unmodifiableSet(temp);
+        ALL_SEEDS = Collections.unmodifiableSet(seedsTemp);
     }
 
     private static final List<EntityType> BOATSTYPE = collectTypesBySuffix("BOAT");
-    public static boolean isBoat(final EntityType et) {
-    	return BOATSTYPE.contains(et);
-    }
-
-    private final static List<EntityType> collectTypesBySuffix(String prefix) {
-        prefix = prefix.toLowerCase();
-        final List<EntityType> res = new LinkedList<EntityType>();
-        for (final EntityType type : EntityType.values()) {
-            if (type.name().toLowerCase().endsWith(prefix)) {
-                res.add(type);
-            }
-        }
-        return res;
-    }
 
     public static final Set<Material> CARPETS = Collections.unmodifiableSet(addBlocks(
             BridgeMaterial.getBySuffix("_carpet", AlmostBoolean.YES, "legacy"), 
@@ -532,7 +532,7 @@ public class MaterialUtil {
                     "spore_blossom", "small_dripleaf", "cave_vines", "cave_vines_plant",
                     "weeping_vines", "weeping_vines_plant",
                     "twisting_vines", "twisting_vines_plant",
-                    "mangrove_propagule"
+                    "mangrove_propagule", "pink_petals", "torchflower", "torchflower_crop"
                     ),
             new HashSet<Material>(Arrays.asList(BridgeMaterial.TALL_GRASS, 
                     BridgeMaterial.WHEAT_CROPS, BridgeMaterial.CARROTS, 
@@ -540,6 +540,19 @@ public class MaterialUtil {
                     Material.PUMPKIN_STEM, Material.MELON_STEM,
                     BridgeMaterial.SUGAR_CANE, BridgeMaterial.BEETROOTS))
             ));
+
+    public static final Set<Material> FARMABLE = Collections.unmodifiableSet(join(new HashSet<Material>(Arrays.asList(BridgeMaterial.TALL_GRASS, 
+                    BridgeMaterial.WHEAT_CROPS, BridgeMaterial.CARROTS, 
+                    BridgeMaterial.POTATOES, BridgeMaterial.GRASS,
+                    Material.PUMPKIN_STEM, Material.MELON_STEM,
+                    BridgeMaterial.SUGAR_CANE, BridgeMaterial.BEETROOTS)),
+                WATER_PLANTS,
+                    BridgeMaterial.getAllBlocks("peony", "sunflower", "lilac", "rose_bush", "sweet_berry_bush", 
+                                                "cocoa", "double_plant", "fern", "large_fern", "attached_melon_stem", 
+                                                "attached_pumpkin_stem", "bamboo", "bamboo_sapling")
+
+
+));
 
     /**
      * Sets of fully solid blocks (in terms of: can walk on, can't pass through,
@@ -565,10 +578,10 @@ public class MaterialUtil {
             WOOD_BLOCKS,
             WOOL_BLOCKS,
             new HashSet<Material>(Arrays.asList(
-            		BridgeMaterial.BRICKS,
-            		BridgeMaterial.MYCELIUM,
-            		BridgeMaterial.CRAFTING_TABLE,
-            		BridgeMaterial.END_STONE
+                    BridgeMaterial.BRICKS,
+                    BridgeMaterial.MYCELIUM,
+                    BridgeMaterial.CRAFTING_TABLE,
+                    BridgeMaterial.END_STONE
                     ))
             ));
 
@@ -583,7 +596,7 @@ public class MaterialUtil {
             RAILS,
             WALL_BANNERS,
             INSTANT_PLANTS,
-			WATER_PLANTS,
+            WATER_PLANTS,
             BridgeMaterial.getAllBlocks("structure_void", "end_gateway"),
             new HashSet<Material>(Arrays.asList(
                     Material.LEVER,
@@ -622,9 +635,56 @@ public class MaterialUtil {
     public static boolean isSpawnEgg(final Material mat) {
         return SPAWN_EGGS.contains(mat);
     }
-
+    
+    /**
+     * Check if is log
+     * 
+     * @param mat
+     * @return 
+     */
     public static boolean isLog(final Material mat) {
         return LOGS.contains(mat);
     }
-
+    
+    /**
+     * Check if is sign (wall included)
+     * 
+     * @param mat
+     * @return
+     */
+    public static boolean isSign(final Material mat) {
+        return WOODEN_SIGNS.contains(mat);
+    }
+    
+    /**
+     * Check if the item can be planted in a dirt-like block
+     * 
+     * @param mat
+     * @return
+     */
+    public static boolean isSeedable(final Material mat) {
+        return mat == BridgeMaterial.CARROTS || ALL_SEEDS.contains(mat) 
+               || mat == BridgeMaterial.POTATOES || mat == BridgeMaterial.BEETROOTS;
+    }
+    
+    /**
+     * Check if is boat type
+     * 
+     * @param entity
+     * @return 
+     */
+    public static boolean isBoat(final EntityType entity) {
+        return BOATSTYPE.contains(entity);
+    }
+    
+    /**
+     * Check if this block can be fertilized with bone meal
+     * (Intended for player-farming, rather. I.e.: bone meal + seeds in both hands)
+     * 
+     * @param mat
+     * @return
+     */
+    public static boolean isFarmable(final Material mat) {
+        return isSeedable(mat) || FARMABLE.contains(mat);
+    }
 }

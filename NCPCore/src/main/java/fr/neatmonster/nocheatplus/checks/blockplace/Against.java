@@ -24,10 +24,12 @@ import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractData;
+import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 
 /**
@@ -51,8 +53,9 @@ public class Against extends Check {
      * Checks a player
      * @param player
      * @param block
-     * @param placedMat the material placed.
-     * @param blockAgainst
+     * @param placedMat 
+     *               The material in hand that has been placed.
+     * @param blockAgainst 
      * @param isInteractBlock
      * @param data
      * @param cc
@@ -65,34 +68,49 @@ public class Against extends Check {
         
         boolean violation = false;
         final BlockInteractData bIData = pData.getGenericInstance(BlockInteractData.class); // TODO: pass as argument.
-        final Material againstType = blockAgainst.getType();
-        final Material matAgainst = bIData.getLastType();
+        /** 
+         * Do not use this to check for cheating: Bukkit will return the placed material if the placement is not possible.
+         * i.e.: Attempting to place dirt against air will return DIRT, not air as against type.
+         */
+        final Material bukkitAgainst = blockAgainst.getType();
+        /** NoCheatPlus' tracked block last interacted with. */
+        final Material ncpAgainst = bIData.getLastType();
 
-        if (pData.isDebugActive(type)) {
-            debug(player, "Player placed (" + placedMat + ") against (" + blockAgainst.toString() +"/"+ matAgainst + "). againstType: " + againstType);
+        if (pData.isDebugActive(this.type)) {
+            debug(player, "Placed " + placedMat.toString() + " against: " + bukkitAgainst +" (bukkit) / "+ (ncpAgainst == null ? "null" : ncpAgainst.toString()) + " (nc+)");
         }
 
         if (bIData.isConsumedCheck(this.type) && !bIData.isPassedCheck(this.type)) {
             // TODO: Awareness of repeated violation probably is to be implemented below somewhere.
             violation = true;
-            if (pData.isDebugActive(type)) {
+            if (pData.isDebugActive(this.type)) {
                 debug(player, "Cancel due to block having been consumed by this check.");
             }
         }
-        else if (BlockProperties.isAir(matAgainst)) { // Holds true for null blocks.
-            if (isInteractBlock && !BlockProperties.isAir(matAgainst) && !BlockProperties.isLiquid(matAgainst)) {
-                // Block was placed against something (e.g. cactus), allow it.
-            }
-            else if (!pData.hasPermission(Permissions.BLOCKPLACE_AGAINST_AIR, player)
-                    && placedMat != BridgeMaterial.LILY_PAD) {
-                violation = true;
-                // Attempted to place a block against a null one (air)
+        else if (isInteractBlock && !BlockProperties.isAir(ncpAgainst) && !BlockProperties.isLiquid(ncpAgainst)) {
+            if (pData.isDebugActive(this.type)) {
+                debug(player, "Block was placed against something, allow it.");
             }
         }
-        else if (BlockProperties.isLiquid(matAgainst)) {
-            if ((placedMat != BridgeMaterial.LILY_PAD
-                || !BlockProperties.isLiquid(block.getRelative(BlockFace.DOWN).getType()))
-                && !BlockProperties.isWaterPlant(bIData.getLastType())
+        else if (BlockProperties.isAir(ncpAgainst)) { // Holds true for null blocks.
+            if (MaterialUtil.isFarmable(placedMat) && MaterialUtil.isFarmable(bukkitAgainst)) {
+                // Server - client desync: place a seed/plant down -> fully grow it with bone meal -> quickly harvest/break it while also trying to place down the next seed/plant (possibly with both hands to further speed up the process)
+                // Sometimes, the client sends a block placement packet which seemingly attempts to plant the seed down on the crop instead of the farmland.
+                // This isn't possible, so NCP's lastType check won't register the last interacted block (= AIR, remember), resulting in a false positive.
+                if (pData.isDebugActive(this.type)) {
+                    debug(player, "Ignore player attempting to place a seed/plant on a crop/plant (assume desync due to fast-farming).");        
+                }
+            }
+            else if (!pData.hasPermission(Permissions.BLOCKPLACE_AGAINST_AIR, player)
+                     && placedMat != BridgeMaterial.LILY_PAD
+                     && placedMat != BridgeMaterial.FROGSPAWN) {
+                violation = true;
+                // Attempted to place a block without having interacted in the past with the placed against block (null)
+            }
+        }
+        else if (BlockProperties.isLiquid(ncpAgainst)) {
+            if (((placedMat != BridgeMaterial.LILY_PAD || placedMat != BridgeMaterial.FROGSPAWN) || !BlockProperties.isLiquid(block.getRelative(BlockFace.DOWN).getType()))
+                && !BlockProperties.isWaterPlant(ncpAgainst)
                 && !pData.hasPermission(Permissions.BLOCKPLACE_AGAINST_LIQUIDS, player)) {
                 violation = true;
             }
@@ -103,11 +121,11 @@ public class Against extends Check {
         if (violation) {
             data.againstVL += 1.0;
             final ViolationData vd = new ViolationData(this, player, data.againstVL, 1, cc.againstActions);
-            vd.setParameter(ParameterName.BLOCK_TYPE, matAgainst == null ? null : matAgainst.toString());
+            vd.setParameter(ParameterName.BLOCK_TYPE, ncpAgainst == null ? "air" : ncpAgainst.toString());
             return executeActions(vd).willCancel();
         }
         else {
-            data.againstVL *=  0.99; // Assume one false positive every 100 blocks.
+            data.againstVL *= 0.99; // Assume one false positive every 100 blocks.
             bIData.addPassedCheck(this.type);
             return false;
         }

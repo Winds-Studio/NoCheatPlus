@@ -24,8 +24,7 @@ import java.util.stream.Collectors;
 import org.bukkit.util.Vector;
 
 /**
- * Auxiliary static methods for dealing with math.<br>
- * Some methods are directly from NMS
+ * Auxiliary static methods for dealing with math.
  */
 public class MathUtil {
    
@@ -209,6 +208,28 @@ public class MathUtil {
         long tmp = Math.round(value);
         return (double) tmp / factor;
     }
+    
+    /**
+     * Flooring method from NMS
+     * 
+     * @param var0
+     * @return floored double 
+     */
+    public static int floor(double value) {
+      int toInt = (int)value;
+      return value < (double)toInt ? toInt - 1 : toInt;
+    }
+
+    /**
+     * Ceiling method from NMS
+     * 
+     * @param var0
+     * @return floored double
+     */
+    public static int ceil(double value) {
+      int toInt = (int)value;
+      return value > (double)toInt ? toInt + 1 : toInt;
+    }
 
     /**
      * Calculate the standard deviation of this data.
@@ -289,5 +310,48 @@ public class MathUtil {
             product[k++] = i;
         }
         return product;
+    }
+
+    /**
+     * Seconds to ms.
+     *
+     * @param s1
+     *            the s1
+     * @param s2
+     *            the s2
+     * @param s3
+     *            the s3
+     * @param s4
+     *            the s4
+     * @param s5
+     *            the s5
+     * @param s6
+     *            the s6
+     * @return the long[]
+     */
+    public static long[] secToMs(final double s1, final double s2, final double s3, final double s4, final double s5, final double s6, final double s7) {
+        return new long[] { (long) (s1 * 1000d), (long) (s2 * 1000d), (long) (s3 * 1000d), (long) (s4 * 1000d), (long) (s5 * 1000d), (long) (s6 * 1000d), (long) (s7 * 1000d) };
+    }
+
+    /**
+     * Seconds to ms.
+     *
+     * @param s1
+     *            the s1
+     * @return the long[]
+     */
+    public static long[] secToMs(final double s1) {
+        final long v = (long) (s1 * 1000d);
+        return new long[]{v, v, v, v, v, v, v};
+    }
+    
+    /**
+     * Milliseconds to seconds
+     * 
+     * @param milliseconds
+     * @return converted time.
+     */
+    public static double toSeconds(final long milliseconds) {
+        return (double) milliseconds / 1000D;
     }
 }

@@ -296,7 +296,7 @@ public class BridgeMaterial {
     public static final Material SCAFFOLDING = get("scaffolding");
 
     /** Sign block. */
-    public static final Material SIGN = getFirstNotNull("acacia_sign", "birch_sign", "dark_oak_sign", "jungle_sign", "oak_sign", "spruce_sign",  "acacia_wall_sign", "birch_wall_sign", "dark_oak_wall_sign", "jungle_wall_sign", "oak_wall_sign", "spruce_wall_sign", "sign_post", "sign", "wall_sign");
+    public static final Material SIGN = getFirstNotNull("bamboo_sign", "cherry_sign", "acacia_sign", "birch_sign", "dark_oak_sign", "jungle_sign", "oak_sign", "spruce_sign",  "bamboo_wall_sign", "cherry_wall_sign", "acacia_wall_sign", "birch_wall_sign", "dark_oak_wall_sign", "jungle_wall_sign", "oak_wall_sign", "spruce_wall_sign", "sign_post", "sign", "wall_sign");
 
     /** Some skull for reference. */
     public static final Material SKELETON_SKULL = getFirst("skeleton_skull", "skull");
@@ -324,6 +324,8 @@ public class BridgeMaterial {
     public static final Material TERRACOTTA = getFirst("terracotta", "hard_clay");
 
     public static final Material VOID_AIR = get("void_air"); // May be null on legacy spigot.
+
+    public static final Material FROGSPAWN = get("frogspawn");
 
     public static final Material WHEAT_CROPS = getFirstNotNull("crops", "wheat"); // Reversed
 

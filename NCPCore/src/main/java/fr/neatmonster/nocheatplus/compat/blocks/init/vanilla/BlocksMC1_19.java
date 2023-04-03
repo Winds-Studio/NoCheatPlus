@@ -37,44 +37,46 @@ public class BlocksMC1_19 implements BlockPropertiesSetup {
     public void setupBlockProperties(WorldConfigProvider<?> worldConfigProvider) {
         BlockFlags.setFlagsAs("OCHRE_FROGLIGHT", Material.DIRT);
         BlockProperties.setBlockProps("OCHRE_FROGLIGHT", new BlockProperties.BlockProps(BlockProperties.noTool, 0.3f));
+
         BlockInit.setAs("VERDANT_FROGLIGHT", "OCHRE_FROGLIGHT");
+
         BlockInit.setAs("PEARLESCENT_FROGLIGHT", "OCHRE_FROGLIGHT");
 
-
-        //
         BlockProperties.setBlockProps("MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.5f));
         BlockFlags.setBlockFlags("MUD", BlockFlags.SOLID_GROUND);
-        //
-        BlockProperties.setBlockProps("PACKED_MUD", new BlockProperties.BlockProps(BlockProperties.woodSpade, 1f));
+
+        BlockProperties.setBlockProps("PACKED_MUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1f));
         BlockFlags.setFlagsAs("PACKED_MUD", Material.DIRT);
+
         BlockInit.setAs("MUD_BRICKS", Material.ANDESITE);
         BlockInit.setAs("MUD_BRICK_SLAB", Material.ANDESITE_SLAB);
+
         BlockInit.setAs("MUD_BRICK_STAIRS", Material.ANDESITE_STAIRS);
         BlockInit.setAs("MUD_BRICK_WALL", Material.ANDESITE_WALL);
 
-
         BlockProperties.setBlockProps("FROGSPAWN", BlockProperties.instantType);
-
+        BlockFlags.setBlockFlags("FROGSPAWN", BlockFlags.F_IGN_PASSABLE);
 
         BlockFlags.setFlagsAs("MUDDY_MANGROVE_ROOTS", Material.DIRT);
-        //
         BlockProperties.setBlockProps("MUDDY_MANGROVE_ROOTS", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.7f));
+
         BlockFlags.setFlagsAs("MANGROVE_ROOTS", Material.DIRT);
-        //
+
         BlockProperties.setBlockProps("MANGROVE_ROOTS", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.7f));
         
-        
         BlockFlags.setBlockFlags("SCULK_VEIN", BlockFlags.F_IGN_PASSABLE);
-        //
+
         BlockProperties.setBlockProps("SCULK_VEIN", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.2f));
+
         BlockInit.setPropsAs("SCULK", "SCULK_VEIN");
         BlockFlags.setFlagsAs("SCULK", Material.DIRT);
+
         BlockFlags.setFlagsAs("SCULK_CATALYST", Material.DIRT);
-        //
         BlockProperties.setBlockProps("SCULK_CATALYST", new BlockProperties.BlockProps(BlockProperties.woodHoe, 3f));
+
         BlockFlags.setFlagsAs("REINFORCED_DEEPSLATE", Material.OBSIDIAN);
         BlockProperties.setBlockProps("REINFORCED_DEEPSLATE", new BlockProperties.BlockProps(BlockProperties.noTool, 55f));
-        //
+
         BlockProperties.setBlockProps("SCULK_SHRIEKER", new BlockProperties.BlockProps(BlockProperties.woodHoe, 3f));
         BlockFlags.setBlockFlags("SCULK_SHRIEKER", BlockFlags.SOLID_GROUND);
 
@@ -83,6 +85,12 @@ public class BlocksMC1_19 implements BlockPropertiesSetup {
             BlockInit.setAs("BAMBOO_BLOCK", Material.OAK_PLANKS);
             BlockInit.setAs("STRIPPED_BAMBOO_BLOCK", Material.OAK_PLANKS);
             BlockInit.setAs("CHISELED_BOOKSHELF", Material.BOOKSHELF);
+        }
+
+        if (ServerVersion.compareMinecraftVersion("1.19.4") >= 0) {
+            BlockInit.setAs("SUSPICIOUS_SAND", Material.SAND);
+            BlockProperties.setBlockProps("DECORATED_POT", BlockProperties.instantType);
+            BlockFlags.setBlockFlags("DECORATED_POT", BlockFlags.SOLID_GROUND | BlockFlags.FULL_BOUNDS);
         }
 
         ConfigFile config = ConfigManager.getConfigFile();
