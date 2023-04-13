@@ -262,7 +262,7 @@ public class MovingUtil {
         // TODO: this/firstPast- Move not touching or not explicitly on ground would be enough?
         return 
                 loc.isPassableBox() // Full box as if standing for lift-off.
-                && !loc.isInWeb()
+                //&& !loc.isInWeb()
                 // Durability is checked within PlayerConnection (toggling on).
                 // && !InventoryUtil.isItemBroken(player.getInventory().getChestplate())
                 /*
@@ -272,7 +272,7 @@ public class MovingUtil {
                  * false-positive-free checking (...)).
                  */
                 && !loc.isOnGround(0.001)
-                && !loc.isInBerryBush() 
+                //&& !loc.isInBerryBush() 
                 // Assume water is checked correctly.
                 //                && (
                 //                        !fromLocation.isInLiquid() // (Needs to check for actual block bounds).

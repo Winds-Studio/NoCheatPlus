@@ -18,6 +18,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 
@@ -60,10 +61,10 @@ public class BukkitLogNodeDispatcher extends AbstractLogNodeDispatcher { // TODO
     @Override
     protected void scheduleAsynchronous() {
         synchronized (queueAsynchronous) {
-            if (taskAsynchronousID == -1) {
+            if (!Folia.isTaskScheduled(taskAsynchronousID)) {
                 // Deadlocking should not be possible.
                 try {
-                    taskAsynchronousID = Bukkit.getScheduler().runTaskAsynchronously(plugin, taskAsynchronous).getTaskId();
+                    taskAsynchronousID = Folia.runAsyncTask(plugin, (arg) -> taskAsynchronous.run());
                 } catch (IllegalPluginAccessException ex) {
                     // (Should be during onDisable, ignore for now.)
                 }
@@ -78,8 +79,13 @@ public class BukkitLogNodeDispatcher extends AbstractLogNodeDispatcher { // TODO
     }
 
     @Override
-    protected void cancelTask(int taskId) {
-        Bukkit.getScheduler().cancelTask(taskId);
+    protected void cancelTask(Object taskInfo) {
+        Folia.cancelTask(taskInfo);
+    }
+
+    @Override
+    protected boolean isTaskScheduled(Object taskInfo) {
+        return Folia.isTaskScheduled(taskInfo);
     }
 
 }

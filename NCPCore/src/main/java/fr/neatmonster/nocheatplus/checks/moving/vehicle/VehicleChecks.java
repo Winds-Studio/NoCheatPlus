@@ -48,6 +48,8 @@ import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveInfo;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.AccountEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
+import fr.neatmonster.nocheatplus.compat.Folia;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.location.IGetLocationWithLook;
 import fr.neatmonster.nocheatplus.components.location.SimplePositionWithLook;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
@@ -105,6 +107,12 @@ public class VehicleChecks extends CheckListener {
     private final AuxMoving aux = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(AuxMoving.class);
 
     private final PassengerUtil passengerUtil = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(PassengerUtil.class);
+    
+    private final boolean specialMinecart = ServerVersion.compareMinecraftVersion("1.19.4") >= 0;
+
+    /** Access last position fields for an entity. Updated on setMCAccess. */
+    // TODO: Useless.
+    //private final IHandle<IEntityAccessLastPositionAndLook> lastPosLook = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IEntityAccessLastPositionAndLook.class);
 
     /** The vehicle more packets check. */
     private final VehicleMorePackets vehicleMorePackets = addCheck(new VehicleMorePackets());
@@ -264,7 +272,7 @@ public class VehicleChecks extends CheckListener {
         // TODO: No problem: (?) update 'authorized state' if no player passenger.
         final Vehicle vehicle = event.getVehicle();
         final EntityType vehicleType = vehicle.getType();
-        if (!normalVehicles.contains(vehicleType)) {
+        if (!normalVehicles.contains(vehicleType) && !(vehicleType == EntityType.MINECART && specialMinecart)) {
             // A little extra sweep to check for debug flags.
             normalVehicles.add(vehicleType);
             if (worldDataManager.getWorldData(vehicle.getWorld()).isDebugActive(checkType)) {
@@ -394,7 +402,9 @@ public class VehicleChecks extends CheckListener {
                 recoverVehicleSetBack(player, vehicle, vehicleLocation, moveInfo, data, cc);
             }
             NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.STATUS, CheckUtils.getLogMessagePrefix(player, CheckType.MOVING_VEHICLE) + "Illegal coordinates on checkVehicleMove: from: " + from + " , to: " + to);
-            setBack(player, vehicle, newTo, data, cc, pData);
+            //Folia.runSyncTaskForEntity(vehicle, plugin, (arg) -> {
+                setBack(player, vehicle, newTo, data, cc, pData);
+            //}, null);
             aux.returnVehicleMoveInfo(moveInfo);
             return;
         }
@@ -577,7 +587,13 @@ public class VehicleChecks extends CheckListener {
             // Finally finish processing the current move and move it to past ones.
             data.vehicleMoves.finishCurrentMove();
         }
-        else setBack(player, vehicle, newTo, data, cc, pData);
+
+        else {
+            //final SetBackEntry tNewTo = newTo;
+            //Folia.runSyncTaskForEntity(vehicle, plugin, (arg) -> {
+                setBack(player, vehicle, newTo, data, cc, pData);
+            //}, null);
+        }
         useLoc1.setWorld(null);
     }
 
@@ -630,7 +646,7 @@ public class VehicleChecks extends CheckListener {
                          final MovingConfig cc, final IPlayerData pData) {
         final boolean debug = pData.isDebugActive(checkType);
         // TODO: Generic set back manager, preventing all sorts of stuff that might be attempted or just happen before the task is running?
-        if (data.vehicleSetBackTaskId == -1) {
+        if (!Folia.isTaskScheduled(data.vehicleSetBackTaskId)) {
             // Schedule a delayed task to teleport back the vehicle with the player.
             // (Only schedule if not already scheduled.)
             // TODO: Might log debug if skipping.
@@ -646,9 +662,9 @@ public class VehicleChecks extends CheckListener {
             // Schedule as task, if set so.
             if (scheduleSetBack) {
                 aux.resetVehiclePositions(vehicle, LocUtil.set(useLoc2, vehicle.getWorld(), newTo), data, cc); // Heavy-ish, though.
-                data.vehicleSetBackTaskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new VehicleSetBackTask(vehicle, player, newTo.getLocation(vehicle.getWorld()), debug));
+                data.vehicleSetBackTaskId = Folia.runSyncTaskForEntity(vehicle, plugin, (arg) -> new VehicleSetBackTask(vehicle, player, newTo.getLocation(vehicle.getWorld()), debug).run(), null);
 
-                if (data.vehicleSetBackTaskId == -1) {
+                if (!Folia.isTaskScheduled(data.vehicleSetBackTaskId)) {
                     NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.STATUS, "Failed to schedule vehicle set back task. Player: " + player.getName() + " , set back: " + newTo);
                     scheduleSetBack = false; // Force direct teleport as a fall-back measure.
                 }
@@ -870,7 +886,7 @@ public class VehicleChecks extends CheckListener {
             if (MoveConsistency.getConsistency(vLoc, null, pLoc) == MoveConsistency.INCONSISTENT) {
                 // TODO: Consider teleporting the player (...)
                 // TODO: What with the case of vehicle moved to another world !?
-                loc = vLoc; // 
+                loc = vLoc; 
                 if (data.vehicleConsistency != MoveConsistency.INCONSISTENT) {
                     // TODO: This may need re-setting on player move -> vehicle move.
                     final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
@@ -898,14 +914,10 @@ public class VehicleChecks extends CheckListener {
             debug(player, "Vehicle leave: " + pLoc.toString() + (pLoc.equals(loc) ? "" : " / player at: " + pLoc.toString()));
         }
 
-        data.waspreInVehicle = true;
+        data.lastVehicleType = vehicle != null ? vehicle.getType() : null;
         aux.resetPositionsAndMediumProperties(player, loc, data, cc);
         data.setSetBack(loc);
-        // Give some freedom to allow the "exiting move".
         data.removeAllVelocity();
-        // TODO: Use-once entries usually are intended to allow one offset, but not jumping/flying on.
-        data.addHorizontalVelocity(new AccountEntry(0.9, 1, 1));
-        data.addVerticalVelocity(new SimpleEntry(0.6, 1)); // TODO: Typical margin?
         useLoc1.setWorld(null);
         useLoc2.setWorld(null);
     }

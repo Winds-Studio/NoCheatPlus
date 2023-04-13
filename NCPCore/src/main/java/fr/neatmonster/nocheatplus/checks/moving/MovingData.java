@@ -20,6 +20,7 @@ import java.util.concurrent.Callable;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
@@ -262,9 +263,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** TODO: */
     public long vehicleMorePacketsLastTime;
     /** Task id of the vehicle set back task. */ 
-    public int vehicleSetBackTaskId = -1;
+    public Object vehicleSetBackTaskId = null;
     /** Task id of the passenger set back task. */ 
-    public int vehicleSetPassengerTaskId = -1;
+    public Object vehicleSetPassengerTaskId = null;
     
 
 
@@ -287,11 +288,11 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     // *----------Vehicles----------*
     /** Inconsistency-flag. Set on moving inside of vehicles, reset on exiting properly. Workaround for VehicleLeaveEvent missing. */
     public boolean wasInVehicle = false; 
-    /** TODO: */
-    public boolean waspreInVehicle = false;
+    /** on 1.19.4+, skip the first PlayerMoveEvent fired after exiting a minecart. */
+    public EntityType lastVehicleType = null;
     /** Set to indicate that events happen during a vehicle set back. Allows skipping some resetting. */
     public boolean isVehicleSetBack = false;
-    /** TODO: Movement consistency */
+    /** TODO:  */
     public MoveConsistency vehicleConsistency = MoveConsistency.INCONSISTENT;
     /** TODO: */
     public final DefaultSetBackStorage vehicleSetBacks = new DefaultSetBackStorage();

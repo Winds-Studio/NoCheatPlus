@@ -71,6 +71,7 @@ import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
 import fr.neatmonster.nocheatplus.command.NoCheatPlusCommand;
 import fr.neatmonster.nocheatplus.command.admin.VersionCommand;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeListener;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
@@ -190,7 +191,7 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
     /** Player data / general data manager +- soon to be legacy static API. */
     private final PlayerDataManager pDataMan = new PlayerDataManager(worldDataManager, permissionRegistry);
 
-    private int dataManTaskId = -1;
+    private Object dataManTaskId = null;
 
     /**
      * Commands that were changed for protecting them against tab complete or
@@ -213,7 +214,7 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
     /** Index at which to continue. */
     private int consistencyCheckerIndex = 0;
 
-    private int consistencyCheckerTaskId = -1;
+    private Object consistencyCheckerTaskId = null;
 
     /** Listeners for players joining and leaving (monitor level) */
     private final List<JoinLeaveListener> joinLeaveListeners = new ArrayList<JoinLeaveListener>();
@@ -653,12 +654,10 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         // TODO: Prevent register feature ?
         eventRegistry.clear();
 
-        BukkitScheduler sched = getServer().getScheduler();
-
         // Stop data-man task.
-        if (dataManTaskId != -1) {
-            sched.cancelTask(dataManTaskId);
-            dataManTaskId = -1;
+        if (Folia.isTaskScheduled(dataManTaskId)) {
+            Folia.cancelTask(dataManTaskId);
+            dataManTaskId = null;
         }
 
         // Stop the tickTask.
@@ -672,16 +671,16 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         // (Keep the tick task locked!)
 
         // Stop consistency checking task.
-        if (consistencyCheckerTaskId != -1) {
-            sched.cancelTask(consistencyCheckerTaskId);
-            consistencyCheckerTaskId = -1;
+        if (Folia.isTaskScheduled(consistencyCheckerTaskId)) {
+            Folia.cancelTask(consistencyCheckerTaskId);
+            consistencyCheckerTaskId = null;
         }
 
         // Just to be sure nothing gets left out.
         if (verbose) {
             logManager.info(Streams.INIT, "Stop all remaining tasks...");
         }
-        sched.cancelTasks(this);
+        Folia.cancelTasks(this);
 
         // DisableListener.onDisable (includes DataManager cleanup.)
         if (verbose) {
@@ -766,8 +765,8 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         blockChangeTracker.clear();
 
         // Restore changed commands.
-        //		if (verbose) LogUtil.logInfo("Undo command changes...");
-        //		undoCommandChanges();
+        //        if (verbose) LogUtil.logInfo("Undo command changes...");
+        //        undoCommandChanges();
         // Clear command changes list (compatibility issues with NPCs, leads to recalculation of perms).
         changedCommands.clear();
 
@@ -1029,12 +1028,7 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         TickTask.start(this);
 
         // dataMan expiration checking.
-        this.dataManTaskId  = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
-            @Override
-            public void run() {
-                pDataMan.checkExpiration();
-            }
-        }, 1207, 1207);
+        this.dataManTaskId = Folia.runSyncRepatingTask(this, (arg) -> pDataMan.checkExpiration(), 1207, 1207);
 
         // Ensure dataMan is first on disableListeners.
         // TODO: Why first ?
@@ -1053,13 +1047,13 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
 
         //        if (config.getBoolean(ConfPaths.MISCELLANEOUS_CHECKFORUPDATES)) {
         //            // Is a new update available?
-        //        	final int timeout = config.getInt(ConfPaths.MISCELLANEOUS_UPDATETIMEOUT, 4) * 1000;
-        //        	getServer().getScheduler().scheduleAsyncDelayedTask(this, new Runnable() {
-        //				@Override
-        //				public void run() {
-        //					updateAvailable = Updates.checkForUpdates(getDescription().getVersion(), timeout);
-        //				}
-        //			});
+        //            final int timeout = config.getInt(ConfPaths.MISCELLANEOUS_UPDATETIMEOUT, 4) * 1000;
+        //            getServer().getScheduler().scheduleAsyncDelayedTask(this, new Runnable() {
+        //                @Override
+        //                public void run() {
+        //                    updateAvailable = Updates.checkForUpdates(getDescription().getVersion(), timeout);
+        //                }
+        //            });
         //        }
 
         // Log other notes.
@@ -1076,15 +1070,10 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         // TODO: re-map ExemptionManager !
         // TODO: Disable all checks for these players for one tick ?
         // TODO: Prepare check data for players [problem: permissions]?
-        Bukkit.getScheduler().scheduleSyncDelayedTask(this, new PostEnableTask(onlinePlayers));
+        Folia.runSyncTask(this, (arg) -> new PostEnableTask(onlinePlayers).run());
 
         // Mid-term cleanup (seconds range).
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
-            @Override
-            public void run() {
-                midTermCleanup();
-            }
-        }, 83, 83);
+        Folia.runSyncRepatingTask(this, (arg) -> midTermCleanup(), 83, 83);
 
         // Set StaticLog to more efficient output.
         StaticLog.setStreamID(Streams.STATUS);
@@ -1259,14 +1248,11 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         BlockProperties.init(mcAccess, ConfigManager.getWorldConfigProvider());
         BlockProperties.applyConfig(config, ConfPaths.COMPATIBILITY_BLOCKS);
         // Schedule dumping the blocks properties (to let other plugins override).
-        Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-            @Override
-            public void run() {
-                // Debug information about unknown blocks.
-                // (Probably removed later.)
-                ConfigFile config = ConfigManager.getConfigFile();
-                BlockProperties.dumpBlocks(config.getBoolean(ConfPaths.BLOCKBREAK_DEBUG, config.getBoolean(ConfPaths.CHECKS_DEBUG, false)));
-            }
+        Folia.runSyncTask(this, (arg) -> {
+            // Debug information about unknown blocks.
+            // (Probably removed later.)
+            ConfigFile cf = ConfigManager.getConfigFile();
+            BlockProperties.dumpBlocks(cf.getBoolean(ConfPaths.BLOCKBREAK_DEBUG, cf.getBoolean(ConfPaths.CHECKS_DEBUG, false)));
         });
     }
 
@@ -1346,8 +1332,8 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         final IPlayerData data = DataManager.getPlayerData(player);
         if (data.hasPermission(Permissions.NOTIFY, player)) { // Updates the cache.
             // Login notifications...
-            //			// Update available.
-            //			if (updateAvailable) player.sendMessage(ChatColor.RED + "NCP: " + ChatColor.WHITE + "A new update of NoCheatPlus is available.\n" + "Download it at http://nocheatplus.org/update");
+            //            // Update available.
+            //            if (updateAvailable) player.sendMessage(ChatColor.RED + "NCP: " + ChatColor.WHITE + "A new update of NoCheatPlus is available.\n" + "Download it at http://nocheatplus.org/update");
 
             // Inconsistent config version.
             if (configProblemsChat != null && ConfigManager.getConfigFile().getBoolean(ConfPaths.CONFIGVERSION_NOTIFY)) {
@@ -1387,9 +1373,8 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
     }
 
     private void scheduleConsistencyCheckers() {
-        BukkitScheduler sched = getServer().getScheduler();
-        if (consistencyCheckerTaskId != -1) {
-            sched.cancelTask(consistencyCheckerTaskId);
+        if (Folia.isTaskScheduled(consistencyCheckerTaskId)) {
+            Folia.cancelTask(consistencyCheckerTaskId);
         }
         ConfigFile config = ConfigManager.getConfigFile();
         if (!config.getBoolean(ConfPaths.DATA_CONSISTENCYCHECKS_CHECK, true)) {
@@ -1397,12 +1382,7 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
         }
         // Schedule task in seconds.
         final long delay = 20L * config.getInt(ConfPaths.DATA_CONSISTENCYCHECKS_INTERVAL, 1, 3600, 10);
-        consistencyCheckerTaskId = sched.scheduleSyncRepeatingTask(this, new Runnable() {
-            @Override
-            public void run() {
-                runConsistencyChecks();
-            }
-        }, delay, delay );
+        consistencyCheckerTaskId = Folia.runSyncRepatingTask(this, (arg) -> runConsistencyChecks(), delay, delay);
     }
 
     /**
@@ -1447,12 +1427,7 @@ public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
 
         // If not finished, schedule further checks.
         if (consistencyCheckerIndex < consistencyCheckers.size()) {
-            getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-                @Override
-                public void run() {
-                    runConsistencyChecks();
-                }
-            });
+            Folia.runSyncTask(this, (arg) -> runConsistencyChecks());
             if (config.getBoolean(ConfPaths.LOGGING_EXTENDED_STATUS)) {
                 logManager.info(Streams.STATUS, "Interrupted consistency checking until next tick.");
             }

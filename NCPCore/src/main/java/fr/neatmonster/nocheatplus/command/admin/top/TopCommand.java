@@ -37,6 +37,7 @@ import fr.neatmonster.nocheatplus.checks.ViolationHistory;
 import fr.neatmonster.nocheatplus.checks.ViolationHistory.VLView;
 import fr.neatmonster.nocheatplus.command.BaseCommand;
 import fr.neatmonster.nocheatplus.command.CommandUtil;
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.utilities.CheckTypeUtil;
 import fr.neatmonster.nocheatplus.utilities.FCFSComparator;
@@ -86,8 +87,9 @@ public class TopCommand extends BaseCommand{
                 sender.sendMessage(TAG + "No history to process.");
             } else {
                 // Start sorting and result processing asynchronously.
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, 
-                    new AsynchronousWorker(sender, type, views, checkTypes, comparator, n, plugin));
+                final CheckType ct = type;
+                final List<VLView> vlviews = views;
+                Folia.runAsyncTask(plugin, (arg) -> new AsynchronousWorker(sender, ct, vlviews, checkTypes, comparator, n, plugin).run());
             }
         }
         
@@ -152,16 +154,9 @@ public class TopCommand extends BaseCommand{
                 builder.append((sender instanceof Player ? TAG : CTAG) + "Nothing to display.");
             }
             final String message = builder.toString();
-            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin,
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        sender.sendMessage(message);
-                    }
-                });
+            Folia.runSyncTask(plugin, (arg) -> sender.sendMessage(message));
             if (!checkTypes.isEmpty()) {
-                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin,
-                    new PrimaryThreadWorker(sender, checkTypes, comparator, n, plugin));
+                Folia.runSyncTask(plugin, (arg) -> new PrimaryThreadWorker(sender, checkTypes, comparator, n, plugin).run());
             }
         }
     }
@@ -217,7 +212,9 @@ public class TopCommand extends BaseCommand{
         }
         
         // Run a worker task.
-        Bukkit.getScheduler().scheduleSyncDelayedTask(access, new PrimaryThreadWorker(sender, checkTypes, comparator, n, access));
+        final Comparator<VLView> fcomparator = comparator;
+        final int fn = n;
+        Folia.runSyncTask(access, (arg) -> new PrimaryThreadWorker(sender, checkTypes, fcomparator, fn, access).run());
         return true;
     }
 

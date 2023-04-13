@@ -87,10 +87,12 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.BlockChangeEntry;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -182,6 +184,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     private IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
 
     private final int idMoveEvent = counters.registerKey("event.player.move");
+
+    private final boolean specialMinecart = ServerVersion.compareMinecraftVersion("1.19.4") >= 0;
 
     @SuppressWarnings("unchecked")
     public MovingListener() {
@@ -304,17 +308,15 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     }
 
 
-    /** Temporary fix "stuck" on boat for 1.14 still work till now */
+    /** Temporary fix "stuck" on boat for 1.14-1.19 */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onUnknowBoatTeleport(final PlayerTeleportEvent event) {
-        if (!Bridge1_13.hasIsSwimming()) {
-            return;
-        }
+        if (!Bridge1_13.hasIsSwimming() || specialMinecart) return;
         if (event.getCause() == TeleportCause.UNKNOWN) {
             final Player player = event.getPlayer();
             final IPlayerData pData = DataManager.getPlayerData(player);
             final MovingData data = pData.getGenericInstance(MovingData.class);
-            if (!data.waspreInVehicle && standsOnEntity(player, player.getLocation().getY())) {
+            if (data.lastVehicleType != null && standsOnEntity(player, player.getLocation().getY())) {
                 event.setCancelled(true);
                 player.setSwimming(false);
             }
@@ -451,8 +453,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         data.clearMostMovingCheckData();
-        data.setSetBack(player.getLocation(useLoc)); // TODO: Monitor this change (!).
-        cData.isUsingItem = false;
+        data.setSetBack(player.getLocation(useLoc)); 
         if (pData.isDebugActive(checkType)) debug(player, "Death: " + player.getLocation(useLoc));
         useLoc.setWorld(null);
     }
@@ -807,6 +808,17 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             earlyReturn = true;
             token = "vehicle";
         }
+        else if (data.lastVehicleType == EntityType.MINECART && specialMinecart
+            // The setback comes from VehicleChecks#onPlayerVehicleLeave
+            // Don't be confuse with data.getSetBack(from) here, the location "from" is used when the stored setback is null 
+            && to.distance(data.getSetBack(from)) < 3) {
+            earlyReturn = true;
+            token = "minecart-total";
+            data.lastVehicleType = null;
+            // Some changes were made in 1.19.4 make PlayerMoveEvent no longer fire while on Minecart
+            // So when the player leave the vehicle will make PlayerMoveEvent 
+            // work normal again and update the position so result in the location player start to ride minecart and location player left it
+        }
         else if (player.isDead()) {
             // Ignore dead players.
             data.sfHoverTicks = -1;
@@ -872,12 +884,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //////////////////////////////////////////////////////////////
         // Split the event into separate moves if suitable          //
         //////////////////////////////////////////////////////////////
-        // This mechanic is needed for two reasons.
+        // This mechanic is needed due to Bukkit not always firing PlayerMoveEvent(s) with each flying packet:
         // 1) In some particular cases, a single PlayerMoveEvent can be the result of multiple flying packets.
         // 2) Bukkit has thresholds for firing PlayerMoveEvents (1f/256 for distance and 10f for looking direction). 
-        // This will result in movements that don't have a significant change to be skipped. 
-        // [In fact the event's nomenclature can be misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B)]
-        // With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
+        //    This will result in movements that don't have a significant change to be skipped. 
+        //    With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
+        // 3) On MC 1.19.4 and later, PlayerMoveEvents are skipped altogether upon entering a minecart and fired normally when exiting.
+        // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B)
         // To fix this, we peek into ProtocolLib to get the movement packets that were skipped or merged on Bukkit-level and "split" the incoming PlayerMoveEvent into several other moves.
         // (as many as the number of skipped moves, capped at 9)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
@@ -889,7 +902,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 0: Handling of split moves has been disabled.
             // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
             !cc.splitMoves 
-            // 0: The "from" location correctly reflects player#getLocation(); no micro move happened, so we don't have any untracked position
+            // 0: The "from" location fired by Bukkit matches player#getLocation(), that means no skip happened.
             || TrigUtil.isSamePos(from, loc)
             // 0: Special case / bug? (Which/why, which version of MC/spigot?)
             || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())) {
@@ -899,7 +912,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event, false);
         }
         else {
-            // Untracked position, last moving event was skipped: the from location does not reflect player#getLocation().
+            // Last moving event was skipped: the "from" location from the event is not up to player#getLocation().
             // Peek into ProtocolLib to get the skipped movements' coordinates.
             // Only work if MovingFlying is active otherwise fall back to legacy one
             // (Since the new hSpeed prediction relies on accurate split moves, this will force us to depend on ProtocolLib to support even the most basic features of Minecraft, but it's likely the most sensible choice anyway)
@@ -1280,15 +1293,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // 1.3: Set riptiding time.
         if (Bridge1_13.isRiptiding(player)) data.timeRiptiding = System.currentTimeMillis();
         
-        // 2: Workaround for 1.14+ vehicles.
-        if (data.waspreInVehicle) {
+        // 4: Workaround for 1.14+ exiting vehicles.
+        if (data.lastVehicleType != null && thisMove.distanceSquared < 5) {
             data.setSetBack(from);
-            if (thisMove.hDistance <= 1.1 && thisMove.yDistance <= 0.8) {
-                data.addHorizontalVelocity(new AccountEntry(thisMove.hDistance, 1, 1));
-                data.addVerticalVelocity(new SimpleEntry(thisMove.yDistance, 1));
-                data.addVerticalVelocity(new SimpleEntry(-0.16, 2));
-            }
-            data.waspreInVehicle = false;
+            data.addHorizontalVelocity(new AccountEntry(thisMove.hDistance, 1, 1));
+            data.addVerticalVelocity(new SimpleEntry(thisMove.yDistance, 1));
+            //data.addVerticalVelocity(new SimpleEntry(-0.16, 2));
+            data.lastVehicleType = null;
         }
         
         // 4: Pre-checks relevant to Sf or Cf.
@@ -2611,12 +2622,12 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         noFall.onLeave(player, data, pData);
         // TODO: Add a method for ordinary presence-change resetting (use in join + leave).
         data.onPlayerLeave();
-        if (data.vehicleSetBackTaskId != -1) {
+        if (Folia.isTaskScheduled(data.vehicleSetBackTaskId)) {
             // Reset the id, assume the task will still teleport the vehicle.
             // TODO: Should rather force teleport (needs storing the task + data).
-            data.vehicleSetBackTaskId = -1;
+            data.vehicleSetBackTaskId = null;
         }
-        data.vehicleSetPassengerTaskId = -1;
+        data.vehicleSetPassengerTaskId = null;
     }
 
     @Override

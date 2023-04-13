@@ -61,7 +61,7 @@ public class VehicleSetBackTask implements Runnable{
     public void run() {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        data.vehicleSetBackTaskId = -1;
+        data.vehicleSetBackTaskId = null;
         try{
             NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(PassengerUtil.class).teleportWithPassengers(
                     vehicle, player, location, debug, passengers, true, pData);

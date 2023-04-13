@@ -172,6 +172,7 @@ public class PlayerData implements IPlayerData {
     private boolean bedrockPlayer = false;
     private boolean requestUpdateInventory = false;
     private boolean requestPlayerSetBack = false;
+    private int versionID = -1;
 
     private boolean frequentPlayerTaskShouldBeScheduled = false;
     /** Actually queried ones. */
@@ -447,8 +448,7 @@ public class PlayerData implements IPlayerData {
         registerFrequentPlayerTaskAsynchronous();
     }
 
-    void onPlayerLeave(final Player player, final long timeNow, 
-            Collection<Class<? extends IDataOnLeave>> types) {
+    void onPlayerLeave(final Player player, final long timeNow, Collection<Class<? extends IDataOnLeave>> types) {
         // (Might collect to be removed types first.)
         for (final Class<? extends IDataOnLeave> type : types) {
             final IDataOnLeave instance = dataCache.get(type);
@@ -459,6 +459,7 @@ public class PlayerData implements IPlayerData {
         // (Somewhat reversed order of invalidation.)
         invalidateOffline();
         bedrockPlayer = false;
+        versionID = -1;
     }
 
     /**
@@ -879,6 +880,26 @@ public class PlayerData implements IPlayerData {
                 && (frequentPlayerTaskShouldBeScheduled || isFrequentPlayerTaskScheduled());
     }
 
+     /**
+     * Get the client's version through ViaVersion or ProtocolSupport. <br>
+     * Requires CompatNoCheatPlus (subject to change)
+     * @return
+     */
+    @Override
+    public int getClientVersionID() {
+        return versionID;
+    }
+
+    /**
+     * Set the client's version ID as given by ProtocolSupport or ViaVersion
+     * 
+     * @param versionID
+     */
+    @Override
+    public void setClientVersionID(final int versionID) {
+        this.versionID = versionID;
+    }
+
     /**
      * Get a data/config instance (1.local cache, 2. player related factory, 3.
      * world registry).
@@ -986,5 +1007,4 @@ public class PlayerData implements IPlayerData {
             }
         }
     }
-
 }

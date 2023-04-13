@@ -910,7 +910,7 @@ public class SurvivalFly extends Check {
         double hDistanceAboveLimit = 0.0;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Determine if the bunnyhop delay should be reset or prolonged (bunnyfly). These checks need to be run before the estimation //                   //
+        // Determine if the bunnyhop delay should be reset or prolonged (bunnyfly). These checks need to be run before the estimation //                  
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // (NCP mechanic, not vanilla. We decide when players can bunnyhop because we use our own collision system for on ground judgement)
         if (data.bunnyhopDelay > 0) {

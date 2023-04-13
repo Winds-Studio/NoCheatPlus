@@ -32,6 +32,7 @@ import org.bukkit.plugin.Plugin;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
@@ -99,7 +100,7 @@ public class TickTask implements Runnable {
     private static ActionFrequency[] spikes = new ActionFrequency[spikeDurations.length];
 
     /** Task id of the running TickTask. */
-    protected static int taskId = -1;
+    protected static Object taskId = -1;
 
     /** The tick. */
     protected static int tick = 0;
@@ -448,10 +449,10 @@ public class TickTask implements Runnable {
      * @return the int
      */
     // Public methods for internal use.
-    public static int start(final Plugin plugin) {
+    public static Object start(final Plugin plugin) {
         cancel();
-        taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new TickTask(), 1, 1);
-        if (taskId != -1) {
+        taskId = Folia.runSyncRepatingTask(plugin, (arg) -> new TickTask().run(), 1, 1);
+        if (Folia.isTaskScheduled(taskId)) {
             timeStart = System.currentTimeMillis();
         }
         else {
@@ -464,11 +465,11 @@ public class TickTask implements Runnable {
      * Cancel.
      */
     public static void cancel() {
-        if (taskId == -1) {
+        if (!Folia.isTaskScheduled(taskId)) {
             return;
         }
-        Bukkit.getScheduler().cancelTask(taskId);
-        taskId = -1;
+        Folia.cancelTask(taskId);
+        taskId = null;
     }
 
     /**

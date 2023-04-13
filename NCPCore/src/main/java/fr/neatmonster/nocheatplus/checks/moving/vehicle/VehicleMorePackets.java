@@ -24,6 +24,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.location.setback.SetBackEntry;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 
 /**
@@ -67,13 +68,13 @@ public class VehicleMorePackets extends Check {
         // TODO: Should refactor and use the NetStatic check instead.
         // Take time once, first:
         final long time = System.currentTimeMillis();
-        final boolean allowSetSetBack = setBack == null && data.vehicleSetBackTaskId == -1;
         final boolean debug = pData.isDebugActive(type);
+        final boolean allowSettingSetBack = setBack == null && !Folia.isTaskScheduled(data.vehicleSetBackTaskId);
         SetBackEntry newTo = null;
         // Take a packet from the buffer.
         data.vehicleMorePacketsBuffer--;
 
-        if (setBack != null || data.vehicleSetBackTaskId != -1){
+        if (setBack != null || Folia.isTaskScheduled(data.vehicleSetBackTaskId)){
             // Short version !
             // TODO: This is bad. Needs to check if still scheduled (a BukkitTask thing) and just skip.
             return data.vehicleSetBacks.getValidMidTermEntry();
@@ -113,7 +114,7 @@ public class VehicleMorePackets extends Check {
             // Set the new "last" time.
             data.vehicleMorePacketsLastTime = time;
             // Set the new set back location.
-            if (allowSetSetBack && newTo == null) {
+            if (allowSettingSetBack && newTo == null) {
                 data.vehicleSetBacks.setMidTermEntry(thisMove.from);
                 if (debug) {
                     debug(player, "Update vehicle morepackets set back: " + thisMove.from);

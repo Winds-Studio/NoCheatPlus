@@ -93,10 +93,11 @@ public class InspectCommand extends BaseCommand {
         final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
 
         // More spaghetti.
-        // TODO: Later through ViaVersion it might be useful to also add the client version.
         builder.append(TAG + c1 + "Status information for player: " + c3 + player.getName());
         
         builder.append("\n "+ c1 + "" + c2 + "•" + c1 + cI + (pData.isBedrockPlayer() ? " Is a Bedrock player" : " Is a Java player") + c1 + ".");
+
+        builder.append("\n "+ c1 + "" + c2 + "•" + c1 +" Is playing with version (protocol ID) " + pData.getClientVersionID());
 
         if (player.isOp()){
             builder.append("\n "+ c1 + "" + c2 + "•"  + c1 + cI + " Is OP" + c1 + ".");

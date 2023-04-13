@@ -54,7 +54,7 @@ public class VehicleSetPassengerTask implements Runnable{
     public void run() {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        data.vehicleSetPassengerTaskId = -1;
+        data.vehicleSetPassengerTaskId = null;
         try {
             // TODO: Distance?
             //final double dist = TrigUtil.distance(player.getLocation(), vehicle.getLocation());

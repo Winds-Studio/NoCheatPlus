@@ -86,7 +86,7 @@ public class BanCommand extends BaseCommand {
             }
         }
         if (player != null){
-            Bukkit.getScheduler().runTask(plugin, ()-> player.kickPlayer(reason));
+            player.kickPlayer(reason);
         }
         // Relay to the server command for compatibility reasons.
         server.dispatchCommand(server.getConsoleSender(), "ban " + name);

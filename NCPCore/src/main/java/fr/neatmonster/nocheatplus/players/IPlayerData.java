@@ -338,4 +338,20 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      */
     public boolean isPlayerSetBackScheduled();
 
+    /**
+     * Get the client's version protocol ID through ViaVersion or ProtocolSupport. <br>
+     * Requires CompatNoCheatPlus (subject to change)
+     * @see https://wiki.vg/Protocol_version_numbers
+     * 
+     * @return -1, if it cannot be determined.
+     */
+    public int getClientVersionID();
+
+    /**
+     * Set the client's version protocol ID as given by ProtocolSupport or ViaVersion.
+     * Currently done externally, through CompatNoCheatPlus (subject to change)
+     * 
+     * @param ID
+     */
+    public void setClientVersionID(final int ID);
 }

@@ -17,10 +17,12 @@ package fr.neatmonster.nocheatplus.actions.types;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 
 import fr.neatmonster.nocheatplus.actions.AbstractActionList;
 import fr.neatmonster.nocheatplus.actions.ParameterHolder;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.config.ConfPaths;
 import fr.neatmonster.nocheatplus.config.ConfigManager;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
@@ -33,6 +35,8 @@ import fr.neatmonster.nocheatplus.utilities.StringUtil;
 public class CommandAction<D extends ParameterHolder, L extends AbstractActionList<D, L>> extends ActionWithParameters<D, L> {
 
     private final boolean logDebug;
+    /** The instance of NoCheatPlus. */
+    private final Plugin plugin;
 
     /**
      * Instantiates a new command action.
@@ -50,6 +54,7 @@ public class CommandAction<D extends ParameterHolder, L extends AbstractActionLi
         // Log messages may have color codes now.
         super(name, delay, repeat, command);
         logDebug = ConfigManager.getConfigFile().getBoolean(ConfPaths.LOGGING_EXTENDED_COMMANDS_ACTIONS);
+        plugin = Bukkit.getPluginManager().getPlugin("NoCheatPlus");
     }
 
     /* (non-Javadoc)
@@ -58,16 +63,18 @@ public class CommandAction<D extends ParameterHolder, L extends AbstractActionLi
     @Override
     public void execute(final D violationData) {
         final String command = getMessage(violationData);
-        try {
-            Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
-            if (logDebug) {
-                debug(violationData, command);
+        Folia.runSyncTask(plugin, (arg) -> {
+        	try {
+                Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
+                if (logDebug) {
+                    debug(violationData, command);
+                }
             }
-        }
-        catch (final Exception e) {
-            StaticLog.logOnce(Level.WARNING, "Failed to execute the command '" + command + "': " + e.getMessage()
-            + ", please check if everything is setup correct.", StringUtil.throwableToString(e));
-        }
+            catch (final Exception e) {
+                StaticLog.logOnce(Level.WARNING, "Failed to execute the command '" + command + "': " + e.getMessage()
+                + ", please check if everything is setup correct.", StringUtil.throwableToString(e));
+            }
+        });
     }
 
     private void debug(final D violationData, String command) {

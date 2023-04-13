@@ -40,10 +40,10 @@ public abstract class AbstractLogNodeDispatcher implements LogNodeDispatcher { /
     protected int maxQueueSize = 5000;
 
     /**
-     * Task id, -1 means the asynchronous task is not running. Synchronize over
+     * Task id, null means the asynchronous task is not running. Synchronize over
      * queueAsynchronous. Must be maintained.
      */
-    protected int taskAsynchronousID = -1;
+    protected Object taskAsynchronousID = null;
     /**
      * Optional implementation for an asynchronous task, using the
      * taskAsynchronousID, synchronized over queueAsynchronous.
@@ -57,7 +57,7 @@ public abstract class AbstractLogNodeDispatcher implements LogNodeDispatcher { /
             while (i < 3) {
                 if (runLogsAsynchronous()) {
                     i = 0;
-                    if (taskAsynchronousID == -1) {
+                    if (!isTaskScheduled(taskAsynchronousID)) {
                         // Shutdown, hard return;
                         return;
                     }
@@ -69,7 +69,7 @@ public abstract class AbstractLogNodeDispatcher implements LogNodeDispatcher { /
                     } catch (InterruptedException e) {
                         synchronized (queueAsynchronous) {
                             // Ensure re-scheduling can happen.
-                            taskAsynchronousID = -1;
+                            taskAsynchronousID = null;
                         }
                         // TODO: throw?
                         return;
@@ -79,7 +79,7 @@ public abstract class AbstractLogNodeDispatcher implements LogNodeDispatcher { /
                     if (queueAsynchronous.isEmpty()) {
                         if (i >= 3) {
                             // Ensure re-scheduling can happen.
-                            taskAsynchronousID = -1;
+                            taskAsynchronousID = null;
                         }
                     } else {
                         i = 0;
@@ -134,10 +134,10 @@ public abstract class AbstractLogNodeDispatcher implements LogNodeDispatcher { /
 
         // Cancel task.
         synchronized (queueAsynchronous) {
-            if (taskAsynchronousID != -1) {
+            if (isTaskScheduled(taskAsynchronousID)) {
                 // TODO: Allow queues to set to "no more input" ?
                 cancelTask(taskAsynchronousID);
-                taskAsynchronousID = -1;
+                taskAsynchronousID = null;
             } else {
                 // No need to wait.
                 ms = 0L;
@@ -184,7 +184,7 @@ public abstract class AbstractLogNodeDispatcher implements LogNodeDispatcher { /
                 if (queueAsynchronous.add(record) > maxQueueSize) {
                     reduceQueue(queueAsynchronous);
                 }
-                if (taskAsynchronousID == -1) { // Works, due to add being synchronized (not sure it's really better than full sync).
+                if (!isTaskScheduled(taskAsynchronousID)) { // Works, due to add being synchronized (not sure it's really better than full sync).
                     scheduleAsynchronous();
                 }
                 break;
@@ -242,6 +242,8 @@ public abstract class AbstractLogNodeDispatcher implements LogNodeDispatcher { /
 
     protected abstract void scheduleAsynchronous();
 
-    protected abstract void cancelTask(int taskId);
+    protected abstract void cancelTask(Object taskInfo);
+
+    protected abstract boolean isTaskScheduled(Object taskInfo);
 
 }

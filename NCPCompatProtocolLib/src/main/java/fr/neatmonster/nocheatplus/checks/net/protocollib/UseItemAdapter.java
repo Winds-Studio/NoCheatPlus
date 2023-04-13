@@ -20,11 +20,13 @@ import java.util.List;
 
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -88,6 +90,14 @@ public class UseItemAdapter extends BaseAdapter {
                 onInventoryOpen(event);
             }
         },
+        new MiniListener<PlayerDeathEvent>() {
+            @EventHandler(priority = EventPriority.MONITOR)
+            @RegisterMethodWithOrder(tag = dftag)
+            @Override
+            public void onEvent(final PlayerDeathEvent event) {
+                onDeath(event);
+            }
+        },
         new MiniListener<PlayerItemHeldEvent>() {
             @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
             @RegisterMethodWithOrder(tag = dftag)
@@ -146,6 +156,12 @@ public class UseItemAdapter extends BaseAdapter {
         if (e.isCancelled()) return;
         final Player p = (Player) e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
+        data.isUsingItem = false;        
+    }
+
+    private static void onDeath(final PlayerDeathEvent e) {
+        final IPlayerData pData = DataManager.getPlayerData((Player) e.getEntity());
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.isUsingItem = false;        
     }

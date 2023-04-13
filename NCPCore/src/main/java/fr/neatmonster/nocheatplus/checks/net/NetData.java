@@ -30,6 +30,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.checks.net.model.TeleportQueue;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.components.debug.IDebugPlayer;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.players.DataManager;
@@ -141,33 +142,31 @@ public class NetData extends ACheckData {
         /** Last known location of the server that has been registerd by Bukkit. */
         final Location knownLocation = player.getLocation();
         final MovingData mData = pData.getGenericInstance(MovingData.class);
-        int task = -1;
-        task = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+        Object task = null;
+        task = Folia.runSyncTaskForEntity(player, plugin, (arg) -> {
             /** Get the first set-back location that might be available */
-            final Location setBackLoc = mData.hasSetBack() ? mData.getSetBack(knownLocation) :
-                                        mData.hasMorePacketsSetBack() ? mData.getMorePacketsSetBack() :
-                                        // Shouldn't happen. If it does, the location is likely to be null
-                                        knownLocation;
-            // Unsafe position. Location hasn't been updated yet.    
-            if (setBackLoc == null) {
-                // (Kick the player due to crash exploit potential i.e.: with extremely long blink cheat distances)
-                StaticLog.logSevere("[NoCheatPlus] Could not restore set back location for " + player.getName() + ", kicking them.");
+            final Location newTo = mData.hasSetBack() ? mData.getSetBack(knownLocation) :
+                                   mData.hasMorePacketsSetBack() ? mData.getMorePacketsSetBack() :
+                                   // Shouldn't happen. If it does, the location is likely to be null
+                                   knownLocation;
+            // Unsafe position. Location hasn't been updated yet.  
+            if (newTo == null) {
+                StaticLog.logSevere("Could not retrieve a safe (set back) location for " + player.getName() + " on packet-level, kicking them due to crash potential.");
                 CheckUtils.kickIllegalMove(player, pData.getGenericInstance(MovingConfig.class));
             } 
             else {
                 // Mask player teleport as a set back.
-                mData.prepareSetBack(setBackLoc);
-                player.teleport(LocUtil.clone(setBackLoc), BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
+                mData.prepareSetBack(newTo);
+                Folia.teleportEntity(player, LocUtil.clone(newTo), BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
                 if (pData.isDebugActive(checkType)) {
-                    idp.debug(player, "Set back player (packet) " + player.getName() + ":" + LocUtil.simpleFormat(setBackLoc));
+                    idp.debug(player, "Packet set back tasked for player: " + player.getName() + " at :" + LocUtil.simpleFormat(newTo));
                 }
-           }
-        });
-        if (task == -1) {
-            StaticLog.logWarning("[NoCheatPlus] Failed to schedule packet set back task for player: " + player.getName());
+            }
+        }, null);
+        if (!Folia.isTaskScheduled(task)) {
+            StaticLog.logWarning("Failed to schedule packet set back task for player for player: " + player.getName());
         }
-        // Cleanup
-        mData.resetTeleported();
+        mData.resetTeleported(); // Cleanup, just in case.
     }
 
     /**
