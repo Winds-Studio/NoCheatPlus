@@ -97,7 +97,7 @@ public class InspectCommand extends BaseCommand {
         
         builder.append("\n "+ c1 + "" + c2 + "•" + c1 + cI + (pData.isBedrockPlayer() ? " Is a Bedrock player" : " Is a Java player") + c1 + ".");
 
-        builder.append("\n "+ c1 + "" + c2 + "•" + c1 +" Is playing with version (protocol ID) " + pData.getClientVersionID());
+        builder.append("\n "+ c1 + "" + c2 + "•" + c1 +" Is playing with version " + pData.getClientVersion().getReleaseName() + "(" + pData.getClientVersionID() + ")");
 
         if (player.isOp()){
             builder.append("\n "+ c1 + "" + c2 + "•"  + c1 + cI + " Is OP" + c1 + ".");

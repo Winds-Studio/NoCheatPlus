@@ -32,6 +32,7 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.config.value.OverrideType;
 import fr.neatmonster.nocheatplus.components.data.ICanHandleTimeRunningBackwards;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -173,6 +174,7 @@ public class PlayerData implements IPlayerData {
     private boolean requestUpdateInventory = false;
     private boolean requestPlayerSetBack = false;
     private int versionID = -1;
+    private ClientVersion clientVersion = ClientVersion.UNKNOWN;
 
     private boolean frequentPlayerTaskShouldBeScheduled = false;
     /** Actually queried ones. */
@@ -460,6 +462,7 @@ public class PlayerData implements IPlayerData {
         invalidateOffline();
         bedrockPlayer = false;
         versionID = -1;
+        clientVersion = ClientVersion.UNKNOWN;
     }
 
     /**
@@ -881,7 +884,7 @@ public class PlayerData implements IPlayerData {
     }
 
      /**
-     * Get the client's version through ViaVersion or ProtocolSupport. <br>
+     * Get the client's version ID through ViaVersion or ProtocolSupport. <br>
      * Requires CompatNoCheatPlus (subject to change)
      * @return
      */
@@ -891,13 +894,24 @@ public class PlayerData implements IPlayerData {
     }
 
     /**
-     * Set the client's version ID as given by ProtocolSupport or ViaVersion
+     * Get the client's version through ViaVersion or ProtocolSupport. <br>
+     * Requires CompatNoCheatPlus (subject to change)
+     * @return
+     */
+    @Override
+    public ClientVersion getClientVersion() {
+        return clientVersion;
+    }
+
+    /**
+     * Set the client's version ID and translate to launcher version, as given by ProtocolSupport or ViaVersion.
      * 
      * @param versionID
      */
     @Override
     public void setClientVersionID(final int versionID) {
         this.versionID = versionID;
+        this.clientVersion = ClientVersion.getById(versionID);
     }
 
     /**
