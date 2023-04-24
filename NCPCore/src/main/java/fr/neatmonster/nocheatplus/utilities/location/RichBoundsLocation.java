@@ -1387,9 +1387,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
                     double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ);
                     double liquidHeightToWorld = iY + liquidHeight;
-                    if (liquidHeightToWorld >= minY) {
+                    if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0) {
                         // Collided.
-                        d2 = Math.max(liquidHeightToWorld - minY, d2);
+                        d2 = Math.max(liquidHeightToWorld - (minY + 0.001), d2);
                         // Determine pushing speed by using the current flow of the liquid.
                         Vector flowVector = getFlowVector(p, iX, iY, iZ);
                         if (d2 < 0.4) {

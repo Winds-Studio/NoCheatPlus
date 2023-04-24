@@ -2645,7 +2645,7 @@ public class BlockProperties {
                 if (data >= 8) {
                     liquidHeight = LIQUID_HEIGHT_LOWERED;
                 } 
-                else liquidHeight = (8 - data / 9f);
+                else liquidHeight = (1 - (data + 1) / 9f);
             }
         } 
         else if ((flags & BlockFlags.F_WATER) != 0) {
@@ -2660,7 +2660,7 @@ public class BlockProperties {
                 if ((data & 8) == 8) {
                     liquidHeight = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
                 } 
-                else liquidHeight = (8 - data / 9f);
+                else liquidHeight = (1 - (data + 1) / 9f);
             }
         } 
         else {
@@ -3936,7 +3936,7 @@ public class BlockProperties {
                     if (data >= 8) {
                         bmaxY = LIQUID_HEIGHT_LOWERED;
                     } 
-                    else bmaxY = (8 - data / 9f);
+                    else bmaxY = (1 - (data + 1) / 9f);
                 }
             } 
             else if ((flags & BlockFlags.F_WATER) != 0) {
@@ -3948,7 +3948,7 @@ public class BlockProperties {
                     if ((data & 8) == 8) {
                         bmaxY = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
                     } 
-                    else bmaxY = (8 - data / 9f);
+                    else bmaxY = (1 - (data + 1) / 9f);
                 }
             } 
             else bmaxY = LIQUID_HEIGHT_LOWERED;

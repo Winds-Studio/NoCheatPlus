@@ -666,96 +666,82 @@ public class SurvivalFly extends Check {
         /*
          * NOTES: Attack-slowdown is done in the FightListener (!).
          * Order of operations is essential. Do not shuffle things around unless you know what you're doing.
+         * Order in mcp: LivingEntity.tick() 
+         * -> Entity.tick() 
+         * -> Entity.baseTick()
+         * -> Entity.updateInWaterStateAndDoFluidPushing()
+         * -> LivingEntity.aiStep()
+         * -> Negligible speed(0.003)
+         * -> LivingEntity.jumpFromGround()
+         * -> LivingEntity.travel()
+         * -> Entity.moveRelative 
+         * -> Entity.move()
+         * -> maybeBackOffFromEdge, 
+         * -> wall collision(Entity.collide()), 
+         * -> Complete the move, prepare next move
+         * -> horizontalCollision - next move                   <--------------------
+         * -> checkFallDamage(do liquid puishing if was not previosly in water) - next move
+         * -> Block.updateEntityAfterFallOn() - next move
+         * -> Block.stepOn() (for slime block) - next move
+         * -> tryCheckInsideBlocks() (for honey block) - next move
+         * -> Entity.getBlockSpeedFactor() - next move
+         * -> LivingEntity : Friction(inertia) - next move - complete running the travel function
+         * -> Entity pushing - next move - complete running the aiStep() function
+         * -> Complete running the LivingEntity.tick() function
+         * -> Repeat
+         * 
+         * From the order above, we will start the order from horizontalCollision and going down then back up
          */
+        
         // Initialize the allowed distance(s) with the previous speed. (Only if we have end-point coordinates)
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.to.getX() - lastMove.from.getX() : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.to.getZ() - lastMove.from.getZ() : 0.0;
+        
         // When a WASD key is pressed, these are set to 1 or -1, depending on the movement direction.
         // They are then multiplied by 0.98 before being passed to the travel() method.
         /** xXa: left = 0.98, right = -0.98 */
-        float strafe = 0.0f;
-        String strafeDir = "";
         /** zZa: forward = 0.98, backwards = -0.98) */
-        float forward = 0.0f;
-        String forwardDir = "";
         
-        // 1: Attempt to calculate the player's input (placeholder method, needs to be replaced)
-        // TODO: Input vector (press ASWD) is independent on how player look(a.k.a yaw) so this one likely wrong
-        // (Inspired from this thread: https://www.spigotmc.org/threads/player-movement-direction.389134/)
-        Vector movementDirection = new Vector(to.getX()-from.getX(), 0.0, to.getZ()-from.getZ());
-        Vector yawDirection = TrigUtil.getHorizontalDirection(to.getYaw());
-        // Differentiate left from right / forward from backwards
-        final boolean isVectorDir = movementDirection.clone().crossProduct(yawDirection).dot(new Vector(0, 1, 0)) >= 0;
-        final double angle = ((isVectorDir ? -1 : 1) * TrigUtil.angle(movementDirection, yawDirection));
-        if (debug) {
-            player.sendMessage("[SurvivalFly] (updateHorizontalSpeed) Input angle: " + angle);
+        InputDirection listdir[] = new InputDirection[9];
+        int i = 0;
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                listdir[i] = new InputDirection(x * 0.98f, z * 0.98f);
+                i++;
+            }
         }
-        if (MathUtil.inRange(0.0, angle, Math.PI / 2.5)
-            || MathUtil.inRange(-(Math.PI / 2.5), angle, 0.0)) {
-            forward = 0.98f;
-            forwardDir = "FORWARD";
-        }
-        else if (angle > Math.PI / 1.8 || angle < -(Math.PI / 1.8)) {
-            forward = -0.98f;
-            forwardDir = "BACKWARDS";
-        }
-
-        if (MathUtil.inRange(0.2, angle, Math.PI / 1.8)
-            || MathUtil.inRange(Math.PI / 1.8, angle, Math.PI / 1.2)) {
-            strafe = 0.98f;
-            strafeDir = "LEFT";
-        }
-        else if (MathUtil.inRange(-(Math.PI / 1.8), angle, -0.2)
-                || MathUtil.inRange(-(Math.PI / 1.2), angle, -(Math.PI / 1.8))) {
-            strafe = -0.98f;
-            strafeDir = "RIGHT";
-        }
-        if (debug) {
-            player.sendMessage("[SurvivalFly] (updateHorizontalSpeed) Estimated direction: " + forwardDir +" | "+ strafeDir);
-        }
-        // TODO: Brute-force through all possible combinations of movements (8 - left/right/backwards/forward/b-left/b-right/f-left/f-right)
 
 
 
         // From KeyboardInput.java (MC-Reborn tool)
         if (sneaking && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
             tags.add("sneaking");
-            // Take care of swift sneak (Formula is from LocalPlayer aiStep)
             float SwiftSneakIncrement = MathUtil.clamp(BridgeEnchant.getSwiftSneakLevel(player) * 0.15f, 0.0f, 1.0f);
-            strafe *= (Magic.SNEAK_MULTIPLIER + SwiftSneakIncrement);
-            forward *= (Magic.SNEAK_MULTIPLIER + SwiftSneakIncrement);
-            // Account for NCP base speed modifiers.
-            strafe *= cc.survivalFlySneakingSpeed / 100;
-            forward *= cc.survivalFlySneakingSpeed / 100;
+            for (i=0; i<9; i++) {
+                // Take care of swift sneak (Formula is from LocalPlayer aiStep)
+                listdir[i].calculateDir(Magic.SNEAK_MULTIPLIER + SwiftSneakIncrement, Magic.SNEAK_MULTIPLIER + SwiftSneakIncrement, 1);
+                // Account for NCP base speed modifiers.
+                listdir[i].calculateDir(cc.survivalFlySneakingSpeed / 100f, cc.survivalFlySneakingSpeed / 100f, 1);
+            }
         }
         // From LocalPlayer.java.aiStep()
         if ((cData.isUsingItem || player.isBlocking()) 
             && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player))) {
             tags.add("usingitem");
-            strafe *= Magic.USING_ITEM_MULTIPLIER;
-            forward *= Magic.USING_ITEM_MULTIPLIER;
-            strafe *= cc.survivalFlyBlockingSpeed / 100;
-            forward *= cc.survivalFlyBlockingSpeed / 100;
-        } 
-        
-        // Friction first.
-        thisMove.xAllowedDistance *= (double) data.lastInertia;
-        thisMove.zAllowedDistance *= (double) data.lastInertia;
-        
-        // Block speed (after friction suits best)
-        thisMove.xAllowedDistance *= (double) data.lastBlockSpeedMultiplier;
-        thisMove.zAllowedDistance *= (double) data.lastBlockSpeedMultiplier;
-        
-        // Sliding speed
-        if (MovingUtil.isSlidingDown(from, mcAccess.getHandle().getWidth(player), thisMove, player)
-            && MovingUtil.honeyBlockSidewayCollision(from, to, data)) {
-            if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
-                thisMove.xAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
-                thisMove.zAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
-                tags.add("honeyslide");
+            for (i=0; i<9; i++) {
+                listdir[i].calculateDir(Magic.USING_ITEM_MULTIPLIER, Magic.USING_ITEM_MULTIPLIER, 1);
+                listdir[i].calculateDir(cc.survivalFlySneakingSpeed / 100f, cc.survivalFlySneakingSpeed / 100f, 1);
             }
         }
 
+
+        Vector liquidFlowVector = from.getLiquidPushingVector(player, thisMove.xAllowedDistance, thisMove.zAllowedDistance);
+        // Calling from checkFallDamage
+        if (from.isInWater() && !lastMove.from.inWater) {
+            thisMove.xAllowedDistance += liquidFlowVector.getX();
+            thisMove.zAllowedDistance += liquidFlowVector.getZ();
+        }
+        
         // Slime speed
         // From BlockSlime.java
         // (Ground check is already included)
@@ -766,6 +752,23 @@ public class SurvivalFly extends Check {
                 tags.add("hslimeblock");
             }
         }
+
+        // Sliding speed
+        if (MovingUtil.isSlidingDown(from, mcAccess.getHandle().getWidth(player), thisMove, player)
+            && MovingUtil.honeyBlockSidewayCollision(from, to, data)) {
+            if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
+                thisMove.xAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
+                thisMove.zAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
+                tags.add("honeyslide");
+            }
+        }
+        // Block speed
+        thisMove.xAllowedDistance *= (double) data.lastBlockSpeedMultiplier;
+        thisMove.zAllowedDistance *= (double) data.lastBlockSpeedMultiplier;
+
+        // Friction next.
+        thisMove.xAllowedDistance *= (double) data.lastInertia;
+        thisMove.zAllowedDistance *= (double) data.lastInertia;
 
         // If sneaking, the game moves the player by steps to check if they reach an edge to back them off.
         // From EntityHuman, maybeBackOffFromEdge
@@ -805,38 +808,15 @@ public class SurvivalFly extends Check {
             }
         }
 
-        // Modifiers to be applied on normal ground only.
-        if (!from.isInLiquid()) {
-            if (Magic.isBunnyhop(data, useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick), sprinting, sneaking, fromOnGround, toOnGround)) {
-                thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
-                thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
-                data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY; 
-                thisMove.bunnyHop = true;
-                tags.add("bunnyhop");
-                // Keep up the Improbable, but don't feed anything.
-                Improbable.update(System.currentTimeMillis(), pData);
-            }
-            if (from.isOnClimbable() && lastMove.from.onClimbable) {
-                // Minecraft caps horizontal speed if on climbable, for whatever reason.
-                thisMove.xAllowedDistance = MathUtil.clamp(thisMove.xAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
-                thisMove.zAllowedDistance = MathUtil.clamp(thisMove.zAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
-            }
-            if (onGround) {
-                // Ground speed modifier.
-                thisMove.xAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
-                thisMove.zAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
-            }
-        }
-        else {
+        if (from.isInLiquid()) {
             // Apply liquid pushing speed.
-            final Vector liquidFlowVector = from.getLiquidPushingVector(player, thisMove.xAllowedDistance, thisMove.zAllowedDistance);
             thisMove.xAllowedDistance += liquidFlowVector.getX();
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
             // NCP liquid speed modifier.
             thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
             thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
-        }     
-        
+        }
+
         // Before calculating the acceleration, check if momentum is below the negligible speed threshold and cancel it.
         if (ServerIsAtLeast1_9) {
             if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
@@ -855,35 +835,89 @@ public class SurvivalFly extends Check {
                 thisMove.zAllowedDistance = 0.0;
             }
         }
+
+        // Modifiers to be applied on normal ground only.
+        if (!from.isInLiquid()) {
+            if (Magic.isBunnyhop(data, useBlockChangeTracker && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick), sprinting, sneaking, fromOnGround, toOnGround)) {
+                thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
+                thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_ACCEL_BOOST); 
+                data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY;
+                thisMove.bunnyHop = true;
+                tags.add("bunnyhop");
+                // Keep up the Improbable, but don't feed anything.
+                Improbable.update(System.currentTimeMillis(), pData);
+            }
+            if (from.isOnClimbable() && lastMove.from.onClimbable) {
+                // Minecraft caps horizontal speed if on climbable, for whatever reason.
+                thisMove.xAllowedDistance = MathUtil.clamp(thisMove.xAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
+                thisMove.zAllowedDistance = MathUtil.clamp(thisMove.zAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
+            }
+            if (onGround) {
+                // Ground speed modifier.
+                thisMove.xAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
+                thisMove.zAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
+            }
+        }
         
         // Finally, add the acceleration.
         // getInputVector, entity.java
         // This is the vanilla equation to set the player (new) horizontal speed (cast to a double because the client does it).
-        double inputSq = MathUtil.square((double)strafe) + MathUtil.square((double)forward);
-        if (inputSq >= 1.0E-7) {
-            // Vec3d normalization
-            if (inputSq > 1.0) {
-                double distance = Math.sqrt(inputSq);
-                if (distance < 1.0E-4) {
-                    strafe = 0.0f;
-                    forward = 0.0f;
-                }
-                else {
-                    strafe /= distance;
-                    forward /= distance;
-                }
-            }
-            strafe *= movementSpeed;
-            forward *= movementSpeed;
-            float SinYaw = TrigUtil.sin(to.getYaw() * TrigUtil.toRadians);
-            float CosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
-            thisMove.xAllowedDistance += strafe * (double)CosYaw - forward * (double)SinYaw;
-            thisMove.zAllowedDistance += forward * (double)CosYaw + strafe * (double)SinYaw;
-        } 
+        float SinYaw = TrigUtil.sin(to.getYaw() * TrigUtil.toRadians);
+        float CosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
+        double xAllowedDistance[] = new double[9];
+        double zAllowedDistance[] = new double[9];
+        for (i = 0; i < 9; i++) {
+            xAllowedDistance[i] = thisMove.xAllowedDistance;
+            zAllowedDistance[i] = thisMove.zAllowedDistance;
 
-        // Stuck speed after update for accuracy's sake. 
-        thisMove.xAllowedDistance *= (double) data.lastStuckInBlockHorizontal;
-        thisMove.zAllowedDistance *= (double) data.lastStuckInBlockHorizontal;
+            double inputSq = MathUtil.square((double)listdir[i].getStrafe()) + MathUtil.square((double)listdir[i].getForward());
+            if (inputSq >= 1.0E-7) {
+                // Vec3d normalization
+                if (inputSq > 1.0) {
+                    double distance = Math.sqrt(inputSq);
+                    if (distance < 1.0E-4) {
+                        listdir[i].calculateDir(0, 0, 0);
+                    }
+                    else {
+                        listdir[i].calculateDir(distance, distance, 2);
+                    }
+                }
+                listdir[i].calculateDir(movementSpeed, movementSpeed, 1);
+                
+                xAllowedDistance[i] += listdir[i].getStrafe() * (double)CosYaw - listdir[i].getForward() * (double)SinYaw;
+                zAllowedDistance[i] += listdir[i].getForward() * (double)CosYaw + listdir[i].getStrafe() * (double)SinYaw;
+            }
+        }
+
+        // Stuck speed after update for accuracy's sake.
+        for (i = 0; i < 9; i++) {
+            xAllowedDistance[i] *= (double) data.lastStuckInBlockHorizontal;
+            zAllowedDistance[i] *= (double) data.lastStuckInBlockHorizontal;
+        }
+        boolean strict = false; // true will block strafe hack
+        boolean found = false;
+        for (i = 0; i < 9; i++) {
+            double a = MathUtil.dist(xAllowedDistance[i], zAllowedDistance[i]);
+            if (strict && Math.abs(to.getX() - from.getX() - xAllowedDistance[i]) < 0.0001 && Math.abs(to.getZ() - from.getZ() - zAllowedDistance[i]) < 0.0001) {
+                found = true;
+            } else if (Math.abs(a - thisMove.hDistance) < 0.0001) {
+                found = true;
+            }
+            if (found) {
+                if (debug) {
+                    player.sendMessage("[SurvivalFly] (updateHorizontalSpeed) Estimated direction: " + listdir[i].getForwardDir() +" | "+ listdir[i].getStrafeDir());
+                }
+                break;
+            }
+        }
+        if (i > 8) {
+            i = 4;    
+            if (debug) {
+                player.sendMessage("[SurvivalFly] (updateHorizontalSpeed) Can not find correct direction, set default: NONE | NONE");
+            }
+        }
+        thisMove.xAllowedDistance = xAllowedDistance[i];
+        thisMove.zAllowedDistance = zAllowedDistance[i];
    }
 
 
@@ -906,7 +940,7 @@ public class SurvivalFly extends Check {
         final boolean sneaking = player.isSneaking() && reallySneaking.contains(player.getName());
         // TODO: New problem here, the onGround does not always reflect correct state with the client, cause fp 
         // Do we need to add lost-ground/false-on-ground cases for horizontal speed as well !?
-        final boolean onGround = fromOnGround || thisMove.touchedGroundWorkaround;
+        final boolean onGround = thisMove.touchedGroundWorkaround || (lastMove.toIsValid && lastMove.from.onGround && lastMove.yDistance <= 0.0) || from.isOnGround();
         double hDistanceAboveLimit = 0.0;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -914,13 +948,7 @@ public class SurvivalFly extends Check {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // (NCP mechanic, not vanilla. We decide when players can bunnyhop because we use our own collision system for on ground judgement)
         if (data.bunnyhopDelay > 0) {
-            // Do prolong bunnyfly if the player is yet to touch the ground
-            if (data.bunnyhopDelay == 1 && !toOnGround && !to.isResetCond()) {
-                data.bunnyhopDelay++;
-                tags.add("bunnyfly(keep)");
-                // NOTE: Later, feed the extra ticks to the Improbable to punish long-jumping.
-            }
-            else if (data.bunnyhopDelay <= 9) {
+            if (data.bunnyhopDelay <= 9) {
                 // (10 represents a bunnyhop)
                 tags.add("bunnyfly(" + data.bunnyhopDelay + ")");
             }
@@ -1056,12 +1084,12 @@ public class SurvivalFly extends Check {
         final double hDistDiffEx = thisMove.hDistance - thisMove.hAllowedDistance;
         if (debug) {
             // TODO: REMOVE 
-            player.sendMessage("c/e: " + thisMove.hDistance + " / " + thisMove.hAllowedDistance);
+            player.sendMessage((Math.abs(thisMove.hDistance - thisMove.hAllowedDistance) < 0.0001 ? "" : "[-----]") + "c/e: " + thisMove.hDistance + " / " + thisMove.hAllowedDistance);
         }
         if (hDistDiffEx <= 0.0) {
             // Speed is lower than estimated.
         }
-        else if (hDistDiffEx < 0.000009) {
+        else if (hDistDiffEx < 0.0001) {
             // Accuracy margin
             // (Too ambitious? :) )
         }

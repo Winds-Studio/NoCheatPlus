@@ -959,6 +959,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                         // This packet is duplicate of the previous one, ignore it.
                         continue;
                     }
+                    // TODO: Deal with skipped Look packet!
                     if (queue[i] != null && queue[i].hasPos) {
                         // Put packets into the array.
                         queuePos[j] = queue[i];
@@ -971,9 +972,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 int maxSplit = 9;
                 for (int i = 0; i < j-1; i++) {
                     /** The 'from' location skipped by Bukkit in the flying queue */
-                    final Location packetFrom = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ());
+                    final Location packetFrom = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ(), 
+                    		queuePos[i].hasLook ? queuePos[i].getYaw() : to.getYaw(), 
+                    		queuePos[i].hasLook ? queuePos[i].getPitch() : to.getPitch());
                     /** The 'to' location skipped by Bukkit in the flying queue. Use Bukkit's "to" if reached the maximum split */
-                    final Location packetTo = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i+1].getX(), queuePos[i+1].getY(), queuePos[i+1].getZ());
+                    final Location packetTo = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i+1].getX(), queuePos[i+1].getY(), queuePos[i+1].getZ(), 
+                    		queuePos[i+1].hasLook ? queuePos[i+1].getYaw() : to.getYaw(), 
+                    		queuePos[i+1].hasLook ? queuePos[i+1].getPitch() : to.getPitch());
                     moveInfo.set(player, packetFrom, packetTo, cc.yOnGround);
                     if (debug) {
                         final String s1 = count == 1 ? "from" : "loc";
