@@ -171,6 +171,7 @@ public class SurvivalFly extends Check {
                                 || LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);
 
         // Alter some data before checking anything
+        // NOTE: Should not use loc for adjusting as split moves can mess up
         final Location loc = player.getLocation(useLoc);
         data.adjustMediumProperties(loc, cc, player, thisMove);
         // Cleanup
@@ -692,11 +693,11 @@ public class SurvivalFly extends Check {
          * 
          * From the order above, we will start the order from horizontalCollision and going down then back up
          */
-        
+
         // Initialize the allowed distance(s) with the previous speed. (Only if we have end-point coordinates)
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.to.getX() - lastMove.from.getX() : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.to.getZ() - lastMove.from.getZ() : 0.0;
-        
+
         // When a WASD key is pressed, these are set to 1 or -1, depending on the movement direction.
         // They are then multiplied by 0.98 before being passed to the travel() method.
         /** xXa: left = 0.98, right = -0.98 */
@@ -746,7 +747,7 @@ public class SurvivalFly extends Check {
         // From BlockSlime.java
         // (Ground check is already included)
         if (from.isOnSlimeBlock()) {
-            if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking) {
+            if (Math.abs(thisMove.yDistance) < 0.1 && !sneaking) { // -0.0784000015258789
                 thisMove.xAllowedDistance *= 0.4 + Math.abs(thisMove.yDistance) * 0.2;
                 thisMove.zAllowedDistance *= 0.4 + Math.abs(thisMove.yDistance) * 0.2;
                 tags.add("hslimeblock");
@@ -754,17 +755,28 @@ public class SurvivalFly extends Check {
         }
 
         // Sliding speed
-        if (MovingUtil.isSlidingDown(from, mcAccess.getHandle().getWidth(player), thisMove, player)
-            && MovingUtil.honeyBlockSidewayCollision(from, to, data)) {
-            if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
-                thisMove.xAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
-                thisMove.zAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / thisMove.yDistance;
+        if (MovingUtil.honeyBlockSidewayCollision(from, to, data) 
+            && MovingUtil.isSlidingDown(from, mcAccess.getHandle().getWidth(player), thisMove, player)) {
+            if (lastMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
+                thisMove.xAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / lastMove.yDistance;
+                thisMove.zAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / lastMove.yDistance;
                 tags.add("honeyslide");
             }
         }
+
+        // Stuck speed
+        //if (this.stuckSpeedMultiplier.lengthSqr() > 1.0E-7D) {
+        //    p_19974_ = p_19974_.multiply(this.stuckSpeedMultiplier);
+        //    this.stuckSpeedMultiplier = Vec3.ZERO;
+        //    this.setDeltaMovement(Vec3.ZERO);
+        //}
+        if (data.lastStuckInBlockHorizontal < 1.0D) {
+            thisMove.xAllowedDistance = thisMove.zAllowedDistance = 0;
+        }
+
         // Block speed
-        thisMove.xAllowedDistance *= (double) data.lastBlockSpeedMultiplier;
-        thisMove.zAllowedDistance *= (double) data.lastBlockSpeedMultiplier;
+        thisMove.xAllowedDistance *= (double) data.nextBlockSpeedMultiplier;
+        thisMove.zAllowedDistance *= (double) data.nextBlockSpeedMultiplier;
 
         // Friction next.
         thisMove.xAllowedDistance *= (double) data.lastInertia;
@@ -891,17 +903,21 @@ public class SurvivalFly extends Check {
 
         // Stuck speed after update for accuracy's sake.
         for (i = 0; i < 9; i++) {
-            xAllowedDistance[i] *= (double) data.lastStuckInBlockHorizontal;
-            zAllowedDistance[i] *= (double) data.lastStuckInBlockHorizontal;
+            xAllowedDistance[i] *= (double) data.nextStuckInBlockHorizontal;
+            zAllowedDistance[i] *= (double) data.nextStuckInBlockHorizontal;
         }
         boolean strict = false; // true will block strafe hack
         boolean found = false;
         for (i = 0; i < 9; i++) {
             double a = MathUtil.dist(xAllowedDistance[i], zAllowedDistance[i]);
-            if (strict && Math.abs(to.getX() - from.getX() - xAllowedDistance[i]) < 0.0001 && Math.abs(to.getZ() - from.getZ() - zAllowedDistance[i]) < 0.0001) {
-                found = true;
-            } else if (Math.abs(a - thisMove.hDistance) < 0.0001) {
-                found = true;
+            if (strict) {
+                if (Math.abs(to.getX() - from.getX() - xAllowedDistance[i]) < 0.0001 && Math.abs(to.getZ() - from.getZ() - zAllowedDistance[i]) < 0.0001) {
+                    found = true;
+                }
+            } else {
+                if (Math.abs(a - thisMove.hDistance) < 0.0001) {
+                    found = true;
+                }
             }
             if (found) {
                 if (debug) {
@@ -1049,9 +1065,9 @@ public class SurvivalFly extends Check {
                 estimateNextSpeed(player, Magic.LIQUID_BASE_ACCELERATION, pData, sneaking, checkPermissions, tags, to, from, debug, fromOnGround, toOnGround, onGround, sprinting, lastMove, tick, useBlockChangeTracker);
             }
             else {
-                data.nextInertia = onGround ? data.lastFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;
+                data.nextInertia = onGround ? data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;
                 // 1.8 (and below) clients will use cubed inertia, not cubed friction here. The difference isn't significant except for blocking speed and bunnyhopping on soul sand, which are both slower on 1.8
-                float acceleration = onGround ? data.walkSpeed * ((ServerIsAtLeast1_13 ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (data.lastFrictionHorizontal * data.lastFrictionHorizontal * data.lastFrictionHorizontal)) : Magic.AIR_ACCELERATION;
+                float acceleration = onGround ? data.walkSpeed * ((ServerIsAtLeast1_13 ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (data.nextFrictionHorizontal * data.nextFrictionHorizontal * data.nextFrictionHorizontal)) : Magic.AIR_ACCELERATION;
                 if (sprinting) {//&& !sneaking) {
                     // NOTE: (Apparently players can now sprint while sneaking !?)
                     // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)

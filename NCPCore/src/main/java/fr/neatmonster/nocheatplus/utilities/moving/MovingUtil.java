@@ -152,21 +152,25 @@ public class MovingUtil {
      */
     public static boolean isSlidingDown(final PlayerLocation from, final double width, final PlayerMoveData thisMove, final Player player) {
         if (thisMove.touchedGround) {
-           // Not sliding, clearly.
-           return false;
-        } 
-        if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
-           // Too far from the block.
-           return false;
-        } 
+            // Not sliding, clearly.
+            return false;
+        }
+        // With current implementation, this condition never run due to from.getBlockY(), it should be the location of the block not player
+        //if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
+        //    // Too far from the block.
+        //    return false;
+        //} 
         if (thisMove.yDistance >= -Magic.DEFAULT_GRAVITY) {
-           // Minimum speed.
-           return false;
-        } 
-        double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
-        double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
-        double var7 = 0.4375D + (width / 2.0F);
-        return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
+            // Minimum speed.
+            return false;
+        }
+        // Done in honeyBlockSidewayCollision
+        // With current implementation, this condition always return false, reason same above
+        //double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
+        //double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
+        //double var7 = 0.4375D + (width / 2.0F);
+        //return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
+        return true;
     }
     
 
@@ -178,16 +182,16 @@ public class MovingUtil {
      */
     public static boolean honeyBlockSidewayCollision(PlayerLocation from, PlayerLocation to, MovingData data) {
 
-        final boolean isFlagCollected = (to.getBlockFlags() & BlockFlags.F_STICKY) != 0;
+        final boolean isFlagCollectedAndSideCollided = (to.getBlockFlags() & BlockFlags.F_STICKY) != 0
+                && BlockProperties.collides(to.getBlockCache(),
+                        to.getMinX() - 0.01, to.getMinY(), to.getMinZ() - 0.01, 
+                        to.getMaxX() + 0.01, to.getMaxY(), to.getMaxZ() + 0.01, 
+                        BlockFlags.F_STICKY);
         // Moving on side block, remove nofall data
-        if (isFlagCollected && !to.isOnGround() && BlockProperties.collides(to.getBlockCache(),
-                                                         to.getMinX() - 0.01, to.getMinY(), to.getMinZ() - 0.01, 
-                                                         to.getMaxX() + 0.01, to.getMaxY(), to.getMaxZ() + 0.01, 
-                                                         BlockFlags.F_STICKY)
-        ) {
+        if (isFlagCollectedAndSideCollided && !to.isOnGround()) {
             data.clearNoFallData();
         }
-        return isFlagCollected;
+        return isFlagCollectedAndSideCollided;
     }
 
 

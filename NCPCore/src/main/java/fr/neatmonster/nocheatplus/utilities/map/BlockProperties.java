@@ -46,6 +46,7 @@ import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -513,12 +514,14 @@ public class BlockProperties {
      * @param player
      * @param location
      * @param yOnGround
+     * @param thisMove 
      */
-    public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround) {
+    public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
+        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
+        pLoc.set(loc, player, yOnGround);
         double friction = 1.0;
         if (pLoc.isInWater()) {
             friction = Magic.FRICTION_MEDIUM_WATER;// 0.800000011920929;
@@ -540,12 +543,14 @@ public class BlockProperties {
      * @param player
      * @param location
      * @param yOnGround
+     * @param thisMove 
      */
-    public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround) {
+    public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
+        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
+        pLoc.set(loc, player, yOnGround);
         double stuckInFactor = 1.0;
         if (pLoc.isInBerryBush()) {
             stuckInFactor = 0.75;
@@ -566,13 +571,16 @@ public class BlockProperties {
      * @param player
      * @param location
      * @param yOnGround
+     * @param thisMove 
      */
-    public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround) {
+    public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
+        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
+        pLoc.set(loc, player, yOnGround);
         /** 1.15 changed the ground-seeking distance to 0.5 */
+        // TODO: ServerVersion shouldn't be called here for performance, also use ClientVersion
         final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
         /** Default friction for all other blocks */
@@ -597,36 +605,40 @@ public class BlockProperties {
      * @param player
      * @param location
      * @param yOnGround
+     * @param thisMove 
      */
-    public static final float getBlockSpeedFactor(final Player player, final Location location, final double yOnGround) {
+    public static final float getBlockSpeedFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
+        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
+        pLoc.set(loc, player, yOnGround);
         float speedFactor = 1.0f;
-        
-        if (pLoc.isInOrAboveSoulSand()) {
+        final Material block = pLoc.getTypeId();
+
+        if (block == Material.SOUL_SAND) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
             if (BridgeEnchant.hasSoulSpeed(player)) {
                 speedFactor = 1.0f;
-            } 
-            // Soul speed is absent and the player is inside the block. Do slow down.
-            else if (pLoc.isInSoulSand()) {
+            } else speedFactor = 0.4f;
+        } else if ((BlockFlags.getBlockFlags(block) & BlockFlags.F_STICKY) != 0) {
+            speedFactor = 0.4f;
+        }
+        if (!isWater(block) && !isBubbleColumn(block) && speedFactor == 1.0f) {
+            // TODO: ServerVersion shouldn't be called here for performance, also use ClientVersion
+            final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
+            final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
+            // Do again with below block
+            if (blockBelow == Material.SOUL_SAND) {
+                // Soul speed nullifies the slow down.
+                // (The boost is already included in the player's attribute speed)
+                if (BridgeEnchant.hasSoulSpeed(player)) {
+                    speedFactor = 1.0f;
+                } else speedFactor = 0.4f;
+            } else if ((BlockFlags.getBlockFlags(blockBelow) & BlockFlags.F_STICKY) != 0) {
                 speedFactor = 0.4f;
             }
-            // Above soul sand (but not inside) and no soul speed present, do not slow down
-            else speedFactor = 1.0f;
-        }
-        //  else if (pLoc.isInWater() || pLoc.isInBubbleStream() || pLoc.isDraggedByBubbleStream()) {
-        //    // Early return: See Entity.java.getBlockSpeedFactor()
-        //    // We don't care about the block's speed if in water or in bubble column (What about lava Mojang?)
-        //    blockCache.cleanup();
-        //    pLoc.cleanup();
-        //    return speedFactor;
-        //  }
-        else if (pLoc.isOnHoneyBlock()) {
-            speedFactor = 0.4f;
         }
         blockCache.cleanup();
         pLoc.cleanup();
@@ -638,12 +650,14 @@ public class BlockProperties {
      * @param player
      * @param location
      * @param yOnGround
+     * @param thisMove 
      */
-    public static final double getStuckInBlockHorizontalFactor(final Player player, final Location location, final double yOnGround) {
+    public static final double getStuckInBlockHorizontalFactor(final Player player, final Location location, final double yOnGround, final PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
+        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
         pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
+        pLoc.set(loc, player, yOnGround);
         double stuckInFactor = 1.0D;
         if (pLoc.isInWeb()) {
             stuckInFactor = 0.25D;
@@ -1053,6 +1067,17 @@ public class BlockProperties {
      */
     public static final boolean isWater(final Material mat) {
         return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_WATER) != 0;
+    }
+
+    /**
+     * Test for bubble column block.
+     * 
+     * @param mat
+     *            the mat.
+     * @return true, if is bubble column
+     */
+    public static final boolean isBubbleColumn(final Material mat) {
+        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_BUBBLECOLUMN) != 0;
     }
 
     /**

@@ -969,7 +969,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 // 3: Actual split
                 int count = 1;
                 // Maximum amount by which a single PlayerMoveEvent can be split.
-                int maxSplit = 9;
+                int maxSplit = 12;
                 for (int i = 0; i < j-1; i++) {
                     /** The 'from' location skipped by Bukkit in the flying queue */
                     final Location packetFrom = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ(), 

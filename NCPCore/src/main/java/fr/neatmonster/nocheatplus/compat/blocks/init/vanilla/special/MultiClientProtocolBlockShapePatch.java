@@ -51,6 +51,7 @@ public class MultiClientProtocolBlockShapePatch extends AbstractBlockPropertiesP
     @Override
     public void setupBlockProperties(WorldConfigProvider<?> worldConfigProvider) {
 
+        // TODO: Rather not adding bunch of flags arbitrarily for compatibility, things could mess up for example isOnground(), use ClientVersion instead
         final List<String> done = new LinkedList<String>();
 
         //This freaks out with 1.8 using viaversion
@@ -64,7 +65,7 @@ public class MultiClientProtocolBlockShapePatch extends AbstractBlockPropertiesP
         done.add("vine");
 
         try {
-            BlockFlags.addFlags("HONEY_BLOCK", BlockFlags.F_MIN_HEIGHT16_15 | BlockFlags.F_HEIGHT100 | BlockFlags.F_GROUND_HEIGHT);
+            BlockFlags.addFlags("HONEY_BLOCK", BlockFlags.F_MIN_HEIGHT16_15 | BlockFlags.F_GROUND_HEIGHT);
             done.add("honey_block");
         }
         catch (Throwable t) {}
