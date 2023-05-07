@@ -87,6 +87,7 @@ public class Magic {
 
     // Gravity.
     public static final double GRAVITY_MAX = 0.0834;
+    /** EntityLiving, travel */
     public static final double DEFAULT_GRAVITY = 0.08;
     public static final double GRAVITY_MIN = 0.0624; 
     public static final double GRAVITY_ODD = 0.05;
@@ -94,10 +95,12 @@ public class Magic {
     public static final float GRAVITY_VACC = (float) (GRAVITY_MIN * 0.6); // 0.03744
     public static final double GRAVITY_SPAN = GRAVITY_MAX - GRAVITY_MIN; // 0.021
     public static final double SLOW_FALL_GRAVITY = 0.0097; // This is actually 0.01, but this value matches with our gravity formula (lastDelta * friction - gravity)
+    /** EntityLiving, travel */
     public static final double DEFAULT_SLOW_FALL_GRAVITY = 0.01;
     public static final float GRAVITY_SLOW_FALL_VACC = (float)(SLOW_FALL_GRAVITY * 0.6);
 
     // Friction factor by medium (move inside of).
+    /** EntityLiving, travel */
     public static final double FRICTION_MEDIUM_AIR = 0.98;
     public static final double FRICTION_MEDIUM_WATER = 0.98;
     public static final double FRICTION_MEDIUM_LAVA = 0.535;

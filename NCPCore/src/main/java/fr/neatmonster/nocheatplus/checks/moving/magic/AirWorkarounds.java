@@ -28,6 +28,9 @@ import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
@@ -235,13 +238,14 @@ public class AirWorkarounds {
      */
     private static boolean oddLiquid(final double yDistDiffEx, final boolean resetTo, 
                                      final MovingData data, final boolean resetFrom, 
-                                     final PlayerLocation from) {
+                                     final PlayerLocation from, final Player player) {
         // TODO: Most are medium transitions with the possibility to keep/alter friction or even speed on 1st/2nd move (counting in the transition).
         final boolean LiquidEnvelope = (data.liftOffEnvelope == LiftOffEnvelope.LIMIT_LIQUID || data.liftOffEnvelope == LiftOffEnvelope.LIMIT_NEAR_GROUND || data.liftOffEnvelope == LiftOffEnvelope.LIMIT_SURFACE);
         final int blockdata = from.getData(from.getBlockX(), from.getBlockY(), from.getBlockZ());
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier);
+        final IPlayerData pData = DataManager.getPlayerData(player);
 
         if (data.sfJumpPhase != 1 && data.sfJumpPhase != 2) {
             return false;
@@ -318,7 +322,7 @@ public class AirWorkarounds {
                         && Math.abs(thisMove.yDistance - lastMove.yDistance) < 0.0114
                         && data.ws.use(WRPT.W_M_SF_ODDLIQUID_11)
                         // 1: Any leaving liquid and keeping distance once. (seem to be appear on legacy clients 1.12.2 and below)
-                        || data.sfJumpPhase == 1 
+                        || data.sfJumpPhase == 1 && pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_12_2)
                         && Math.abs(thisMove.yDistance) <= 0.3001 && thisMove.yDistance == lastMove.yDistance
                         && data.ws.use(WRPT.W_M_SF_ODDLIQUID_12)
                         // 1: Not documented -> What is this why is it even here?
@@ -784,6 +788,7 @@ public class AirWorkarounds {
         final double SetBackYDistance = to.getY() - data.getSetBackY();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        final IPlayerData pData = DataManager.getPlayerData(player);
         return 
                 // 0: Ignore: Legitimate step.
                 (fromOnGround || thisMove.touchedGroundWorkaround || lastMove.touchedGround
@@ -797,6 +802,7 @@ public class AirWorkarounds {
                 && data.insideMediumCount < 6 && Bridge1_13.hasIsSwimming() && Magic.recentlyInWaterfall(data, 20)
                 && (Magic.inAir(thisMove) || Magic.leavingWater(thisMove)) && SetBackYDistance < cc.sfStepHeight 
                 && thisMove.yDistance < LiftOffEnvelope.NORMAL.getMaxJumpGain(0.0) 
+                && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) 
                 // 0: Lost ground cases
                 || thisMove.touchedGroundWorkaround 
                 && ( 
@@ -825,18 +831,19 @@ public class AirWorkarounds {
     public static boolean outOfEnvelopeNoData(final PlayerLocation from, final PlayerLocation to, 
                                               final boolean resetTo, final MovingData data,
                                               double yDistDiffEx, final boolean resetFrom, final double yDistChange,
-                                              final MovingConfig cc) {
+                                              final MovingConfig cc, final Player player) {
         
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData secondLastMove = data.playerMoves.getSecondPastMove();
+        final IPlayerData pData = DataManager.getPlayerData(player);
         return  
                 // 0: Allow falling shorter than expected, if onto ground.
                 // Note resetFrom should usually mean that allowed dist is > 0 ? 5
                 thisMove.yDistance <= 0.0 && (resetTo || thisMove.touchedGround) 
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_NODATA1)
                 // 0: Pre 1.17 bug.
-                || to.isHeadObstructed() 
+                || to.isHeadObstructed() && pData.getClientVersion().isOlderThan(ClientVersion.V_1_17)
                 && MathUtil.between(0.0, thisMove.yDistance, 1.2)
                 && MaterialUtil.SHULKER_BOXES.contains(from.getTypeId())
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_NODATA2)
@@ -886,7 +893,7 @@ public class AirWorkarounds {
      */
     public static boolean oddJunction(final PlayerLocation from, final PlayerLocation to, final double yDistChange, 
                                       final double yDistDiffEx, final boolean resetTo,
-                                      final MovingData data, final MovingConfig cc, final boolean resetFrom) {
+                                      final MovingData data, final MovingConfig cc, final boolean resetFrom, final Player player) {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier);
@@ -895,7 +902,7 @@ public class AirWorkarounds {
             return false;
             // Skip everything if last move is invalid
         }
-        if (AirWorkarounds.oddLiquid(yDistDiffEx, resetTo, data, resetFrom, from)) {
+        if (AirWorkarounds.oddLiquid(yDistDiffEx, resetTo, data, resetFrom, from, player)) {
             // Jump after leaving the liquid near ground.
             return true;
         }

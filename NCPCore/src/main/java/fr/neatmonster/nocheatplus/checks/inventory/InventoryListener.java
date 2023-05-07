@@ -41,6 +41,7 @@ import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -86,10 +87,13 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
     private final MoreInventory moreInv = addCheck(new MoreInventory());
 
     /** The fast click check. */
-    private final FastClick  fastClick  = addCheck(new FastClick());
+    private final FastClick fastClick  = addCheck(new FastClick());
 
     /** The instant bow check. */
     private final InstantBow instantBow = addCheck(new InstantBow());
+
+    /** The fast consume check. */
+    private final FastConsume fastConsume = addCheck(new FastConsume());
     
     /** The open check */
     private final Open open = addCheck(new Open());
@@ -264,10 +268,31 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             event.setCancelled(true);
         }
     }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onConsumingFoodOrPotions(final PlayerItemConsumeEvent event){
+        final Player player = event.getPlayer();
+        if (player.isDead() && BridgeHealth.getHealth(player) <= 0.0) {
+            // Eat after death.
+            event.setCancelled(true);
+            counters.addPrimaryThread(idCancelDead, 1);
+            return;
+        }
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        if (!pData.isCheckActive(CheckType.INVENTORY_FASTCONSUME, player)) {
+            return;
+        }
+        final InventoryData data = pData.getGenericInstance(InventoryData.class);
+        final long time = System.currentTimeMillis();
+        if (fastConsume.check(player, event.getItem(), time, data, pData)) {
+            event.setCancelled(true);
+            DataManager.getPlayerData(player).requestUpdateInventory();
+        }
+    }
     
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerInventoryClose(final InventoryCloseEvent event) {
-        // NOTE: ignoreCancelled is kept to false here. Cancelled events won't reset data.
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onClosingAnyInventory(final InventoryCloseEvent event) {
+        // NOTE: ignoreCancelled is kept to true here. Cancelled events won't reset data.
         // NOTE: Priority level -> same as opening time.
         final HumanEntity entity = event.getPlayer();
         if (entity instanceof Player) {

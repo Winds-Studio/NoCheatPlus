@@ -92,6 +92,7 @@ import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.BlockChangeEntry;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
@@ -841,7 +842,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             earlyReturn = handleTeleportedOnMove(player, event, data, cc, pData);
             token = "awaitsetback";
         }
-        else if (TrigUtil.isSamePos(from, to) && !data.lastMoveNoMove) { 
+        else if (TrigUtil.isSamePos(from, to) && !data.lastMoveNoMove 
+            && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_17)) { 
             //if (data.sfHoverTicks > 0) data.sfHoverTicks += hoverTicksStep;
             earlyReturn = data.lastMoveNoMove = thisMove.duplicatePosition = true;
             token = "duplicate";
@@ -891,8 +893,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //    With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
         // 3) On MC 1.19.4 and later, PlayerMoveEvents are skipped altogether upon entering a minecart and fired normally when exiting.
         // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B)
-        // To fix this, we peek into ProtocolLib to get the movement packets that were skipped or merged on Bukkit-level and "split" the incoming PlayerMoveEvent into several other moves.
-        // (as many as the number of skipped moves, capped at 9)
+        // To fix this, we peek into ProtocolLib to get the movement packets that were skipped or merged on Bukkit-level (or otherwise messed up on Bukkit's side) and "split" the incoming PlayerMoveEvent into several other moves.
+        // (as many as the number of skipped moves, capped at 12)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         final Location loc = player.getLocation(moveInfo.useLoc);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
@@ -902,19 +904,18 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 0: Handling of split moves has been disabled.
             // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
             !cc.splitMoves 
-            // 0: The "from" location fired by Bukkit matches player#getLocation(), that means no skip happened.
+            // 0: A regular PlayerMoveEvent will always fire a "from" loc reflecting player#getLocation().
+            //    If these don't match, something happened on Bukkit-level, and this move cannot be used as is.
             || TrigUtil.isSamePos(from, loc)
             // 0: Special case / bug? (Which/why, which version of MC/spigot?)
             || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())) {
             // TODO: On pistons pulling the player back: -1.15 yDistance for split move 1 (untracked position > 0.5 yDistance!).
             // Normal move: fire from -> to
             moveInfo.set(player, from, to, cc.yOnGround);
-            checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event, false);
+            checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event, true);
         }
         else {
-            // Last moving event was skipped: the "from" location from the event is not up to player#getLocation().
-            // Peek into ProtocolLib to get the skipped movements' coordinates.
-            // Only work if MovingFlying is active otherwise fall back to legacy one
+            // Peek into ProtocolLib to get the movement's actual coordinates.
             // (Since the new hSpeed prediction relies on accurate split moves, this will force us to depend on ProtocolLib to support even the most basic features of Minecraft, but it's likely the most sensible choice anyway)
             final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
             final DataPacketFlying[] queue = flyingHandle.getHandle();
@@ -923,7 +924,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 int fromIndex = -1;
                 /** Index of the Bukkit's "to" location in the flying queue. -1 if already purged out of the queue or cannot be found for any reason.*/
                 int toIndex = -1;
-                // 1: Find out where the Bukkit's 'from' and 'to' locations are on packet-level in the flying queue.
+                // 1: Locate Bukkit's 'from' and 'to' locations on packet-level in the flying queue.
                 for (int queueIndex = 0; queueIndex < queue.length; queueIndex++) {
                     final DataPacketFlying packetData = queue[queueIndex];
                     if (packetData == null || !packetData.hasPos) {
@@ -951,7 +952,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     }
                     return;
                 }
-                // 2: Filter duplicate pos (1.17+), null, look only or ground only packet
+                // 2: Filter out duplicate pos (1.17+), null, look only or ground only packet
                 final DataPacketFlying[] queuePos = new DataPacketFlying[fromIndex - toIndex + 1]; // Array of the size of packets skipped between the bukkit locations
                 int j = 0;
                 for (int i = fromIndex; i >= toIndex; i--) {
@@ -971,14 +972,15 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 // Maximum amount by which a single PlayerMoveEvent can be split.
                 int maxSplit = 12;
                 for (int i = 0; i < j-1; i++) {
-                    /** The 'from' location skipped by Bukkit in the flying queue */
+                    /** The 'from' location skipped/lost by Bukkit in the flying queue */
                     final Location packetFrom = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ(), 
-                    		queuePos[i].hasLook ? queuePos[i].getYaw() : to.getYaw(), 
-                    		queuePos[i].hasLook ? queuePos[i].getPitch() : to.getPitch());
-                    /** The 'to' location skipped by Bukkit in the flying queue. Use Bukkit's "to" if reached the maximum split */
+                                                             // Ensure the correct look is also set.
+                    		                                 queuePos[i].hasLook ? queuePos[i].getYaw() : to.getYaw(), 
+                    	                                   	 queuePos[i].hasLook ? queuePos[i].getPitch() : to.getPitch());
+                    /** The 'to' location skipped/lost by Bukkit in the flying queue. Use Bukkit's "to" if the maximum split was reached */
                     final Location packetTo = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i+1].getX(), queuePos[i+1].getY(), queuePos[i+1].getZ(), 
-                    		queuePos[i+1].hasLook ? queuePos[i+1].getYaw() : to.getYaw(), 
-                    		queuePos[i+1].hasLook ? queuePos[i+1].getPitch() : to.getPitch());
+                    		                                                        queuePos[i+1].hasLook ? queuePos[i+1].getYaw() : to.getYaw(), 
+                    		                                                        queuePos[i+1].hasLook ? queuePos[i+1].getPitch() : to.getPitch());
                     moveInfo.set(player, packetFrom, packetTo, cc.yOnGround);
                     if (debug) {
                         final String s1 = count == 1 ? "from" : "loc";
@@ -1104,13 +1106,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * @param cc
      * @param pData
      * @param event
-     * @param isModernSplitMove False if legacySplitMove is used, or no split move is detected, true otherwise
+     * @param isNormalOrPacketSplitMove False if legacySplitMove is used, true otherwise (even with no split move)
      * @return True, if the move is cancelled, in which case onMoveMonitorNotCancelled won't run.
      */
     private boolean checkPlayerMove(final Player player, final Location from, final Location to, final int multiMoveCount, 
                                     final PlayerMoveInfo moveInfo, final boolean debug, final MovingData data, 
                                     final MovingConfig cc, final IPlayerData pData, final PlayerMoveEvent event,
-                                    final boolean isModernSplitMove) {
+                                    final boolean isNormalOrPacketSplitMove) {
         Location newTo = null;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final String playerName = player.getName(); // TODO: Could switch to UUID here (needs more changes).
@@ -1505,7 +1507,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 1.3: Actual check.
             // Only check if passable has not already set back.
             if (newTo == null) {
-                newTo = survivalFly.check(player, pFrom, pTo, multiMoveCount, data, cc, pData, tick, time, useBlockChangeTracker, isModernSplitMove);
+                newTo = survivalFly.check(player, pFrom, pTo, multiMoveCount, data, cc, pData, tick, time, useBlockChangeTracker, isNormalOrPacketSplitMove);
             }
             
             // 1.4: Only check NoFall, if not already vetoed.
@@ -2578,7 +2580,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Check for missed moves.
             // TODO: Force-load chunks [log if (!)] ?
             // Check only from the old versions, newer versions don't seem like a problem to account for
-            if (!BlockProperties.isPassable(loc) && !Bridge1_13.hasIsSwimming()) {
+            if (!BlockProperties.isPassable(loc) && pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
                 final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
                 final PlayerMoveData lastMove2 = data.playerMoves.getNumberOfPastMoves() > 1 ? data.playerMoves.getSecondPastMove() : null;
                 // Won't use lastMove.toIsValid to prevent players already failed some checks in last move

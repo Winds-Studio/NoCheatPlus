@@ -56,6 +56,7 @@ import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.compat.blocks.init.vanilla.VanillaBlocksFactory;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.config.ConfPaths;
@@ -64,6 +65,8 @@ import fr.neatmonster.nocheatplus.config.WorldConfigProvider;
 import fr.neatmonster.nocheatplus.logging.LogManager;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.logging.Streams;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.collision.BlockPositionContainer;
@@ -510,11 +513,12 @@ public class BlockProperties {
 
     /**
      * NMS friction factors library for vertical motion
-     * This only concerns media (liquid and air, later gliding as well.)
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @return the factor 
      */
     public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
@@ -525,10 +529,12 @@ public class BlockProperties {
         double friction = 1.0;
         if (pLoc.isInWater()) {
             friction = Magic.FRICTION_MEDIUM_WATER;// 0.800000011920929;
+            // TODO: Wrong factor. get rid and make vDistLiquid predictive
         }
         else if (pLoc.isInLava()) {
             friction = Magic.FRICTION_MEDIUM_LAVA;
             // friction = 0.800000011920929;
+            // TODO: Wrong factor. get rid and make vDistLiquid predictive
         }
         else {
             friction = Magic.FRICTION_MEDIUM_AIR;
@@ -540,10 +546,12 @@ public class BlockProperties {
 
     /**
      * NMS stuck-in-block vertical speed factor library.
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @return the factor 
      */
     public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
@@ -568,10 +576,12 @@ public class BlockProperties {
 
     /**
      * NMS block friction library for horizontal speed
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @return the factor
      */
     public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
@@ -579,9 +589,9 @@ public class BlockProperties {
         pLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
         pLoc.set(loc, player, yOnGround);
+        final IPlayerData pData = DataManager.getPlayerData(player);
         /** 1.15 changed the ground-seeking distance to 0.5 */
-        // TODO: ServerVersion shouldn't be called here for performance, also use ClientVersion
-        final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
+        final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
         /** Default friction for all other blocks */
         final float DEFAULT_FRICTION = 0.6f;
@@ -601,11 +611,13 @@ public class BlockProperties {
     }
 
     /**
-     * NMS block speed factor library for horizontal speed (mostly slowdown multipliers).
+     * NMS block-speed library for horizontal speed (mostly slowdown multipliers).
+     * This is retrieved according to how vanilla does it.
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves)
      */
     public static final float getBlockSpeedFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
@@ -615,19 +627,21 @@ public class BlockProperties {
         pLoc.set(loc, player, yOnGround);
         float speedFactor = 1.0f;
         final Material block = pLoc.getTypeId();
-
         if (block == Material.SOUL_SAND) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
             if (BridgeEnchant.hasSoulSpeed(player)) {
                 speedFactor = 1.0f;
-            } else speedFactor = 0.4f;
-        } else if ((BlockFlags.getBlockFlags(block) & BlockFlags.F_STICKY) != 0) {
+            } 
+            else speedFactor = 0.4f;
+        } 
+        else if ((BlockFlags.getBlockFlags(block) & BlockFlags.F_STICKY) != 0) {
             speedFactor = 0.4f;
         }
         if (!isWater(block) && !isBubbleColumn(block) && speedFactor == 1.0f) {
-            // TODO: ServerVersion shouldn't be called here for performance, also use ClientVersion
-            final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
+            final IPlayerData pData = DataManager.getPlayerData(player);
+            /** 1.15 changed the ground-seeking distance to 0.5 */
+            final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
             final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
             // Do again with below block
             if (blockBelow == Material.SOUL_SAND) {
@@ -635,8 +649,10 @@ public class BlockProperties {
                 // (The boost is already included in the player's attribute speed)
                 if (BridgeEnchant.hasSoulSpeed(player)) {
                     speedFactor = 1.0f;
-                } else speedFactor = 0.4f;
-            } else if ((BlockFlags.getBlockFlags(blockBelow) & BlockFlags.F_STICKY) != 0) {
+                } 
+                else speedFactor = 0.4f;
+            } 
+            else if ((BlockFlags.getBlockFlags(blockBelow) & BlockFlags.F_STICKY) != 0) {
                 speedFactor = 0.4f;
             }
         }
@@ -646,7 +662,8 @@ public class BlockProperties {
     }
 
     /**
-     * Get the NMS stuck-in-block factor for horizontal speed.
+     * NMS stuck-in-block factor library for horizontal speed.
+     * 
      * @param player
      * @param location
      * @param yOnGround
@@ -4295,6 +4312,7 @@ public class BlockProperties {
         // Judge if the block collision can be considered as "ground"     //
         ////////////////////////////////////////////////////////////////////
         // Handle special blocks.
+        // Calling directly world#getBlockAt() will tank performance without caching, as the onGround check is called many times
         /*final Block block = world.getBlockAt(x, y, z);
         if (block != null) {
             // Player collided but the leaf has an unstable tilt.

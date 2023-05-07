@@ -32,6 +32,7 @@ import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.components.registry.feature.IDisableListener;
@@ -116,7 +117,7 @@ public class Open extends Check implements IDisableListener {
     }
 
     /**
-     * On PlayerMoveEvents, determine if the inventory should be allowed to stay open. <br>
+     * To be called during PlayerMoveEvents: determine if the inventory should be allowed to stay open. <br>
      * (Against InventoryMove cheats and similar)<br>
      * 
      * @param player
@@ -160,7 +161,7 @@ public class Open extends Check implements IDisableListener {
             || mData.getOrUseVerticalVelocity(thisMove.yDistance) != null
             || mData.useHorizontalVelocity(thisMove.hDistance - mData.getHorizontalFreedom()) >= thisMove.hDistance - mData.getHorizontalFreedom()
             // Ignore entity pushing.
-            || ServerVersion.compareMinecraftVersion("1.9") >= 0 && CollisionUtil.isCollidingWithEntities(player, true)) {
+            || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) && CollisionUtil.isCollidingWithEntities(player, true)) {
             return false;
         }
             
@@ -178,23 +179,22 @@ public class Open extends Check implements IDisableListener {
             || (thisMove.from.getYaw() != thisMove.to.getYaw() || thisMove.from.getPitch() != thisMove.to.getPitch())
             // Can't swim also.
             || Bridge1_13.isSwimming(player) 
-            && (!thisMove.touchedGround && !lastMove.touchedGround 
+            && (
                 // For whatever reason, Mojang decided that players should be allowed to still swim if the player is touching ground
-                || (thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.0001))
+                !thisMove.touchedGround && !lastMove.touchedGround 
+                || (thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.001))
             )
             // Can't have an open inventory while sneaking
-            || player.isSneaking() && !Bridge1_13.isSwimming(player)
-            && (!Bridge1_13.hasIsSwimming() // The rule above holds true for legacy clients
-                // Newer clients can use accessability settings to still sneak while having an open inventory
-                // However they won't be able to move around in this state still.
-                || (thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.0001))
+            || player.isSneaking() 
+            && (
+                // 1.12 and below don't accessability settings to allow sneaking while also clicking in the inventory
+                pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)
+                || thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.001)
             )
-            // Cannot press the space bar if the inventory is open
+            // Cannot press the space bar if the inventory is open (only count the actual jumping moment)
             || thisMove.canJump && thisMove.to.getY() > thisMove.from.getY() && thisMove.yDistance > 0.0
             // Obviously, you cannot press WASD keys if the inventory is open.
-            || thisMove.hAllowedDistance >= lastMove.hAllowedDistance 
-            || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.0001)
-            && mData.bunnyhopDelay <= 0) {
+            || thisMove.from.inLiquid && (thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.001))) {
             // TODO: Ascending in liquid envelopes.
             
             // Feed the improbable.
