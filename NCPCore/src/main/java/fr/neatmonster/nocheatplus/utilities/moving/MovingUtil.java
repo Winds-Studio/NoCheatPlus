@@ -143,7 +143,8 @@ public class MovingUtil {
 
 
     /**
-     * From HoneyBlock.java (client 1.18.2)
+     * From HoneyBlock.java 
+     * Test if the player is sliding sideway with a honey block (NMS, checks for speed as well)
      * @param from
      * @param width
      * @param thisMove
@@ -175,23 +176,16 @@ public class MovingUtil {
     
 
     /** 
-     * Collect the F_STICKY block flag. Clear NoFall's data upon side collision.
+     * Test if the player collided horizontally with a honey block.
+     * 
      * @param from
      * @param to
      * @param data
      */
     public static boolean honeyBlockSidewayCollision(PlayerLocation from, PlayerLocation to, MovingData data) {
-
-        final boolean isFlagCollectedAndSideCollided = (to.getBlockFlags() & BlockFlags.F_STICKY) != 0
-                && BlockProperties.collides(to.getBlockCache(),
-                        to.getMinX() - 0.01, to.getMinY(), to.getMinZ() - 0.01, 
-                        to.getMaxX() + 0.01, to.getMaxY(), to.getMaxZ() + 0.01, 
-                        BlockFlags.F_STICKY);
-        // Moving on side block, remove nofall data
-        if (isFlagCollectedAndSideCollided && !to.isOnGround()) {
-            data.clearNoFallData();
-        }
-        return isFlagCollectedAndSideCollided;
+        return (to.getBlockFlags() & BlockFlags.F_STICKY) != 0
+                && BlockProperties.collides(to.getBlockCache(), to.getMinX() - 0.01, to.getMinY(), to.getMinZ() - 0.01, 
+                                            to.getMaxX() + 0.01, to.getMaxY(), to.getMaxZ() + 0.01, BlockFlags.F_STICKY);
     }
 
 

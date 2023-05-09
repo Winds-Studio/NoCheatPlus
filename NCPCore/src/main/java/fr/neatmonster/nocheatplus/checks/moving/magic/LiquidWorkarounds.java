@@ -14,6 +14,9 @@
  */
 package fr.neatmonster.nocheatplus.checks.moving.magic;
 
+import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
+
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
@@ -41,10 +44,12 @@ public class LiquidWorkarounds {
      * @return The allowed distance for reference, in case the move is allowed.
      *         If no workaround applies, null is returned.
      */
-    public static Double liquidWorkarounds(final PlayerLocation from, final PlayerLocation to, final double baseSpeed, final double frictDist, final PlayerMoveData lastMove, final MovingData data) {
+    public static Double liquidWorkarounds(final Player player, final PlayerLocation from, final PlayerLocation to, final double baseSpeed, final double frictDist, final PlayerMoveData lastMove, final MovingData data) {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final double yDistance = thisMove.yDistance;
         final PlayerMoveData pastMove1 = data.playerMoves.getSecondPastMove();
+        final Vector downStreamVector = from.getLiquidPushingVector(player, to.getX() - from.getX(), to.getZ() - from.getZ());
+        final boolean downStream = downStreamVector.getZ() > 0.0 || downStreamVector.getX() > 0.0;
 
         if (yDistance >= 0.0) {
             // TODO: liftOffEnvelope: refine conditions (general) , should be near water level.
@@ -164,7 +169,7 @@ public class LiquidWorkarounds {
                     && (
                             // Moving downstream.
                             lastMove.yDistance < 0.0 && yDistance > -0.5 && yDistance < lastMove.yDistance 
-                            && lastMove.yDistance - yDistance < Magic.GRAVITY_MIN && BlockProperties.isDownStream(from, to)
+                            && lastMove.yDistance - yDistance < Magic.GRAVITY_MIN && downStream
                             // Mix of gravity and base speed [careful: relates to water base speed].
                             || lastMove.yDistance < 0.0 && yDistance > -baseSpeed - Magic.GRAVITY_MAX && yDistance < lastMove.yDistance
                             && lastMove.yDistance - yDistance > Magic.GRAVITY_SPAN

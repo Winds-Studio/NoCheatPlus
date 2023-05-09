@@ -88,7 +88,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Tick counter used to workaround certain transitions with repeated or high motion (e.g.: gliding->normal, riptiding->normal). */
     // TODO: Rename -> motionTransitionTick/(...)
     public int keepfrictiontick = 0;
-    /** Countdown for ending a bunnyfly phase(= phase after bunnyhop). 10(max) represents a bunnyhop, 9-1 represent the tick at which this bunnfly phase currently is. */
+    /** The delay from bunnyhop to bunnyhop (internally referred to as "bunnyfly") */
     public int bunnyhopDelay;
     /** Count set back (re-) setting. */
     private int playerMoveCount = 0;
@@ -437,7 +437,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
 
     /**
-     * Adjust medium properties according to media.
+     * Adjust medium properties according to the medium.
      * @param loc
      * @param cc
      * @param player

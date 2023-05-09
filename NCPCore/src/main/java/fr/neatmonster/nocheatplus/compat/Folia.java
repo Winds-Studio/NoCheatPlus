@@ -29,7 +29,12 @@ import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
-public class Folia {
+/**
+ * Compatibility class for Paper's regionized multi-threaded server.
+ * If the server is not running Folia, do use Bukkit's scheduler.
+ */
+public class Folia { // Perhaps rename to be more straightforward on what this does i.e.: BridgeScheduler / SchedulerHelper / SchedulerProvider
+
     private static final boolean RegionizedServer = ReflectionUtil.getClass("io.papermc.paper.threadedregions.RegionizedServer") != null;
     //private static final Class<?> AsyncScheduler = ReflectionUtil.getClass("io.papermc.paper.threadedregions.scheduler.AsyncScheduler");
     private static final Class<?> GlobalRegionScheduler = ReflectionUtil.getClass("io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler");

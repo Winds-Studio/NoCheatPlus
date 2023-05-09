@@ -88,11 +88,6 @@ public class MoveData {
      * (See: MovingListener, RichEntityLocation)
      */
     public boolean headObstructed;
-
-    /**
-     * Player is moving downstream in flowing liquid (horizontal rather). Set in the moving listener
-     */
-    public boolean downStream;
    
     /**
      * Like isDownStream specifically for vertical move.
@@ -165,7 +160,6 @@ public class MoveData {
         to.extraPropertiesValid = false;
         // Properties involving the environment.
         headObstructed = false;
-        downStream = false;
         touchedGround = false;
         touchedGroundWorkaround = false;
         // Done.

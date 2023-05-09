@@ -65,6 +65,12 @@ public class PlayerMoveData extends MoveData {
      */
     public double yAllowedDistance;
 
+    /**
+     * Vertical allowed distance estimated by checks.
+     * TODO: Get rid of yAllowedDistance and use this one instead for both checks.
+     */
+    public double vAllowedDistance;
+
 
     // Properties involving the environment.
     /** This move was a bunny hop. */
@@ -81,7 +87,7 @@ public class PlayerMoveData extends MoveData {
     /**
      * Due to the thresholds for moving events, there could have been other
      * (micro-) moves by the player which could not be checked. One moving event
-     * is split into several other moves, capped at 9 currently.
+     * is split into several other moves, with a cap.
      */
     public int multiMoveCount;
     
@@ -116,6 +122,7 @@ public class PlayerMoveData extends MoveData {
         yAllowedDistance = 0.0;
         zAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
+        vAllowedDistance = 0.0;
         // Meta stuff.
         multiMoveCount = 0;
         verVelUsed = null;

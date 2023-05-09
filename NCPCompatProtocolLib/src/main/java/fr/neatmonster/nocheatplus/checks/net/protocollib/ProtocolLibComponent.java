@@ -38,6 +38,7 @@ import com.comphenix.protocol.events.PacketAdapter;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
+import fr.neatmonster.nocheatplus.compat.activation.ActivationUtil;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.registry.feature.IDisableListener;
@@ -142,10 +143,9 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
         	    register("fr.neatmonster.nocheatplus.checks.net.protocollib.UseItemAdapter", plugin);
                 register("fr.neatmonster.nocheatplus.checks.net.protocollib.Fight", plugin);
             }
-            
-            if (worldMan.isActiveAnywhere(CheckType.NET_TOGGLEFREQUENCY)) {
-                register("fr.neatmonster.nocheatplus.checks.net.protocollib.EntityActionAdapter", plugin);
-            }
+        }
+        if (worldMan.isActiveAnywhere(CheckType.NET_TOGGLEFREQUENCY)) {
+            register("fr.neatmonster.nocheatplus.checks.net.protocollib.EntityActionAdapter", plugin);
         }
         if (!registeredPacketAdapters.isEmpty()) {
             List<String> names = new ArrayList<String>(registeredPacketAdapters.size());
@@ -167,9 +167,11 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
             Class<?> clazz = Class.forName(name);
             register((Class<? extends PacketAdapter>) clazz, plugin);
             return;
-        } catch (ClassNotFoundException e) {
+        } 
+        catch (ClassNotFoundException e) {
             t = e;
-        } catch (ClassCastException e) {
+        } 
+        catch (ClassCastException e) {
             t = e;
         }
         StaticLog.logWarning("Could not register packet level hook: " + name);
@@ -182,7 +184,8 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
             PacketAdapter adapter = clazz.getDeclaredConstructor(Plugin.class).newInstance(plugin);
             ProtocolLibrary.getProtocolManager().addPacketListener(adapter);
             registeredPacketAdapters.add(adapter);
-        } catch (Throwable t) {
+        } 
+        catch (Throwable t) {
             StaticLog.logWarning("Could not register packet level hook: " + clazz.getSimpleName());
             StaticLog.logWarning(t);
             if (t.getCause() != null) {
@@ -210,7 +213,8 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
             try {
                 protocolManager.removePacketListener(adapter);
                 api.removeComponent(adapter); // Bit heavy, but consistent.
-            } catch (Throwable t) {
+            } 
+            catch (Throwable t) {
                 StaticLog.logWarning("Failed to unregister packet level hook: " + adapter.getClass().getName());
             }
 
@@ -231,7 +235,8 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
             }
             api.setFeatureTags("packet-listeners", names);
             StaticLog.logInfo("Unregistered packet level hook:" + adapter.getClass().getName());
-        } catch (Throwable t) {
+        } 
+        catch (Throwable t) {
             StaticLog.logWarning("Failed to unregister packet level hook: " + adapter.getClass().getName());
         }
     }
@@ -241,6 +246,13 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
         if (!registeredPacketAdapters.isEmpty()) {
             DataManager.getGenericInstance(player, NetData.class).onJoin(player);
         }
+        // Ensure client-version checking doesn't yield UNKNOWN if multiprotocol plugins are not present on the server
+        if (ActivationUtil.getMultiProtocolSupportPluginActivation() == null) {
+            // Assume clients to match the server protocol version.
+            // - If not even ProtocolLib is installed, do return UNKNOWN (that's on the server's owner). Time to make NCP full-on depend on ProtocolLib?
+            // - If the server has protocol plugins active but doesn't have CompatNoCheatPlus, that's on them as well :)
+            DataManager.getPlayerData(player).setClientVersionID(ProtocolLibrary.getProtocolManager().getProtocolVersion(player));
+        }
     }
 
     @Override
@@ -248,6 +260,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
         if (!registeredPacketAdapters.isEmpty()) {
             DataManager.getGenericInstance(player, NetData.class).onLeave(player);
         }
+        // (On leaving the server, client data is reset in PlayerData)
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)

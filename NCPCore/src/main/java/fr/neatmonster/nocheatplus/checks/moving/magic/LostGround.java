@@ -206,9 +206,10 @@ public class LostGround {
             if (lastMove.yDistance < 0.0 && !lastMove.touchedGroundWorkaround && hDistance > 0.0001) { 
                 // Generic could step.
                 // TODO: Possibly confine margin depending on side, moving direction (see client code).
-                if (from.isOnGround(1.0) && thisMove.hDistance <= thisMove.hAllowedDistance * 1.1
+                if (from.isOnGround(1.0) && thisMove.hDistance <= thisMove.hAllowedDistance + 0.0001
                     && BlockProperties.isOnGroundShuffled(to.getWorld(), to.getBlockCache(), from.getX(), from.getY() + cc.sfStepHeight, from.getZ(), to.getX(), 
                                                           to.getY(), to.getZ(), 0.1 + from.getBoxMarginHorizontal(), to.getyOnGround(), 0.0)) {
+                    thisMove.canStep = true;
                     return applyLostGround(player, from, false, thisMove, data, "couldstep", tags);
                 }
                 // Close by ground miss (client side blocks y move, but allows h move fully/mostly, missing the edge on server side).

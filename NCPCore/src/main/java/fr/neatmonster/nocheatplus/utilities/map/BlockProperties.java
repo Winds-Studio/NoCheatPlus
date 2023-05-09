@@ -56,6 +56,7 @@ import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.compat.blocks.init.vanilla.VanillaBlocksFactory;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.config.ConfPaths;
@@ -64,6 +65,8 @@ import fr.neatmonster.nocheatplus.config.WorldConfigProvider;
 import fr.neatmonster.nocheatplus.logging.LogManager;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.logging.Streams;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.collision.BlockPositionContainer;
@@ -510,11 +513,12 @@ public class BlockProperties {
 
     /**
      * NMS friction factors library for vertical motion
-     * This only concerns media (liquid and air, later gliding as well.)
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @return the factor 
      */
     public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
@@ -524,11 +528,12 @@ public class BlockProperties {
         pLoc.set(loc, player, yOnGround);
         double friction = 1.0;
         if (pLoc.isInWater()) {
-            friction = Magic.FRICTION_MEDIUM_WATER;// 0.800000011920929;
+            friction = Magic.WATER_VERTICAL_INERTIA;
+            // TODO: Wrong factor. get rid and make vDistLiquid predictive
         }
         else if (pLoc.isInLava()) {
-            friction = Magic.FRICTION_MEDIUM_LAVA;
-            // friction = 0.800000011920929;
+            friction = Magic.LAVA_VERTICAL_INERTIA;
+            // TODO: Wrong factor. get rid and make vDistLiquid predictive
         }
         else {
             friction = Magic.FRICTION_MEDIUM_AIR;
@@ -540,12 +545,18 @@ public class BlockProperties {
 
     /**
      * NMS stuck-in-block vertical speed factor library.
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @return the factor 
      */
     public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+            // Flying player are ignored by the game.
+            return 1.0;
+        }
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
@@ -568,20 +579,26 @@ public class BlockProperties {
 
     /**
      * NMS block friction library for horizontal speed
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @return the factor
      */
     public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+            // Flying player are ignored by the game.
+            return 1.0f;
+        }
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
         pLoc.set(loc, player, yOnGround);
+        final IPlayerData pData = DataManager.getPlayerData(player);
         /** 1.15 changed the ground-seeking distance to 0.5 */
-        // TODO: ServerVersion shouldn't be called here for performance, also use ClientVersion
-        final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
+        final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
         /** Default friction for all other blocks */
         final float DEFAULT_FRICTION = 0.6f;
@@ -601,13 +618,19 @@ public class BlockProperties {
     }
 
     /**
-     * NMS block speed factor library for horizontal speed (mostly slowdown multipliers).
+     * NMS block-speed library for horizontal speed (mostly slowdown multipliers).
+     * This is retrieved according to how vanilla does it.
+     * 
      * @param player
-     * @param location
+     * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove Should be used over location to compose the correct position (split moves)
      */
     public static final float getBlockSpeedFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+            // Flying player are ignored by the game.
+            return 1.0f;
+        }
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
@@ -615,19 +638,21 @@ public class BlockProperties {
         pLoc.set(loc, player, yOnGround);
         float speedFactor = 1.0f;
         final Material block = pLoc.getTypeId();
-
         if (block == Material.SOUL_SAND) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
             if (BridgeEnchant.hasSoulSpeed(player)) {
                 speedFactor = 1.0f;
-            } else speedFactor = 0.4f;
-        } else if ((BlockFlags.getBlockFlags(block) & BlockFlags.F_STICKY) != 0) {
+            } 
+            else speedFactor = 0.4f;
+        } 
+        else if ((BlockFlags.getBlockFlags(block) & BlockFlags.F_STICKY) != 0) {
             speedFactor = 0.4f;
         }
         if (!isWater(block) && !isBubbleColumn(block) && speedFactor == 1.0f) {
-            // TODO: ServerVersion shouldn't be called here for performance, also use ClientVersion
-            final double yBelow = ServerVersion.compareMinecraftVersion("1.15") >= 0 ? 0.5000001D : 1.0D;
+            final IPlayerData pData = DataManager.getPlayerData(player);
+            /** 1.15 changed the ground-seeking distance to 0.5 */
+            final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
             final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
             // Do again with below block
             if (blockBelow == Material.SOUL_SAND) {
@@ -635,8 +660,10 @@ public class BlockProperties {
                 // (The boost is already included in the player's attribute speed)
                 if (BridgeEnchant.hasSoulSpeed(player)) {
                     speedFactor = 1.0f;
-                } else speedFactor = 0.4f;
-            } else if ((BlockFlags.getBlockFlags(blockBelow) & BlockFlags.F_STICKY) != 0) {
+                } 
+                else speedFactor = 0.4f;
+            } 
+            else if ((BlockFlags.getBlockFlags(blockBelow) & BlockFlags.F_STICKY) != 0) {
                 speedFactor = 0.4f;
             }
         }
@@ -646,13 +673,18 @@ public class BlockProperties {
     }
 
     /**
-     * Get the NMS stuck-in-block factor for horizontal speed.
+     * NMS stuck-in-block factor library for horizontal speed.
+     * 
      * @param player
      * @param location
      * @param yOnGround
      * @param thisMove 
      */
     public static final double getStuckInBlockHorizontalFactor(final Player player, final Location location, final double yOnGround, final PlayerMoveData thisMove) {
+        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+            // Flying player are ignored by the game.
+            return 1.0f;
+        }
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
@@ -790,7 +822,7 @@ public class BlockProperties {
      * Returns false if the material is null
      * 
      * @param mat
-     *            the mat.
+     *            the mat. If null, will yield false.
      * @return true, if is air
      */
     public static final boolean isActuallyAir(final Material mat) {
@@ -801,7 +833,7 @@ public class BlockProperties {
      * Returns true if the material is null0
      *
      * @param mat
-     *            the mat.
+     *            the mat. If null, will yield true.
      * @return true, if is air
      */
     public static final boolean isAir(final Material mat) {
@@ -2980,8 +3012,8 @@ public class BlockProperties {
 
 
     /**
-     * Requires the hit-box of the block is hit (...): this checks for special
-     * blocks properties such as glass panes and similar.<br>
+     * Checks for blocks that have a different collision box than the actual hit box (i.e.: fences with a 1.0 hitbox but 1.5 collision box) <br>
+     * This checks for special blocks properties such as glass panes and similar.<br>
      * Ray-tracing version for passable-workarounds.
      *
      * @param access
@@ -4295,6 +4327,7 @@ public class BlockProperties {
         // Judge if the block collision can be considered as "ground"     //
         ////////////////////////////////////////////////////////////////////
         // Handle special blocks.
+        // Calling directly world#getBlockAt() will tank performance without caching, as the onGround check is called many times
         /*final Block block = world.getBlockAt(x, y, z);
         if (block != null) {
             // Player collided but the leaf has an unstable tilt.
@@ -4456,94 +4489,6 @@ public class BlockProperties {
             }
         }
         return true;
-    }
-
-    /**
-     * Check if the move given by from and to is leading downstream. Currently
-     * only the x-z move is regarded, no tight envelope/consistency check is done here.
-     *
-     * @param from
-     *            the from
-     * @param to
-     *            the to
-     * @return true, if is down stream
-     */
-    public static final boolean isDownStream(final PlayerLocation from, final PlayerLocation to) {
-        if (!from.isInLiquid() && !to.isInLiquid()) {
-            // Clearly cannot be moving downstream, if not in a liquid.
-            return false;
-        }
-        if (from.isSubmerged(0.75)) {
-            // Player is almost submerged in liquid, so they are not moving downstream.
-            return false;
-        }
-        return isDownStream(from.getBlockCache(), from.getBlockX(), from.getBlockY(), from.getBlockZ(), 
-                            from.getData(), to.getX() - from.getX(), to.getZ() - from.getZ());
-    }
-
-    /**
-     * Check if a move determined by xDistance and zDistance is leading down
-     * stream.
-     *
-     * @param access
-     *            the access
-     * @param x
-     *            the x
-     * @param y
-     *            the y
-     * @param z
-     *            the z
-     * @param data
-     *            the data
-     * @param dX
-     *            the d x
-     * @param dZ
-     *            the d z
-     * @return true, if is down stream
-     */
-    public static final boolean isDownStream(final BlockCache access, final int x, final int y, final int z, final int data, final double dX, final double dZ) {
-        // x > 0 -> south, z > 0 -> west
-        if ((data & 0x8) == 0) {
-            // not falling.
-            if ((dX > 0)) {
-                if (data < 7 && isLiquid(access.getType(x + 1, y, z)) && access.getData(x + 1, y, z) > data) {
-                    return true;
-                }
-                else if (data > 0 && isLiquid(access.getType(x - 1, y, z)) && access.getData(x - 1, y, z) < data) {
-                    // reverse direction.
-                    return true;
-                }
-            } 
-            else if (dX < 0) {
-                if (data < 7 && isLiquid(access.getType(x - 1, y, z)) && access.getData(x - 1, y, z) > data) {
-                    return true;
-                }
-                else if (data > 0 && isLiquid(access.getType(x + 1, y, z)) && access.getData(x + 1, y, z) < data) {
-                    // reverse direction.
-                    return true;
-                }
-            }
-
-            if (dZ > 0) {
-                if (data < 7 && isLiquid(access.getType(x, y, z + 1)) && access.getData(x, y, z + 1) > data) {
-                    return true;
-                }
-                else if (data > 0 && isLiquid(access.getType(x , y, z - 1)) && access.getData(x, y, z - 1) < data) {
-                    // reverse direction.
-                    return true;
-                }
-            }
-            else if (dZ < 0) {
-                if (data < 7 && isLiquid(access.getType(x, y, z - 1)) && access.getData(x, y, z - 1) > data) {
-                    return true;
-                }
-                else if (data > 0 && isLiquid(access.getType(x , y, z + 1)) && access.getData(x, y, z + 1) < data) {
-                    // reverse direction.
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**

@@ -33,11 +33,11 @@ public enum LiftOffEnvelope {
     LIMIT_SURFACE(0.1, 1.16, 0.1, 4, false),
     //    /** Flowing water / strong(-est) limit. */
     //    LIMIT_LIQUID_STRONG(...), // TODO
-    /** No jumping at all (web). */
-    NO_JUMP(0.0, 0.0, 0.0, 0, false),
-    /** Like NO_JUMP, just to distinguish from being in web. */
+    /** Webs envelope (web). */
+    NO_JUMP(0.021, 0.021, 0.0, 0, false),
+    /** Lift off envelope is not covered by this enum */
     UNKNOWN(0.0, 0.0, 0.0, 0, false),
-    /** Halfed jump gain, meant for the honey block, rather. */
+    /** Honey block evenlope */
     HALF_JUMP(0.21, 0.4, 0.21, 4, true), 
     /** Nearly ordinary jumping gain (meant for berry bushes)*/
     BERRY_JUMP(0.315, 0.5, 0.315, 0, true), 

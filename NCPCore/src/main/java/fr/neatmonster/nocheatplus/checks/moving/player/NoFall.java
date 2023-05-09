@@ -46,8 +46,9 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
-import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
+import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
@@ -55,6 +56,7 @@ import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 /**
  * A check to see if people cheat by tricking the server to not deal them fall damage.
@@ -78,8 +80,6 @@ public class NoFall extends Check {
     private static final Location useLoc2 = new Location(null, 0, 0, 0);
 
     private final Random random = CheckUtils.getRandom();
-
-    private final static boolean ServerIsAtLeast1_12 = ServerVersion.compareMinecraftVersion("1.12") >= 0;
 
     /**
      * Instantiates a new no fall check.
@@ -269,6 +269,7 @@ public class NoFall extends Check {
      */
     public static double calcReducedDamageByBlock(final Player player, final MovingData data, final double damage) {
         final PlayerMoveData validMove = data.playerMoves.getLatestValidMove();
+        final IPlayerData pData = DataManager.getPlayerData(player);
         if (validMove != null && validMove.toIsValid) {
             // TODO: Need move data pTo, this location isn't updated
             final Material blockMat = player.getWorld().getBlockAt(Location.locToBlock(validMove.to.getX()), Location.locToBlock(validMove.to.getY()), Location.locToBlock(validMove.to.getZ())).getType();
@@ -276,11 +277,11 @@ public class NoFall extends Check {
                 return damage / 5D;
             }
             // Beds were made bouncy in 1.12. They will also partially nerf the damage.
-            if (ServerIsAtLeast1_12 && MaterialUtil.BEDS.contains(blockMat)) {
+            if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12) && MaterialUtil.BEDS.contains(blockMat)) {
                 return damage / 2D;
             }
             // Uh... This mechanic exists since 1.9
-            if (Bridge1_9.hasEndRod() && blockMat == Material.HAY_BLOCK) {
+            if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) && blockMat == Material.HAY_BLOCK) {
                 return damage / 5D;
             }
         }
@@ -461,7 +462,8 @@ public class NoFall extends Check {
         // TODO: early returns (...) 
         final double minY = Math.min(fromY, toY);
         if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))
-            || !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
+            || !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))
+            || MovingUtil.honeyBlockSidewayCollision(pFrom, pTo, data) && !toOnGround) {
             // Just reset
             data.clearNoFallData();
         }
@@ -580,7 +582,6 @@ public class NoFall extends Check {
         final float fallDistance = player.getFallDistance();
         // TODO: Might also detect too high mc fall dist.
         if (data.noFallFallDistance > fallDistance) {
-
             final double playerY = player.getLocation(useLoc).getY();
             useLoc.setWorld(null);
             if (player.isFlying() 

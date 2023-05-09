@@ -54,5 +54,9 @@ public class VelocityFlags {
      * server not sending properly).
      */
     public static final long ORIGIN_PVP = 0x0400;
-
+    
+    /**
+     * Generic flag: entries with this flag are for internal purposes (always faked) and should be ignored by velocity checks.
+     */
+    public static final double ORIGIN_INTERNAL = 0x0800;
 }

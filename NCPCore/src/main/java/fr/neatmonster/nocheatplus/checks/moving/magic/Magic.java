@@ -83,10 +83,13 @@ public class Magic {
     public static final double LIQUID_SPEED_GAIN = 0.039;
     /** EntityLiving, goDownInWater */
     public static final double LIQUID_GRAVITY = -LIQUID_SPEED_GAIN;
+    public static final double WATER_VERTICAL_INERTIA = 0.8;
+    public static final double LAVA_VERTICAL_INERTIA = 0.5;
 
 
     // Gravity.
     public static final double GRAVITY_MAX = 0.0834;
+    /** EntityLiving, travel */
     public static final double DEFAULT_GRAVITY = 0.08;
     public static final double GRAVITY_MIN = 0.0624; 
     public static final double GRAVITY_ODD = 0.05;
@@ -94,10 +97,12 @@ public class Magic {
     public static final float GRAVITY_VACC = (float) (GRAVITY_MIN * 0.6); // 0.03744
     public static final double GRAVITY_SPAN = GRAVITY_MAX - GRAVITY_MIN; // 0.021
     public static final double SLOW_FALL_GRAVITY = 0.0097; // This is actually 0.01, but this value matches with our gravity formula (lastDelta * friction - gravity)
+    /** EntityLiving, travel */
     public static final double DEFAULT_SLOW_FALL_GRAVITY = 0.01;
     public static final float GRAVITY_SLOW_FALL_VACC = (float)(SLOW_FALL_GRAVITY * 0.6);
 
     // Friction factor by medium (move inside of).
+    /** EntityLiving, travel */
     public static final double FRICTION_MEDIUM_AIR = 0.98;
     public static final double FRICTION_MEDIUM_WATER = 0.98;
     public static final double FRICTION_MEDIUM_LAVA = 0.535;
@@ -129,7 +134,7 @@ public class Magic {
     // Vertical speeds/modifiers. 
     public static final double climbSpeedAscend        = 0.119;
     public static final double climbSpeedDescend       = 0.151;
-    public static final double snowClimbSpeedAscend    = 0.177;
+    public static final double snowClimbSpeedAscend    = 0.1765999;
     public static final double snowClimbSpeedDescend   = 0.118;
     public static final double bushSpeedDescend        = 0.09;
     public static final double bubbleStreamDescend     = 0.49; // from wiki.
