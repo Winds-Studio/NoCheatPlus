@@ -631,7 +631,27 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 inLava = false;
                 return false;
             }
-            inLava = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_LAVA);
+            inLava = false;
+            final int iMinX = MathUtil.floor(minX + 0.001);
+            final int iMaxX = MathUtil.ceil(maxX - 0.001);
+            final int iMinY = MathUtil.floor(minY + 0.001); // + 0.001 <- Minecraft actually deflates the AABB by this amount.
+            final int iMaxY = MathUtil.ceil(maxY - 0.001);
+            final int iMinZ = MathUtil.floor(minZ + 0.001);
+            final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
+            // NMS collision method
+            for (int iX = iMinX; iX < iMaxX; iX++) {
+                for (int iY = iMinY; iY < iMaxY; iY++) {
+                    for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, BlockFlags.F_LAVA);
+                        double liquidHeightToWorld = iY + liquidHeight;
+                        if (liquidHeightToWorld > minY + 0.001 && liquidHeight != 0.0) {
+                            // Collided.
+                            inLava = true;
+                            return inLava;
+                        }
+                    }
+                }
+            }
         }
         return inLava;
     }
@@ -647,8 +667,28 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 inWater = false;
                 return false;
             }
-            inWater = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_WATER) || isInWaterLogged();
-
+            inWater = isInWaterLogged();
+            if (inWater) return true;
+            final int iMinX = MathUtil.floor(minX + 0.001);
+            final int iMaxX = MathUtil.ceil(maxX - 0.001);
+            final int iMinY = MathUtil.floor(minY + 0.001); // + 0.001 <- Minecraft actually deflates the AABB by this amount.
+            final int iMaxY = MathUtil.ceil(maxY - 0.001);
+            final int iMinZ = MathUtil.floor(minZ + 0.001);
+            final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
+            // NMS collision method
+            for (int iX = iMinX; iX < iMaxX; iX++) {
+                for (int iY = iMinY; iY < iMaxY; iY++) {
+                    for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, BlockFlags.F_WATER);
+                        double liquidHeightToWorld = iY + liquidHeight;
+                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0) {
+                            // Collided.
+                            inWater = true;
+                            return inWater;
+                        }
+                    }
+                }
+            }
         }
         return inWater;
     }
@@ -794,7 +834,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isInWeb() {
         if (inWeb == null) {
             if (blockFlags == null || (blockFlags & BlockFlags.F_COBWEB) != 0L) {
-                inWeb = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_COBWEB);
+                inWeb = BlockProperties.collides(blockCache, minX + 0.001, minY + 0.001, minZ + 0.001, maxX - 0.001, maxY - 0.001, maxZ - 0.001, BlockFlags.F_COBWEB);
             }
             else {
                 inWeb = false;
@@ -810,11 +850,11 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInPowderSnow() {
         if (inPowderSnow == null) {
-            if (blockFlags != null && (blockFlags.longValue() & BlockFlags.F_POWDERSNOW) == 0) {
-                inPowderSnow = false;
-            } 
+            if (blockFlags == null || (blockFlags & BlockFlags.F_POWDERSNOW) != 0L) {
+                inPowderSnow = BlockProperties.collides(blockCache, minX + 0.001, minY + 0.001, minZ + 0.001, maxX - 0.001, maxY - 0.001, maxZ - 0.001, BlockFlags.F_POWDERSNOW);
+            }
             else {
-                inPowderSnow = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_POWDERSNOW) != 0;;
+                inPowderSnow = false;
             }
         }
         return inPowderSnow;
@@ -828,7 +868,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isInBerryBush() {
         if (inBerryBush == null) {
             if (blockFlags == null || (blockFlags & BlockFlags.F_BERRY_BUSH) != 0L) {
-                inBerryBush = BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_BERRY_BUSH);
+                inBerryBush = BlockProperties.collides(blockCache, minX + 0.001, minY + 0.001, minZ + 0.001, maxX - 0.001, maxY - 0.001, maxZ - 0.001, BlockFlags.F_BERRY_BUSH);
             }
             else {
                 inBerryBush = false;
@@ -911,7 +951,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 onSlimeBlock = false;
             } 
             else { 
-                final Material typeId = getTypeId();
+                final Material typeId = getTypeIdBelow();
                 final long thisFlags = BlockFlags.getBlockFlags(typeId);
                 onSlimeBlock = isOnGround() && (thisFlags & BlockFlags.F_SLIME) != 0;  
             }
@@ -1333,7 +1373,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @param zDistance
      * @return the vector
      */
-    public Vector getLiquidPushingVector(final Player p, final double xDistance, final double zDistance) {
+    public Vector getLiquidPushingVector(final Player p, final double xDistance, final double zDistance, final long liquidtypeflag) {
         if (!isInLiquid()) {
             // First, check using NoCheatPlus' collision system: if the player is not in a liquid, we don't need to proceed further
             return new Vector();
@@ -1344,12 +1384,12 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             return new Vector();
         }
         // No Location#locToBlock() here (!)
-        final int iMinX = MathUtil.floor(minX);
-        final int iMaxX = MathUtil.ceil(maxX);
-        final int iMinY = MathUtil.floor(minY + (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13) ? (0.4 + 0.001) : 0.0));
-        final int iMaxY = MathUtil.ceil(maxY);
-        final int iMinZ = MathUtil.floor(minZ);
-        final int iMaxZ = MathUtil.ceil(maxZ);
+        final int iMinX = MathUtil.floor(minX + 0.001);
+        final int iMaxX = MathUtil.ceil(maxX - 0.001);
+        final int iMinY = MathUtil.floor(minY + 0.001); // (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13) ? (0.4 + 0.001) : 0.0));
+        final int iMaxY = MathUtil.ceil(maxY - 0.001);
+        final int iMinZ = MathUtil.floor(minZ + 0.001);
+        final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
         // TODO: Rename this multiplier to something intelligible
         double d2 = 0.0;
         Vector pushingVector = new Vector();
@@ -1362,7 +1402,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
                     // LEGACY 1.13-
                     if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ);
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidtypeflag);
                         if (liquidHeight != 0.0) {
                             double d0 = (float) (iY + 1) - liquidHeight;
                             if (!p.isFlying() && iMaxY >= d0) {
@@ -1374,14 +1414,14 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                     }
                     // MODERN 1.13+
                     else {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ);
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidtypeflag);
                         double liquidHeightToWorld = iY + liquidHeight;
                         if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0
                            && !p.isFlying()) {
                             // Collided.
                             d2 = Math.max(liquidHeightToWorld - (minY + 0.001), d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
                             // Determine pushing speed by using the current flow of the liquid.
-                            Vector flowVector = getFlowVector(p, iX, iY, iZ);
+                            Vector flowVector = getFlowVector(p, iX, iY, iZ, liquidtypeflag);
                             if (d2 < 0.4) {
                                 flowVector = flowVector.multiply(d2);
                             }
@@ -1402,7 +1442,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             // In Entity.java:
             // LAVA: 0.0023333333333333335 if in any other world that isn't nether, 0.007 otherwise.
             // WATER: 0.014
-            double flowSpeedMultiplier = isInLava() ? (world.getEnvironment() == World.Environment.NETHER ? 0.007 : 0.0023333333333333335) : 0.014;
+            // Water first then Lava
+            double flowSpeedMultiplier = isInWater() ? 0.014 : (world.getEnvironment() == World.Environment.NETHER ? 0.007 : 0.0023333333333333335);
             if (pushingVector.lengthSquared() > 0.0) {
                 if (k1 > 0) {
                    pushingVector = pushingVector.multiply(1.0 / k1);
@@ -1423,9 +1464,11 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
     
     // (Taken from Grim :p)
-    private static boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1) {
-        return BlockProperties.getLiquidHeight(access, x, y, z) == 0 || BlockProperties.getLiquidHeight(access, x, y, z) > 0 && BlockProperties.getLiquidHeight(access, x1, y1, z1) > 0; 
-            
+
+    private static boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidtypeflag) {
+        return BlockProperties.getLiquidHeight(access, x, y, z, liquidtypeflag) == 0
+               || BlockProperties.getLiquidHeight(access, x, y, z, liquidtypeflag) > 0 
+               && BlockProperties.getLiquidHeight(access, x1, y1, z1, liquidtypeflag) > 0; 
     }
     
     // (Taken from Grim :p)
@@ -1443,8 +1486,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @param z
      * @return the vector
      */
-    public Vector getFlowVector(final Player p, int x, int y, int z) {
-        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
+    public Vector getFlowVector(final Player p, int x, int y, int z, final long liquidtypeflag) {
+        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidtypeflag); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
         if (!isInLiquid()) {
             return new Vector();
         }
@@ -1453,18 +1496,18 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
             int modX = x + hDirection.getModX();
             int modZ = z + hDirection.getModZ();
-            if (affectsFlow(blockCache, x, y, z, modX, y, modZ)) {  
-                float f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ); // node.getData(blockCache, modX, y, modZ) / 9.0f;
+            if (affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidtypeflag)) {  
+                float f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidtypeflag); // node.getData(blockCache, modX, y, modZ) / 9.0f;
                 float f1 = 0.0F;
                 if (f == 0.0F) {
-                	final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
+                    final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
                     final long flagsAtThisBlock = BlockFlags.getBlockFlags(node.getType());
                     // VANILLA: block needs a hitbox to block motion
                     //          if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
                     // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions)
                     if ((flagsAtThisBlock & (BlockFlags.F_GROUND | BlockFlags.F_SOLID)) == 0) { 
-                        if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ)) {
-                            f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ); // node.getData(blockCache, modX, y - 1, modZ) / 9.0f;
+                        if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidtypeflag)) {
+                            f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidtypeflag); // node.getData(blockCache, modX, y - 1, modZ) / 9.0f;
                             if (f > 0.0F) {
                                 f1 = liquidLevel - (f - 0.8888889F);
                             }
@@ -1776,7 +1819,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
          *  maxY (+ = Grow bounding box above head | - = Shrink bounding box below head)
          *  minY (- = Grow bounding box below feet | + = Shrink bounding box above feet)
          */
-        final double dxz = Math.round(fullWidth * 500.0) / 1000.0; // this.width / 2; // 0.3;
+        final double dxz = fullWidth / 2f; // this.width / 2; // 0.3;
         minX = x - dxz;
         minY = y;
         minZ = z - dxz;
