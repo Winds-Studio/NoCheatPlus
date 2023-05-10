@@ -461,16 +461,16 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         loc.collectBlockFlags();
         // Simplified.
         if (loc.isInWeb()) {
-            liftOffEnvelope = LiftOffEnvelope.NO_JUMP;
+            liftOffEnvelope = LiftOffEnvelope.LIMIT_WEBS;
         }
         else if (loc.isInBerryBush()) {
-            liftOffEnvelope = LiftOffEnvelope.BERRY_JUMP;
+            liftOffEnvelope = LiftOffEnvelope.LIMIT_SWEET_BERRY;
         }
         else if (loc.isInPowderSnow()) {
-            liftOffEnvelope = LiftOffEnvelope.POWDER_SNOW;
+            liftOffEnvelope = LiftOffEnvelope.LIMIT_POWDER_SNOW;
         }
         else if (loc.isOnHoneyBlock()) {
-            liftOffEnvelope = LiftOffEnvelope.HALF_JUMP;
+            liftOffEnvelope = LiftOffEnvelope.LIMIT_HONEY_BLOCK;
         }
         else if (loc.isInLiquid()) {
             liftOffEnvelope = LiftOffEnvelope.LIMIT_LIQUID;

@@ -23,7 +23,7 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
 public enum LiftOffEnvelope {
     /** Normal in-air lift off without any restrictions/specialties. */
     NORMAL(0.42, 1.35, 1.15, 6, true),
-    /** Weak or no limit moving off liquid near ground. */
+    /** Weak or no limit moving off liquid from liquid near ground. T */
     LIMIT_NEAR_GROUND(0.42, 1.35, 1.15, 6, false), // TODO: 0.385 / not jump on top of 1 high wall from water.
     /** Simple calm water surface, stronger limit */
     LIMIT_LIQUID(0.1, 0.27, 0.1, 3, false),
@@ -33,16 +33,16 @@ public enum LiftOffEnvelope {
     LIMIT_SURFACE(0.1, 1.16, 0.1, 4, false),
     //    /** Flowing water / strong(-est) limit. */
     //    LIMIT_LIQUID_STRONG(...), // TODO
-    /** Webs envelope (web). */
-    NO_JUMP(0.021, 0.021, 0.0, 0, false),
-    /** Lift off envelope is not covered by this enum */
+    /** Web jump envelope.. */
+    LIMIT_WEBS(0.0, 0.0, 0.0, 0, true),
+    /** Like NO_JUMP, just to distinguish from being in web. */
     UNKNOWN(0.0, 0.0, 0.0, 0, false),
-    /** Honey block evenlope */
-    HALF_JUMP(0.21, 0.4, 0.21, 4, true), 
-    /** Nearly ordinary jumping gain (meant for berry bushes)*/
-    BERRY_JUMP(0.315, 0.5, 0.315, 0, true), 
-    /** Special liftoff handling for powder snow: jump height is equal to lift-off speed. */
-    POWDER_SNOW(0.63, 0.63, 0.5, 0, true)
+    /** Honey block jump envelope. */
+    LIMIT_HONEY_BLOCK(0.21, 0.4, 0.21, 4, true), 
+    /** Berry bush jump envelope. */
+    LIMIT_SWEET_BERRY(0.315, 0.5, 0.315, 0, true), 
+    /** Powder snow jump envelope. */
+    LIMIT_POWDER_SNOW(0.63, 0.63, 0.5, 0, true)
     ;
 
     private double maxJumpGain;

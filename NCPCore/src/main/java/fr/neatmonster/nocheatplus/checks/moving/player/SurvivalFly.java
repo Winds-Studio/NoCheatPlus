@@ -418,16 +418,16 @@ public class SurvivalFly extends Check {
             else data.liftOffEnvelope = LiftOffEnvelope.LIMIT_LIQUID;
         }
         else if (thisMove.to.inPowderSnow) {
-            data.liftOffEnvelope = LiftOffEnvelope.POWDER_SNOW;
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_POWDER_SNOW;
         }
         else if (thisMove.to.inWeb) {
-            data.liftOffEnvelope = LiftOffEnvelope.NO_JUMP; 
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_WEBS; 
         }
         else if (thisMove.to.inBerryBush) {
-            data.liftOffEnvelope = LiftOffEnvelope.BERRY_JUMP;
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_SWEET_BERRY;
         }
         else if (thisMove.to.onHoneyBlock) {
-            data.liftOffEnvelope = LiftOffEnvelope.HALF_JUMP;
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_HONEY_BLOCK;
         }
         else if (resetTo) {
             // TODO: This might allow jumping on vines etc., but should do for the moment.
@@ -453,16 +453,16 @@ public class SurvivalFly extends Check {
 
         }
         else if (thisMove.from.inPowderSnow) {
-            data.liftOffEnvelope = LiftOffEnvelope.POWDER_SNOW;
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_POWDER_SNOW;
         }
         else if (thisMove.from.inWeb) {
-            data.liftOffEnvelope = LiftOffEnvelope.NO_JUMP; 
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_WEBS; 
         }
         else if (thisMove.from.inBerryBush) {
-            data.liftOffEnvelope = LiftOffEnvelope.BERRY_JUMP;
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_SWEET_BERRY;
         }
         else if (thisMove.from.onHoneyBlock) {
-            data.liftOffEnvelope = LiftOffEnvelope.HALF_JUMP;
+            data.liftOffEnvelope = LiftOffEnvelope.LIMIT_HONEY_BLOCK;
         }
         else if (resetFrom || thisMove.touchedGround) {
             data.liftOffEnvelope = LiftOffEnvelope.NORMAL;
@@ -1407,7 +1407,7 @@ public class SurvivalFly extends Check {
                             || yDistance <= 0.0 && lastMove.headObstructed && lastMove.yDistance >= 0.0
                             && !thisMove.headObstructed // Much higher leniency
                             // Skip if the player is just jumping out of powder snow
-                            || BridgeMisc.hasLeatherBootsOn(player) && data.liftOffEnvelope == LiftOffEnvelope.POWDER_SNOW && lastMove.from.inPowderSnow
+                            || BridgeMisc.hasLeatherBootsOn(player) && data.liftOffEnvelope == LiftOffEnvelope.LIMIT_POWDER_SNOW && lastMove.from.inPowderSnow
                             && (
                                 // 1: Ordinary gravity envelope.
                                 lastMove.yDistance <= Magic.GRAVITY_MAX * 2.36 && lastMove.yDistance > 0.0 
@@ -2245,7 +2245,7 @@ public class SurvivalFly extends Check {
             (thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed && lastMove.yDistance >= 0.0) 
             && !BlockProperties.isPowderSnow(from.getTypeIdAbove())
             // 0: Players can still press the space bar in powder snow to boost ascending speed.
-            || from.isInPowderSnow() && MathUtil.between(thisMove.vAllowedDistance, thisMove.yDistance, thisMove.vAllowedDistance + LiftOffEnvelope.POWDER_SNOW.getMaxJumpGain(0.0))
+            || from.isInPowderSnow() && MathUtil.between(thisMove.vAllowedDistance, thisMove.yDistance, thisMove.vAllowedDistance + LiftOffEnvelope.LIMIT_POWDER_SNOW.getMaxJumpGain(0.0))
             && thisMove.yDistance > 0.0 && lastMove.yDistance > 0.0 && BridgeMisc.hasLeatherBootsOn(player) && thisMove.yDistance - lastMove.yDistance == 0.0
             // 0: The first move is -most of the time- mispredicted due to... Whatever (probably 0.03?).
             || fromOnGround && !thisMove.to.onGround 

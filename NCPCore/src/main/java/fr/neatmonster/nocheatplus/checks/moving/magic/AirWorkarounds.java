@@ -69,7 +69,7 @@ public class AirWorkarounds {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         return 
                 // 0: Intended for leaving cobwebs (0.03)
-                data.liftOffEnvelope == LiftOffEnvelope.NO_JUMP && data.sfJumpPhase < 60
+                data.liftOffEnvelope == LiftOffEnvelope.LIMIT_WEBS && data.sfJumpPhase < 60
                 && (
                     lastMove.toIsValid && lastMove.yDistance < 0.0 
                     && (
