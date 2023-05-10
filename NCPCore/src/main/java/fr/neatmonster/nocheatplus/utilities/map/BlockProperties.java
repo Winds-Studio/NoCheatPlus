@@ -518,7 +518,7 @@ public class BlockProperties {
      * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
      * @param thisMove Should be used over location to compose the correct position (split moves) 
-     * @return the factor 
+     * @return the factor
      */
     public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
@@ -550,8 +550,8 @@ public class BlockProperties {
      * @param player
      * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove Should be used over location to compose the correct position (split moves) 
-     * @return the factor 
+     * @param thisMove Should be used over location to compose the correct position (split moves)
+     * @return the factor
      */
     public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
@@ -580,7 +580,7 @@ public class BlockProperties {
      * @param player
      * @param location Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @param thisMove Should be used over location to compose the correct position (split moves)
      * @return the factor
      */
     public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
@@ -2667,44 +2667,34 @@ public class BlockProperties {
      * @param x
      * @param y
      * @param z
+     * @param liquidtypeflag flag of the liquid want to check(BlockFlags.F_WATER or BlockFlags.F_LAVA)
      * @return the level
      * 
      */
-    public static double getLiquidHeight(final BlockCache access, final int x, final int y, final int z) {
+    public static double getLiquidHeight(final BlockCache access, final int x, final int y, final int z, final long liquidtypeflag) {
         double liquidHeight;
         final IBlockCacheNode node = access.getOrCreateBlockCacheNode(x, y, z, false);
         final IBlockCacheNode nodeAbove = access.getOrCreateBlockCacheNode(x, y + 1, z, false);
         final long aboveFlags = BlockFlags.getBlockFlags(nodeAbove.getType());
         final long flags = BlockFlags.getBlockFlags(node.getType());
-        if ((flags & BlockFlags.F_LAVA) != 0) {
-            if (nodeAbove != null && (aboveFlags & BlockFlags.F_LAVA) != 0) {
-                // Lava above, full block height
+        if ((flags & liquidtypeflag) != 0) {
+            if (nodeAbove != null && (aboveFlags & liquidtypeflag) != 0) {
+                // Same liquid type above, full block height
                 liquidHeight = 1;
-            } 
+            }
             else {
                 // Level-dependant height otherwise
                 final int data = node.getData(access, x, y, z);
                 if (data >= 8) {
                     liquidHeight = LIQUID_HEIGHT_LOWERED;
-                } 
+                }
+                //if ((data & 8) == 8) { // is water
+                //    final double[] bounds = node.getBounds(access, x, y, z);
+                //    liquidHeight = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
+                //}
                 else liquidHeight = (1 - (data + 1) / 9f);
             }
-        } 
-        else if ((flags & BlockFlags.F_WATER) != 0) {
-            if (nodeAbove != null && (aboveFlags & BlockFlags.F_WATER) != 0) {
-                // Water above, full block height
-                liquidHeight = 1;
-            } 
-            else {
-                // Level-dependant height otherwise
-                final int data = node.getData(access, x, y, z);
-                final double[] bounds = node.getBounds(access, x, y, z);
-                if ((data & 8) == 8) {
-                    liquidHeight = Math.max(LIQUID_HEIGHT_LOWERED, bounds[4]);
-                } 
-                else liquidHeight = (1 - (data + 1) / 9f);
-            }
-        } 
+        }
         else {
             // Not a liquid.
             liquidHeight = 0.0;

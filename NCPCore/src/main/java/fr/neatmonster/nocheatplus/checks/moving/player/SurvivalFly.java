@@ -735,9 +735,9 @@ public class SurvivalFly extends Check {
         }
 
 
-        Vector liquidFlowVector = from.getLiquidPushingVector(player, thisMove.xAllowedDistance, thisMove.zAllowedDistance);
         // (Calling from checkFallDamage() in vanilla)
         if (from.isInWater() && !lastMove.from.inWater) {
+            Vector liquidFlowVector = from.getLiquidPushingVector(player, thisMove.xAllowedDistance, thisMove.zAllowedDistance, BlockFlags.F_WATER);
             thisMove.xAllowedDistance += liquidFlowVector.getX();
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
             thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
@@ -792,7 +792,7 @@ public class SurvivalFly extends Check {
         // Apply entity-pushing speed
         // From Entity.java.push()
         if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) 
-        	&& CollisionUtil.isCollidingWithEntities(player, true)) {
+            && CollisionUtil.isCollidingWithEntities(player, true)) {
             for (Entity entity : player.getNearbyEntities(0.01, 0.0, 0.01)) {
                 if (!entity.isValid() || MaterialUtil.isBoat(entity.getType()) 
                     || entity.getType() == EntityType.ARMOR_STAND) {
@@ -825,6 +825,7 @@ public class SurvivalFly extends Check {
 
         if (from.isInLiquid()) {
             // Apply liquid pushing speed (2nd call).
+            Vector liquidFlowVector = from.getLiquidPushingVector(player, thisMove.xAllowedDistance, thisMove.zAllowedDistance, from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA);
             thisMove.xAllowedDistance += liquidFlowVector.getX();
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
             thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
