@@ -532,7 +532,8 @@ public class MaterialUtil {
                     "spore_blossom", "small_dripleaf", "cave_vines", "cave_vines_plant",
                     "weeping_vines", "weeping_vines_plant",
                     "twisting_vines", "twisting_vines_plant",
-                    "mangrove_propagule", "pink_petals", "torchflower", "torchflower_crop"
+                    "mangrove_propagule", "pink_petals", "torchflower", "torchflower_crop",
+                    "pitcher_plant"
                     ),
             new HashSet<Material>(Arrays.asList(BridgeMaterial.TALL_GRASS, 
                     BridgeMaterial.WHEAT_CROPS, BridgeMaterial.CARROTS, 

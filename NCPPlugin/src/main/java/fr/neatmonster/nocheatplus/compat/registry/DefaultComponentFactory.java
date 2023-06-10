@@ -47,6 +47,12 @@ public class DefaultComponentFactory {
     public DefaultComponentFactory() {
         for (Activation condition : Arrays.asList(
                 new Activation()
+                .neutralDescription("ProtocolLib 5.1.0 or later for Minecraft 1.20.x")
+                .pluginVersionGT("ProtocolLib", "5.1.0", true)
+                .minecraftVersionBetween("1.20", true, "1.21", false)
+                .advertise(true)
+                ,
+                new Activation()
                 .neutralDescription("ProtocolLib 5.0.0 or later for Minecraft 1.19.x")
                 .pluginVersionGT("ProtocolLib", "5.0.0", true)
                 .minecraftVersionBetween("1.19", true, "1.20", false)

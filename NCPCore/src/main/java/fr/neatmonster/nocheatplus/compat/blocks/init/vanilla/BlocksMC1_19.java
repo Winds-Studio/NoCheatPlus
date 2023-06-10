@@ -88,9 +88,11 @@ public class BlocksMC1_19 implements BlockPropertiesSetup {
         }
 
         if (ServerVersion.compareMinecraftVersion("1.19.4") >= 0) {
-            BlockInit.setAs("SUSPICIOUS_SAND", Material.SAND);
+            BlockInit.setPropsAs("SUSPICIOUS_SAND", Material.SAND);
+            BlockProperties.setBlockProps("SUSPICIOUS_SAND", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.25f));
+            
             BlockProperties.setBlockProps("DECORATED_POT", BlockProperties.instantType);
-            BlockFlags.setBlockFlags("DECORATED_POT", BlockFlags.SOLID_GROUND | BlockFlags.FULL_BOUNDS);
+            BlockFlags.setBlockFlags("DECORATED_POT", BlockFlags.SOLID_GROUND);
         }
 
         ConfigFile config = ConfigManager.getConfigFile();
