@@ -19,6 +19,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerEditBookEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
 import fr.neatmonster.nocheatplus.checks.Check;
@@ -26,39 +27,39 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 
-public class Gutenberg extends Check implements Listener {
-
-    public static void testAvailability(){
-        if (!PlayerEditBookEvent.class.getSimpleName().equals("PlayerEditBookEvent")){
-            throw new RuntimeException("This exception should not even get thrown.");
-        }
-    }
-
+/**
+ * Simple check for preventing some kind of book exploits
+ */
+public class Gutenberg extends Check {
+    
+   /**
+    * Instantiates a new gutenberg check.
+    */
     public Gutenberg() {
         super(CheckType.INVENTORY_GUTENBERG);
     }
-
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onEditBook(final PlayerEditBookEvent event) {
-        final Player player = event.getPlayer();
-        if (!isEnabled(player)) {
-            return;
-        }
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
-        final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        final BookMeta newMeta = event.getNewBookMeta();
-        final int pages = newMeta.getPageCount();
-        if (pages <= cc.gutenbergPageLimit) {
+    
+    /**
+     * Checks a player
+     * 
+     * @param player
+     * @param data
+     * @param pData
+     * @param pages
+     * @return True, if to cancel the event.
+     */
+    public boolean check(final Player player, final InventoryData data, final IPlayerData pData, int pages) {
+    	boolean cancel = false;
+    	final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
+    	if (pages <= cc.gutenbergPageLimit) {
+            // On 1.14+ this is 100, 50 prior.
             // Legitimate.
-            return;
+            return false;
         }
         // Violation.
-        final int vl = pages - cc.gutenbergPageLimit;
-        data.gutenbergVL += vl;
-        if (executeActions(player, data.gutenbergVL, vl, cc.gutenbergActions).willCancel()) {
-            event.setCancelled(true);
-        }
+        final int pagesAboveLimit = pages - cc.gutenbergPageLimit;
+        data.gutenbergVL += pagesAboveLimit;
+        cancel = executeActions(player, data.gutenbergVL, pagesAboveLimit, cc.gutenbergActions).willCancel();
+		return cancel;
     }
-
 }

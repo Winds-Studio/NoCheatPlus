@@ -48,7 +48,7 @@ import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveInfo;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.AccountEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
-import fr.neatmonster.nocheatplus.compat.Folia;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.location.IGetLocationWithLook;
 import fr.neatmonster.nocheatplus.components.location.SimplePositionWithLook;
@@ -646,7 +646,7 @@ public class VehicleChecks extends CheckListener {
                          final MovingConfig cc, final IPlayerData pData) {
         final boolean debug = pData.isDebugActive(checkType);
         // TODO: Generic set back manager, preventing all sorts of stuff that might be attempted or just happen before the task is running?
-        if (!Folia.isTaskScheduled(data.vehicleSetBackTaskId)) {
+        if (!SchedulerHelper.isTaskScheduled(data.vehicleSetBackTaskId)) {
             // Schedule a delayed task to teleport back the vehicle with the player.
             // (Only schedule if not already scheduled.)
             // TODO: Might log debug if skipping.
@@ -662,9 +662,9 @@ public class VehicleChecks extends CheckListener {
             // Schedule as task, if set so.
             if (scheduleSetBack) {
                 aux.resetVehiclePositions(vehicle, LocUtil.set(useLoc2, vehicle.getWorld(), newTo), data, cc); // Heavy-ish, though.
-                data.vehicleSetBackTaskId = Folia.runSyncTaskForEntity(vehicle, plugin, (arg) -> new VehicleSetBackTask(vehicle, player, newTo.getLocation(vehicle.getWorld()), debug).run(), null);
+                data.vehicleSetBackTaskId = SchedulerHelper.runSyncTaskForEntity(vehicle, plugin, (arg) -> new VehicleSetBackTask(vehicle, player, newTo.getLocation(vehicle.getWorld()), debug).run(), null);
 
-                if (!Folia.isTaskScheduled(data.vehicleSetBackTaskId)) {
+                if (!SchedulerHelper.isTaskScheduled(data.vehicleSetBackTaskId)) {
                     NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.STATUS, "Failed to schedule vehicle set back task. Player: " + player.getName() + " , set back: " + newTo);
                     scheduleSetBack = false; // Force direct teleport as a fall-back measure.
                 }

@@ -32,7 +32,7 @@ import org.bukkit.plugin.Plugin;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
-import fr.neatmonster.nocheatplus.compat.Folia;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
@@ -451,8 +451,8 @@ public class TickTask implements Runnable {
     // Public methods for internal use.
     public static Object start(final Plugin plugin) {
         cancel();
-        taskId = Folia.runSyncRepatingTask(plugin, (arg) -> new TickTask().run(), 1, 1);
-        if (Folia.isTaskScheduled(taskId)) {
+        taskId = SchedulerHelper.runSyncRepeatingTask(plugin, (arg) -> new TickTask().run(), 1, 1);
+        if (SchedulerHelper.isTaskScheduled(taskId)) {
             timeStart = System.currentTimeMillis();
         }
         else {
@@ -465,10 +465,10 @@ public class TickTask implements Runnable {
      * Cancel.
      */
     public static void cancel() {
-        if (!Folia.isTaskScheduled(taskId)) {
+        if (!SchedulerHelper.isTaskScheduled(taskId)) {
             return;
         }
-        Folia.cancelTask(taskId);
+        SchedulerHelper.cancelTask(taskId);
         taskId = null;
     }
 

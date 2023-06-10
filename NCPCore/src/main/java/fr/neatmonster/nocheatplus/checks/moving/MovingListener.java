@@ -65,7 +65,9 @@ import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedConfig;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.BounceHandler;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.PlayerEnvelopes;
+import fr.neatmonster.nocheatplus.checks.moving.model.BounceType;
 import fr.neatmonster.nocheatplus.checks.moving.model.ModelFlying;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
@@ -87,7 +89,7 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
-import fr.neatmonster.nocheatplus.compat.Folia;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.BlockChangeEntry;
@@ -129,9 +131,8 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.AuxMoving;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
-import fr.neatmonster.nocheatplus.utilities.moving.bounce.BounceType;
-import fr.neatmonster.nocheatplus.utilities.moving.bounce.BounceUtil;
 import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
 
 /**
@@ -301,8 +302,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Cleanup
             useLoc.setWorld(null);
             // Teleport.
-            data.prepareSetBack(newTo); // Should be enough. 
-            player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
+            data.prepareSetBack(newTo);  
+            SchedulerHelper.teleportEntity(player, newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
         }
         // Player was sleeping and is now out of the bed, reset.
         else data.wasInBed = false;
@@ -371,7 +372,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerToggleSprint(final PlayerToggleSprintEvent event) {
-        // IgnoreCancelled = true... Not sure, sprinting is client-sided, so cancelling won't do anything.
         if (!event.isSprinting()) DataManager.getGenericInstance(event.getPlayer(), MovingData.class).timeSprinting = 0;
     }
 
@@ -392,7 +392,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         final Location loc = player.getLocation(useLoc);
         moveInfo.set(player, loc, null, cc.yOnGround);
-        // TODO: data.isVelocityJumpPhase() might be too harsh, but prevents too easy abuse.
+        // data.isVelocityJumpPhase() might be too harsh, but prevents too easy abuse.
         if (!MovingUtil.shouldCheckSurvivalFly(player, moveInfo.from, moveInfo.to, data, cc, pData) 
             || data.isVelocityJumpPhase() || BlockProperties.isOnGroundOrResetCond(player, loc, cc.yOnGround)) {
             useLoc.setWorld(null);
@@ -401,8 +401,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         aux.returnPlayerMoveInfo(moveInfo);
         useLoc.setWorld(null);
-        // TODO: Confine to minimum activation ticks.
-        data.addVelocity(player, cc, 0.0, 0.3, 0.0);
+        data.addVelocity(player, cc, 0.0, 0.3, 0.0, VelocityFlags.ORIGIN_INTERNAL);
     }
 
 
@@ -485,7 +484,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (to == null) {
             // Better cancel this one.
             if (!event.isCancelled()) {
-                if (debug) debugTeleportMessage(player, event, "Cancel event, that has no target location (to) set.");
+                if (debug) {
+                    debugTeleportMessage(player, event, "Cancel event, that has no target location (to) set.");
+                }
                 event.setCancelled(true);
             }
             return;
@@ -496,7 +497,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 return;
             }
             else {
-                if (debug) debugTeleportMessage(player, event, "Prevent teleport, due to a scheduled set back: ", to);
+                if (debug) {
+                    debugTeleportMessage(player, event, "Prevent teleport, due to a scheduled set back: ", to);
+                }
                 event.setCancelled(true);
                 return;
             }
@@ -544,32 +547,33 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     /** HIGHEST: Revert cancel on set back. Done before MONITOR */
     @EventHandler(ignoreCancelled = false, priority = EventPriority.HIGHEST)
     public void onPlayerTeleport(final PlayerTeleportEvent event) {
-        // Only check cancelled events.
-        if (event.isCancelled()) {
-            final Player player = event.getPlayer();
-            final IPlayerData pData = DataManager.getPlayerData(player);
-            final MovingData data = pData.getGenericInstance(MovingData.class);
-            // Revert cancel on set back (only precise match).
-            // Teleport by NCP.
-            // TODO: What if not scheduled.
-            if (data.hasTeleported()) {
-                // Prevent cheaters getting rid of flying data (morepackets, other).
-                // TODO: even more strict enforcing ?
-                event.setCancelled(false);
-                if (!data.isTeleported(event.getTo())) {
-                    final Location teleported = data.getTeleported();
-                    event.setTo(teleported);
-                    /*
-                     * Setting from ... not sure this is relevant. Idea was to avoid
-                     * subtleties with other plugins, but it probably can't be
-                     * estimated, if this means more or less 'subtleties' in the end
-                     * (amortized).
-                     */
-                    event.setFrom(teleported);
-                }
-                if (pData.isDebugActive(checkType)) {
-                    NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.TRACE_FILE, player.getName() + " TP " + event.getCause()+ " (revert cancel on set back): " + event.getTo());
-                }
+        if (!event.isCancelled()) {
+            // Only check cancelled events.
+            return;
+        }
+        final Player player = event.getPlayer();
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final MovingData data = pData.getGenericInstance(MovingData.class);
+        // Revert cancel on set back (only precise match).
+        // Teleport by NCP.
+        // TODO: What if not scheduled.
+        if (data.hasTeleported()) {
+            // Prevent cheaters getting rid of flying data (morepackets, other).
+            // TODO: even more strict enforcing ?
+            event.setCancelled(false);
+            if (!data.isTeleported(event.getTo())) {
+                final Location teleported = data.getTeleported();
+                event.setTo(teleported);
+                /*
+                 * Setting from ... not sure this is relevant. Idea was to avoid
+                 * subtleties with other plugins, but it probably can't be
+                 * estimated, if this means more or less 'subtleties' in the end
+                 * (amortized).
+                 */
+                event.setFrom(teleported);
+            }
+            if (pData.isDebugActive(checkType)) {
+                NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.TRACE_FILE, player.getName() + " TP " + event.getCause()+ " (revert cancel on set back): " + event.getTo());
             }
         }
     }
@@ -585,7 +589,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // Invalidate first-move thing.
         // TODO: Might conflict with 'moved wrongly' on join.
         data.joinOrRespawn = false;
-        
         // Special cases.
         final Location to = event.getTo();
         if (event.isCancelled()) {
@@ -609,9 +612,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Uncertain if this is vehicle leave or vehicle enter.
             if (event.getCause() != BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION) {
                 // TODO: Unexpected, what now?
-                NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.STATUS, 
-                        CheckUtils.getLogMessagePrefix(player, CheckType.MOVING_VEHICLE) 
-                        + "Unexpected teleport cause on vehicle set back: " + event.getCause());
+                NCPAPIProvider.getNoCheatPlusAPI().getLogManager().warning(Streams.STATUS, CheckUtils.getLogMessagePrefix(player, CheckType.MOVING_VEHICLE) + "Unexpected teleport cause on vehicle set back: " + event.getCause());
             }
             // TODO: Consider to verify, if this is somewhere near the vehicle as expected (might need storing more data for a set back).
             skipExtras = true;
@@ -666,7 +667,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final Location from = event.getFrom();
         if (from != null 
             && event.getCause() == TeleportCause.END_PORTAL // Currently only related to this.
-            &&!from.getWorld().getName().equals(to.getWorld().getName())) { // Less java, though.
+            && !from.getWorld().getName().equals(to.getWorld().getName())) { // Less java, though.
             // Remember the position teleported from.
             data.crossWorldFrom = new SimplePositionWithLook(from.getX(), from.getY(), from.getZ(), from.getYaw(), from.getPitch());
         }
@@ -892,21 +893,20 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //    This will result in movements that don't have a significant change to be skipped. 
         //    With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
         // 3) On MC 1.19.4 and later, PlayerMoveEvents are skipped altogether upon entering a minecart and fired normally when exiting.
-        // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B)
-        // To fix this, we peek into ProtocolLib to get the movement packets that were skipped or merged on Bukkit-level (or otherwise messed up on Bukkit's side) and "split" the incoming PlayerMoveEvent into several other moves.
-        // (as many as the number of skipped moves, capped at 14)
+        // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B).
+        // Now, to fix this, we'd need to re-code NCP to run movement checks on packet level instead. Such is out of the question: would require a massive work which we don't have the manpower for, hence this mechanic which -albeit convoluted- works well.
+        // Essentially, after Bukkit fires a PlayerMoveEvent, NCP will check if it had been fired normally. If it not, the flying-packet queue is used to get the correct "from" and "to" locations.
+        // (Overall, this forces NCP to pretty much hard-depend on ProtocolLib, but it's the most sensible choice anyway, as working with Bukkit events has proven to be unreliable on the longer run)
+        // (For simplicity, the mechanic is internally refferred to as "split move", because the event is essentially split by how many moves were lost, with a cap)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         final Location loc = player.getLocation(moveInfo.useLoc);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         if (cc.loadChunksOnMove) MovingUtil.ensureChunksLoaded(player, from, to, lastMove, "move", cc, pData);
         
         if (
-            // 0: Handling of split moves has been disabled.
-            // TODO: Maybe remove this config option. Why would one disable such anyway? (Over-configurability perhaps... :))
-            !cc.splitMoves 
             // 0: A regular PlayerMoveEvent will always fire a "from" loc reflecting player#getLocation().
             //    If these don't match, something happened on Bukkit-level, and this move cannot be used as is.
-            || TrigUtil.isSamePos(from, loc)
+            TrigUtil.isSamePos(from, loc)
             // 0: Special case / bug? (Which/why, which version of MC/spigot?)
             || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())) {
             // TODO: On pistons pulling the player back: -1.15 yDistance for split move 1 (untracked position > 0.5 yDistance!).
@@ -916,7 +916,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         else {
             // Peek into ProtocolLib to recover the movement's actual locations.
-            // (Overall, this forces NCP to pretty much hard-depend on ProtocolLib, but it's the most sensible choice anyway, as working with Bukkit events has proven to be unreliable on the longer run)
             final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
             final DataPacketFlying[] queue = flyingHandle.getHandle();
             if (queue.length != 0) {
@@ -941,7 +940,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                         break;
                     }
                 }
-                // Not found, return to legacy split moves
+                // Not found or the from location is higher up in the queue than the to location (can happen if a lot of moves were skipped), return to legacy split moves
                 if (fromIndex < 0 || toIndex < 0 || fromIndex - toIndex + 1 < 1) {
                     bukkitSplitMove(player, moveInfo, from, loc, to, debug, data, cc, pData, event);
                     // Cleanup.
@@ -1360,19 +1359,19 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     // Prepare bounce: The center of the player must be above the block.
                     // Common pre-conditions.
                     // TODO: Check if really leads to calling the method for pistons (checkBounceEnvelope vs. push).
-                    if (!survivalFly.isReallySneaking(player) && BounceUtil.checkBounceEnvelope(player, pFrom, pTo, data, cc, pData)) {
+                    if (!survivalFly.isReallySneaking(player) && PlayerEnvelopes.checkBounceEnvelope(player, pFrom, pTo, data, cc, pData)) {
                         // TODO: Check other side conditions (fluids, web, max. distance to the block top (!))
                         // Classic static bounce.
                         if ((pTo.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0L) {
                             /* TODO: May need to adapt within this method, if "push up" happened and the trigger had been ordinary */
                             verticalBounce = BounceType.STATIC;
-                            checkNf = false; // Skip NoFall.
+                            checkNf = false; 
                         }
                         
                         if (verticalBounce == BounceType.NO_BOUNCE && useBlockChangeTracker) { 
-                            if (BounceUtil.checkPastStateBounceDescend(player, pFrom, pTo, thisMove, lastMove, tick, data, cc, blockChangeTracker) != BounceType.NO_BOUNCE) {
+                            if (BounceHandler.checkPastStateBounceDescend(player, pFrom, pTo, thisMove, lastMove, tick, data, cc, blockChangeTracker) != BounceType.NO_BOUNCE) {
                                 // Not set verticalBounce, as this is ascending and it's already force used.
-                                checkNf = false; // Skip NoFall.
+                                checkNf = false;
                             }
                         }
                     }
@@ -1380,13 +1379,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 else {
                     if (
                             // Prepared bounce support.
-                            data.verticalBounce != null && BounceUtil.onPreparedBounceSupport(player, from, to, thisMove, lastMove, tick, data)
+                            data.verticalBounce != null && BounceHandler.onPreparedBounceSupport(player, from, to, thisMove, lastMove, tick, data)
                             // Past state bounce (includes prepending velocity / special calls).
                             || useBlockChangeTracker 
                             // 0-dist moves count in: && thisMove.yDistance >= 0.415 
                             && thisMove.yDistance <= 1.515
                         ) {
-                        verticalBounce = BounceUtil.checkPastStateBounceAscend(player, pFrom, pTo, thisMove, lastMove, tick, pData, this, data, cc, blockChangeTracker);
+                        verticalBounce = BounceHandler.checkPastStateBounceAscend(player, pFrom, pTo, thisMove, lastMove, tick, pData, this, data, cc, blockChangeTracker);
                         if (verticalBounce != BounceType.NO_BOUNCE) checkNf = false;
                     }
                 }
@@ -1415,11 +1414,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // 5: Check passable first to prevent set back override.
         // Passable is checked first to get the original set back locations from the other checks, if needed. 
         // TODO: Redesign to set set backs later (queue + invalidate).
-        boolean mightSkipNoFall = false; // If to skip nofall check (mainly on violation of other checks).
+        /** If to skip nofall check on violation of other checks */
+        boolean mightSkipNoFall = false; 
         if (newTo == null && checkPassable && player.getGameMode() != BridgeMisc.GAME_MODE_SPECTATOR) {
             newTo = passable.check(player, pFrom, pTo, data, cc, pData, tick, useBlockChangeTracker);
-            // Check if to skip the nofall check.
-            if (newTo != null) mightSkipNoFall = true;
+            if (newTo != null) {
+                mightSkipNoFall = true;
+            }
         }
         
         // 6: Recalculate explosion velocity as PlayerVelocityEvent can't handle well on 1.13+
@@ -1473,7 +1474,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // 7: HACK: Fake add velocity when levitation ends to smoothen the transition and not trigger false positives
         if (lastMove.hasLevitation && !thisMove.hasLevitation) {
             // Ensure to use the previous yDistance which has been checked by SurvivalFly.
-            data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance + Magic.GRAVITY_MAX, 1));
+            data.addVelocity(player, cc, 0.0, lastMove.yDistance + Magic.GRAVITY_MAX, 0.0, VelocityFlags.ORIGIN_INTERNAL);
             if (debug) {
                 debug(player, "Transition from levitation to normal move: fake use velocity.");
             }
@@ -1484,7 +1485,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (!thisMove.headObstructed && lastMove.from.inBubbleStream 
             && BlockProperties.isAir(pFrom.getTypeIdAbove()) && !lastMove.from.draggedByBubbleStream
             && !data.isVelocityJumpPhase()) {
-            data.addVerticalVelocity(new SimpleEntry(Math.min(1.8, lastMove.yDistance + 0.1), (int) Math.round(Math.min(1.8, lastMove.yDistance + 0.1) * 60)));
+            data.addVelocity(player, cc, 0.0, Math.min(1.8, lastMove.yDistance + 0.1), 0.0, VelocityFlags.ORIGIN_INTERNAL);
             data.setFrictionJumpPhase();
             if (debug) {
                 debug(player, "Fake velocity for bubble stream launch effect.");
@@ -1617,7 +1618,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
             // 2: Process the bounce effect if the move is allowed.
             if (verticalBounce != BounceType.NO_BOUNCE) {
-                BounceUtil.processBounce(player, pFrom.getY(), pTo.getY(), verticalBounce, tick, this, data, cc, pData);
+                BounceHandler.processBounce(player, pFrom.getY(), pTo.getY(), verticalBounce, tick, this, data, cc, pData);
             }
 
             // 3: Finish processing the current move, move it to past ones
@@ -1957,6 +1958,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     /**
      * Add velocity, in order to work around issues with transitions between Fly checks.
      * Asserts last distances are set.
+     * TODO: with the vDistRel and hDistRel overhaul, this will be obsolete.
      * 
      * @param tick
      * @param data
@@ -1966,7 +1968,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final double amount = guessVelocityAmount(player, data.playerMoves.getCurrentMove(), lastMove, data, cc);
         data.clearActiveHorVel(); // Clear active velocity due to adding actual speed here.
-        data.clearAccounting(); // Forestall potential issues with the old gravity check.
         data.bunnyhopDelay = 0; // Remove bunny hop due to add velocity 
         if (amount > 0.0) data.addHorizontalVelocity(new AccountEntry(tick, amount, cc.velocityActivationCounter, MovingData.getHorVelValCount(amount)));
         data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance, cc.velocityActivationCounter));
@@ -1975,7 +1976,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (debug) debug(player, "*** Transition from CreativeFly to SurvivalFly: Add velocity.");
     }
 
-
+    /** TODO: Get rid with the hDistrel and vDistrel overhaul */
     private static double guessVelocityAmount(final Player player, final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
                                               final MovingData data, final MovingConfig cc) {
         // Default margin: Allow slightly less than the previous speed.
@@ -2397,10 +2398,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     Improbable.check(player, 1.0f, System.currentTimeMillis(), "nofall.fakeground",pData);
                 }
             }
-            // Legitimate damage: clear accounting data.
-            // TODO: Why only reset in case of !data.noFallSkipAirCheck?
-            // TODO: Also reset in other cases (moved too quickly)?
-            else data.clearAccounting();
         }
         aux.returnPlayerMoveInfo(moveInfo);
         // Fall-back check (skip with jump amplifier).
@@ -2524,8 +2521,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         data.clearAllMorePacketsData();
         data.removeAllVelocity();
         data.resetTrace(player, loc, tick, mcAccess.getHandle(), cc); // Might reset to loc instead of set back ?
-        // More resetting.
-        data.clearAccounting();
         aux.resetPositionsAndMediumProperties(player, loc, data, cc);
 
         // Enforcing the location.
@@ -2634,7 +2629,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         noFall.onLeave(player, data, pData);
         // TODO: Add a method for ordinary presence-change resetting (use in join + leave).
         data.onPlayerLeave();
-        if (Folia.isTaskScheduled(data.vehicleSetBackTaskId)) {
+        if (SchedulerHelper.isTaskScheduled(data.vehicleSetBackTaskId)) {
             // Reset the id, assume the task will still teleport the vehicle.
             // TODO: Should rather force teleport (needs storing the task + data).
             data.vehicleSetBackTaskId = null;

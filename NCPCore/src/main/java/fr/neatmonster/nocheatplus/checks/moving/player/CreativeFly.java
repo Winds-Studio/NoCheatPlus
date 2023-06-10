@@ -31,8 +31,8 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.magic.LostGround;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.PlayerEnvelopes;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.workaround.LostGround;
 import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.ModelFlying;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
@@ -51,6 +51,7 @@ import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
@@ -423,7 +424,7 @@ public class CreativeFly extends Check {
                     (
                         // 1: Normal jumping.
                         yDistance > 0.0 
-                        && yDistance > LiftOffEnvelope.NORMAL.getMinJumpGain(data.jumpAmplifier) - Magic.GRAVITY_SPAN
+                        && yDistance > LiftOffEnvelope.NORMAL.getJumpGain(data.jumpAmplifier) - Magic.GRAVITY_SPAN
                         // 1: Too short with head obstructed.
                         || thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed && lastMove.yDistance <= 0.0
                         // 1: Hop without y distance increase at moderate h-speed.
@@ -538,7 +539,7 @@ public class CreativeFly extends Check {
                 || thisMove.touchedGroundWorkaround
                 )) {
                 // Allow normal jumping.
-                final double maxGain = LiftOffEnvelope.NORMAL.getMaxJumpGain(data.jumpAmplifier);
+                final double maxGain = LiftOffEnvelope.NORMAL.getJumpGain(data.jumpAmplifier);
                 if (maxGain > limitV) {
                     limitV = maxGain;
                     tags.add("jump_gain");
@@ -1089,7 +1090,7 @@ public class CreativeFly extends Check {
 
             final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
             if (secondPastMove.modelFlying != null
-                && Magic.glideEnvelopeWithHorizontalGain(thisMove, lastMove, secondPastMove)) {
+                && PlayerEnvelopes.glideEnvelopeWithHorizontalGain(thisMove, lastMove, secondPastMove)) {
                 return lastMove.hDistance + 0.1468;
             }
         }

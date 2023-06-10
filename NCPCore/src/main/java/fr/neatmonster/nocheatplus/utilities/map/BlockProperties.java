@@ -45,7 +45,6 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
@@ -76,6 +75,7 @@ import fr.neatmonster.nocheatplus.utilities.collision.PassableRayTracing;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
@@ -869,14 +869,17 @@ public class BlockProperties {
     /**
      * Climbable material that needs to be attached to a block, to allow players
      * to climb up.<br>
-     * Currently only applies to vines. There is no flag for such, yet.
+     * Currently only applies to vines.
      *
      * @param mat
      *            the mat.
      * @return true, if is attached climbable
      */
-    public static final boolean isAttachedClimbable(final Material mat) {
-        if ((BlockFlags.getBlockFlags(mat) & BlockFlags.F_CLIMBUPABLE) != 0) return false;
+    public static final boolean needsToBeAttachedToABlock(final Material mat) {
+        if ((BlockFlags.getBlockFlags(mat) & BlockFlags.F_CLIMBUPABLE) != 0) {
+            // Explicitly climbable upwards, so it does not need to be attached to a block
+            return false;
+        }
         return mat == Material.VINE;
     }
 

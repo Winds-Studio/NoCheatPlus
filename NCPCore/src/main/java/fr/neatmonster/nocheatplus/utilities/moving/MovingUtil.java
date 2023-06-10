@@ -28,7 +28,6 @@ import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
 import fr.neatmonster.nocheatplus.checks.moving.model.MoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.player.PlayerSetBackMethod;
@@ -139,53 +138,6 @@ public class MovingUtil {
         }
         baseV -= speed * (-1.0 + squaredCos * 0.75);
         return baseV;
-    }
-
-
-    /**
-     * From HoneyBlock.java 
-     * Test if the player is sliding sideway with a honey block (NMS, checks for speed as well)
-     * @param from
-     * @param width
-     * @param thisMove
-     * @param player
-     * @return if the player is sliding on the honey block.
-     */
-    public static boolean isSlidingDown(final PlayerLocation from, final double width, final PlayerMoveData thisMove, final Player player) {
-        if (thisMove.touchedGround) {
-            // Not sliding, clearly.
-            return false;
-        }
-        // With current implementation, this condition never run due to from.getBlockY(), it should be the location of the block not player
-        //if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
-        //    // Too far from the block.
-        //    return false;
-        //} 
-        if (thisMove.yDistance >= -Magic.DEFAULT_GRAVITY) {
-            // Minimum speed.
-            return false;
-        }
-        // Done in honeyBlockSidewayCollision
-        // With current implementation, this condition always return false, reason same above
-        //double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
-        //double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
-        //double var7 = 0.4375D + (width / 2.0F);
-        //return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
-        return true;
-    }
-    
-
-    /** 
-     * Test if the player collided horizontally with a honey block.
-     * 
-     * @param from
-     * @param to
-     * @param data
-     */
-    public static boolean honeyBlockSidewayCollision(PlayerLocation from, PlayerLocation to, MovingData data) {
-        return (to.getBlockFlags() & BlockFlags.F_STICKY) != 0
-                && BlockProperties.collides(to.getBlockCache(), to.getMinX() - 0.01, to.getMinY(), to.getMinZ() - 0.01, 
-                                            to.getMaxX() + 0.01, to.getMaxY(), to.getMaxZ() + 0.01, BlockFlags.F_STICKY);
     }
 
 
@@ -702,8 +654,7 @@ public class MovingUtil {
         // TODO: Consider to skip checking for packet level, if not available (plus optimize access).
         // TODO: Consider a config flag, so this can be turned off (set back method).
         final PlayerSetBackMethod method = cc.playerSetBackMethod;
-        if (!method.shouldNoRisk() 
-                && (method.shouldCancel() || method.shouldSetTo()) && method.shouldUpdateFrom()) {
+        if (!method.shouldNoRisk() && (method.shouldCancel() || method.shouldSetTo()) && method.shouldUpdateFrom()) {
             /*
              * Another leniency option: Skip, if we have already received an ACK
              * for this position on packet level - typically the next move would

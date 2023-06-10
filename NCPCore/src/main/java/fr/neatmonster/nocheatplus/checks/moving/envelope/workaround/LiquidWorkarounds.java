@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.checks.moving.magic;
+package fr.neatmonster.nocheatplus.checks.moving.envelope.workaround;
 
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -22,10 +22,13 @@ import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
+import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 /**
  * Magic workarounds for moving in liquid (SurvivalFly.vDistLiquid).
+ * (See AirEnvelopes)
  * 
  * @author asofold
  *
@@ -48,7 +51,7 @@ public class LiquidWorkarounds {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final double yDistance = thisMove.yDistance;
         final PlayerMoveData pastMove1 = data.playerMoves.getSecondPastMove();
-        final Vector downStreamVector = from.getLiquidPushingVector(player, to.getX() - from.getX(), to.getZ() - from.getZ());
+        final Vector downStreamVector = from.getLiquidPushingVector(to.getX() - from.getX(), to.getZ() - from.getZ(), from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA);
         final boolean downStream = downStreamVector.getZ() > 0.0 || downStreamVector.getX() > 0.0;
 
         if (yDistance >= 0.0) {
@@ -70,7 +73,7 @@ public class LiquidWorkarounds {
                 // Asc by water level
                 if (!(data.liftOffEnvelope == LiftOffEnvelope.LIMIT_LIQUID && Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(from.getPlayer()))) 
                     && (
-                        yDistance <= data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier) 
+                        yDistance <= data.liftOffEnvelope.getJumpGain(data.jumpAmplifier) 
                         && !BlockProperties.isLiquid(from.getTypeIdAbove()) 
                         || !to.isInLiquid() // TODO: impossible !?
                         || (thisMove.to.onGround || lastMove.toIsValid && lastMove.yDistance - yDistance >= 0.010 || to.isAboveStairs())

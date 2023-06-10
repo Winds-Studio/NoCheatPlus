@@ -682,7 +682,6 @@ public abstract class ConfPaths {
     public static final String  MOVING_YONGROUND                            = MOVING + "yonground";
 
     // General.
-    public static final String  MOVING_SPLITMOVES                           = MOVING + "split-moves"; // Needs better categories...
     public static final String  MOVING_TEMPKICKILLEGAL                      = MOVING + "temp-kick-illegal";
     public static final String  MOVING_IGNORESTANCE                         = MOVING + "ignore-stance";
     // TODO: Might add a section for illegal move.
@@ -853,6 +852,8 @@ public abstract class ConfPaths {
     public static final String  MOVING_MOREPACKETSVEHICLE_ACTIONS        = "checks.moving.morepacketsvehicle.actions";
 
     // Deprecated paths (just removed).
+    @Deprecated
+    public static final String  MOVING_SPLITMOVES                           = MOVING + "split-moves"; // Needs better categories...
     @Deprecated
     public static final String  INVENTORY_FASTCLICK_TWEAKS1_5            = INVENTORY_FASTCLICK + "tweaks1_5";
     @Deprecated

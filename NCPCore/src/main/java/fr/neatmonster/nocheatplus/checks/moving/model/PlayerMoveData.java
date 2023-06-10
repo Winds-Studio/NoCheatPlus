@@ -17,7 +17,7 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 
 /**
- * Include player specific data for a move.
+ * Include player-specific data for a move.
  * 
  * @author asofold
  *

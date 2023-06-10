@@ -38,7 +38,6 @@ public class AttributeAccessFactory {
         }
         catch (Throwable t) {}
         RegistryHelper.setupGenericInstance(new String[] {
-                "fr.neatmonster.nocheatplus.compat.cbdev.AttributeAccess",
                 "fr.neatmonster.nocheatplus.compat.spigotcb1_10_R1.AttributeAccess",
                 "fr.neatmonster.nocheatplus.compat.spigotcb1_9_R2.AttributeAccess",
                 "fr.neatmonster.nocheatplus.compat.spigotcb1_9_R1.AttributeAccess",

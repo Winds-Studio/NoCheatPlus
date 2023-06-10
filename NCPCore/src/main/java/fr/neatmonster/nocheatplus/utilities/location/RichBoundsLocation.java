@@ -23,7 +23,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeReference;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.BlockChangeEntry;
@@ -44,6 +43,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -58,7 +58,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     // TODO: Do any of these belong to RichEntityLocation?
 
     // Simple members // 
-
     /** Y parameter for growing the bounding box with the isOnGround check. */
     double yOnGround = 0.001;
 
@@ -88,7 +87,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
 
     // "Light" object members (reset to null on set) //
-
     // TODO: primitive+isSet? AlmostBoolean?
     // TODO: All properties that can be set should have a "checked" flag, thus resetting the flag suffices.
     // TODO: nodeAbove ?
@@ -157,9 +155,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     Boolean inBubblestream = null;
 
 
-    // "Heavy" object members that need to be set to null on cleanup. //
-    Player player = null;
-    
+    // "Heavy" object members that need to be set to null on cleanup. //    
     /** Block property access. */
     BlockCache blockCache = null;
 
@@ -756,23 +752,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isSubmerged(final double yMargin) {
         return BlockProperties.collides(blockCache, minX, minY + yMargin, minZ, maxX, maxY, maxZ, BlockFlags.F_LIQUID);
     }
-    
-    /**
-     * Check if the moved AABB collides with a block with the given flags
-     * 
-     * @param xMargin
-     *             Parameter to move the bounding box along the X axis
-     * @param yMargin
-     *             Parameter to move the bounding box along the Y axis
-     * @param zMargin
-     *             Parameter to move the bounding box along the Z axis
-     * @param collisionFlags
-     *              Flags to check for collision with.
-     * @return true if collision is found with the moved box.
-     */
-    public boolean collidesWithMovedAABB(double xMargin, double yMargin, double zMargin, long collisionFlags) {
-        return BlockProperties.collides(blockCache, minX + xMargin, minY + yMargin, + minZ + zMargin, maxX + xMargin, maxY + yMargin, maxZ + zMargin, collisionFlags);
-    }
 
     /**
      * Check if solid blocks hit the box.
@@ -841,6 +820,17 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             }
         }
         return inWeb;
+    }
+
+    /** 
+     * Test if the player collided horizontally with a honey block.
+     * Meant for checking if the player is sliding down.
+     * 
+     * @return
+     */
+    public boolean isCollidingWithHoneyBlock() {
+        return (blockFlags & BlockFlags.F_STICKY) != 0
+                && BlockProperties.collides(blockCache, minX - 0.01, minY, minZ - 0.01, maxZ + 0.01, maxY, maxZ + 0.01, BlockFlags.F_STICKY);
     }
 
     /**
@@ -932,7 +922,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 inSoulSand = false;
             } 
             else {
-                // In soul block, rather.
                 inSoulSand = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_SOULSAND) != 0;
             }
         }
@@ -1365,179 +1354,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public int ensureChunksLoaded(final double xzMargin) {
         return MapUtil.ensureChunksLoaded(world, x, z, xzMargin);
     }
-    
-    /**
-     * Entity.java, updateFluidHeightAndDoFluidPushing()
-     * @param player
-     * @param xDistance
-     * @param zDistance
-     * @return the vector
-     */
-    public Vector getLiquidPushingVector(final Player p, final double xDistance, final double zDistance, final long liquidtypeflag) {
-        if (!isInLiquid()) {
-            // First, check using NoCheatPlus' collision system: if the player is not in a liquid, we don't need to proceed further
-            return new Vector();
-        }
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (isInLava() && pData.getClientVersion().isOlderThan(ClientVersion.V_1_16)) {
-            // Lava pushes entities starting from the nether update (1.16+)
-            return new Vector();
-        }
-        // No Location#locToBlock() here (!)
-        final int iMinX = MathUtil.floor(minX + 0.001);
-        final int iMaxX = MathUtil.ceil(maxX - 0.001);
-        final int iMinY = MathUtil.floor(minY + 0.001); // (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13) ? (0.4 + 0.001) : 0.0));
-        final int iMaxY = MathUtil.ceil(maxY - 0.001);
-        final int iMinZ = MathUtil.floor(minZ + 0.001);
-        final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
-        // TODO: Rename this multiplier to something intelligible
-        double d2 = 0.0;
-        Vector pushingVector = new Vector();
-        // TODO: Rename this counter to something intelligible
-        int k1 = 0;
-        // NMS collision method. We need to check for a second collision because of how Minecraft handles fluid pushing
-        // (And we need the exact speed for predictions)
-        for (int iX = iMinX; iX < iMaxX; iX++) {
-            for (int iY = iMinY; iY < iMaxY; iY++) {
-                for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
-                    // LEGACY 1.13-
-                    if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidtypeflag);
-                        if (liquidHeight != 0.0) {
-                            double d0 = (float) (iY + 1) - liquidHeight;
-                            if (!p.isFlying() && iMaxY >= d0) {
-                                // Collided
-                                Vector flowVector = getFlowVector(p, iX, iY, iZ);
-                                pushingVector.add(flowVector);
-                            }
-                        }
-                    }
-                    // MODERN 1.13+
-                    else {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidtypeflag);
-                        double liquidHeightToWorld = iY + liquidHeight;
-                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0
-                           && !p.isFlying()) {
-                            // Collided.
-                            d2 = Math.max(liquidHeightToWorld - (minY + 0.001), d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
-                            // Determine pushing speed by using the current flow of the liquid.
-                            Vector flowVector = getFlowVector(p, iX, iY, iZ, liquidtypeflag);
-                            if (d2 < 0.4) {
-                                flowVector = flowVector.multiply(d2);
-                            }
-                            pushingVector = pushingVector.add(flowVector);
-                            k1++ ;
-                        }
-                    }
-                }
-            }
-        }
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-            if (isInWater() && pushingVector.lengthSquared() > 0.0) {
-                pushingVector.normalize();
-                pushingVector.multiply(0.014);
-            }
-        }
-        else {
-            // In Entity.java:
-            // LAVA: 0.0023333333333333335 if in any other world that isn't nether, 0.007 otherwise.
-            // WATER: 0.014
-            // Water first then Lava
-            double flowSpeedMultiplier = isInWater() ? 0.014 : (world.getEnvironment() == World.Environment.NETHER ? 0.007 : 0.0023333333333333335);
-            if (pushingVector.lengthSquared() > 0.0) {
-                if (k1 > 0) {
-                   pushingVector = pushingVector.multiply(1.0 / k1);
-                }
-                if (p.isInsideVehicle()) {
-                    // Normalize the vector anyway if inside liquid on a vehicle... (ease some work with the (future) vehicle rework)
-                    pushingVector = pushingVector.normalize();
-                }
-                pushingVector = pushingVector.multiply(flowSpeedMultiplier); 
-                if (Math.abs(xDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD && Math.abs(zDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD
-                    && pushingVector.length() < 0.0045000000000000005) {
-                    pushingVector = pushingVector.normalize().multiply(0.0045000000000000005);
-                }
-            }
-        }
-        // p.sendMessage("pushingVector: " + pushingVector.toString());
-        return pushingVector;
-    }
-    
-    // (Taken from Grim :p)
-
-    private static boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidtypeflag) {
-        return BlockProperties.getLiquidHeight(access, x, y, z, liquidtypeflag) == 0
-               || BlockProperties.getLiquidHeight(access, x, y, z, liquidtypeflag) > 0 
-               && BlockProperties.getLiquidHeight(access, x1, y1, z1, liquidtypeflag) > 0; 
-    }
-    
-    // (Taken from Grim :p)
-    private static Vector normalizedVectorWithoutNaN(Vector vector) {
-        double var0 = vector.length();
-        return var0 < 1.0E-4 ? new Vector() : vector.multiply(1 / var0);
-    }
-    
-    /**
-     * FlowingFluid.java, getFlow()
-     * 
-     * @param access
-     * @param x
-     * @param y
-     * @param z
-     * @return the vector
-     */
-    public Vector getFlowVector(final Player p, int x, int y, int z, final long liquidtypeflag) {
-        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidtypeflag); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
-        if (!isInLiquid()) {
-            return new Vector();
-        }
-        double xModifier = 0.0D;
-        double zModifier = 0.0D;
-        for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
-            int modX = x + hDirection.getModX();
-            int modZ = z + hDirection.getModZ();
-            if (affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidtypeflag)) {  
-                float f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidtypeflag); // node.getData(blockCache, modX, y, modZ) / 9.0f;
-                float f1 = 0.0F;
-                if (f == 0.0F) {
-                    final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
-                    final long flagsAtThisBlock = BlockFlags.getBlockFlags(node.getType());
-                    // VANILLA: block needs a hitbox to block motion
-                    //          if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
-                    // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions)
-                    if ((flagsAtThisBlock & (BlockFlags.F_GROUND | BlockFlags.F_SOLID)) == 0) { 
-                        if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidtypeflag)) {
-                            f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidtypeflag); // node.getData(blockCache, modX, y - 1, modZ) / 9.0f;
-                            if (f > 0.0F) {
-                                f1 = liquidLevel - (f - 0.8888889F);
-                            }
-                        }
-                    }
-                } 
-                else if (f > 0.0F) {
-                    f1 = liquidLevel - f;
-                }
-                if (f1 != 0.0F) {
-                    xModifier += (float) hDirection.getModX() * f1;
-                    zModifier += (float) hDirection.getModZ() * f1;
-                }
-            }
-        }
-        // Compose the speed vector
-        Vector flowingVector = new Vector(xModifier, 0.0D, zModifier);
-        // p.sendMessage("FlowingVector: " + flowingVector.toString());
-        //IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
-        // TODO: Implement & Research "isSolidFace" method.
-        /*if (BlockProperties.isLiquid(node.getType()) && node.getData(access, x, y, z) >= 8) { // 8-15 - falling liquid
-            for (BlockFace direction : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
-                if (isSolidFace(player, x, y, z, direction) || isSolidFace(player, x, y + 1, z, direction)) {
-                    flowingVector = flowingVector.normalize().add(new Vector(0.0D, -6.0D, 0.0D));
-                    break;
-                }
-            }
-        }*/
-        return normalizedVectorWithoutNaN(flowingVector);
-    }
 
     /**
      * Check for tracked block changes, having moved a block into a certain
@@ -1775,8 +1591,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Sets the.
-     *
      * @param location
      *            the location
      * @param fullWidth
@@ -1851,7 +1665,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * Set some references to null.
      */
     public void cleanup() {
-    	player = null;
         world = null;
         blockCache = null; // No reset here.
     }

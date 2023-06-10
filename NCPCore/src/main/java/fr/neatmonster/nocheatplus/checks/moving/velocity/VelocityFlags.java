@@ -58,5 +58,5 @@ public class VelocityFlags {
     /**
      * Generic flag: entries with this flag are for internal purposes (always faked) and should be ignored by velocity checks.
      */
-    public static final double ORIGIN_INTERNAL = 0x0800;
+    public static final long ORIGIN_INTERNAL = 0x0800;
 }

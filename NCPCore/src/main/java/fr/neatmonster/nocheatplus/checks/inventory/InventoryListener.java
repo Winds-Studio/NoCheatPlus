@@ -39,6 +39,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerEditBookEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -50,6 +51,8 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
+
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
@@ -94,6 +97,8 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
 
     /** The fast consume check. */
     private final FastConsume fastConsume = addCheck(new FastConsume());
+    
+    private final Gutenberg gutenberg = addCheck(new Gutenberg());
     
     /** The open check */
     private final Open open = addCheck(new Open());
@@ -268,6 +273,21 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             event.setCancelled(true);
         }
     }
+    
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onEditingABook(final PlayerEditBookEvent event) {
+        final Player player = event.getPlayer();
+        if (!gutenberg.isEnabled(player)) {
+            return;
+        }
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final InventoryData data = pData.getGenericInstance(InventoryData.class);
+        final BookMeta newMeta = event.getNewBookMeta();
+        final int pages = newMeta.getPageCount();
+        if (gutenberg.check(player, data, pData, pages)) {
+        	event.setCancelled(true);
+        }
+    }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onConsumingFoodOrPotions(final PlayerItemConsumeEvent event){
@@ -279,7 +299,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             return;
         }
         final IPlayerData pData = DataManager.getPlayerData(player);
-        if (!pData.isCheckActive(CheckType.INVENTORY_FASTCONSUME, player)) {
+        if (!fastConsume.isEnabled(player)) {
             return;
         }
         final InventoryData data = pData.getGenericInstance(InventoryData.class);

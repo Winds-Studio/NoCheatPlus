@@ -23,7 +23,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import fr.neatmonster.nocheatplus.compat.Folia;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.command.AbstractCommand;
 import fr.neatmonster.nocheatplus.command.BaseCommand;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
@@ -60,7 +60,7 @@ public class KickCommand extends BaseCommand {
     void kick(CommandSender sender, String name, String reason) {
         Player player = DataManager.getPlayer(name);
         if (player == null) return;
-        Folia.runSyncTask(plugin, (arg) -> {
+        SchedulerHelper.runSyncTask(plugin, (arg) -> {
             player.kickPlayer(reason);
             StaticLog.logInfo("(" + sender.getName() + ") Kicked " + player.getName() + " : " + reason);
         });

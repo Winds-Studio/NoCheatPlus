@@ -38,7 +38,7 @@ import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.PlayerEnvelopes;
 import fr.neatmonster.nocheatplus.checks.moving.model.LocationData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
@@ -56,7 +56,7 @@ import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
-import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 /**
  * A check to see if people cheat by tricking the server to not deal them fall damage.
@@ -435,7 +435,6 @@ public class NoFall extends Check {
         final double yDiff = toY - fromY;
         final double oldNFDist = data.noFallFallDistance;
         // Reset-cond is not touched by yOnGround.
-        // TODO: Distinguish water depth vs. fall distance ?
         /*
          * TODO: Account for flags instead (F_FALLDIST_ZERO and
          * F_FALLDIST_HALF). Resetcond as trigger: if (resetFrom) { ...
@@ -463,7 +462,7 @@ public class NoFall extends Check {
         final double minY = Math.min(fromY, toY);
         if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))
             || !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))
-            || MovingUtil.honeyBlockSidewayCollision(pFrom, pTo, data) && !toOnGround) {
+            || pTo.isCollidingWithHoneyBlock() && !toOnGround) {
             // Just reset
             data.clearNoFallData();
         }

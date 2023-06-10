@@ -24,7 +24,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.location.setback.SetBackEntry;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
-import fr.neatmonster.nocheatplus.compat.Folia;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 
 /**
@@ -69,12 +69,12 @@ public class VehicleMorePackets extends Check {
         // Take time once, first:
         final long time = System.currentTimeMillis();
         final boolean debug = pData.isDebugActive(type);
-        final boolean allowSettingSetBack = setBack == null && !Folia.isTaskScheduled(data.vehicleSetBackTaskId);
+        final boolean allowSettingSetBack = setBack == null && !SchedulerHelper.isTaskScheduled(data.vehicleSetBackTaskId);
         SetBackEntry newTo = null;
         // Take a packet from the buffer.
         data.vehicleMorePacketsBuffer--;
 
-        if (setBack != null || Folia.isTaskScheduled(data.vehicleSetBackTaskId)){
+        if (setBack != null || SchedulerHelper.isTaskScheduled(data.vehicleSetBackTaskId)){
             // Short version !
             // TODO: This is bad. Needs to check if still scheduled (a BukkitTask thing) and just skip.
             return data.vehicleSetBacks.getValidMidTermEntry();

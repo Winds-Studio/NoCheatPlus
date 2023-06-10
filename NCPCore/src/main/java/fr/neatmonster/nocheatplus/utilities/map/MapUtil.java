@@ -80,6 +80,9 @@ public class MapUtil {
      */
     public static int ensureChunksLoaded(final World world, final double x, final double z, final double xzMargin) {
         int loaded = 0;
+        if (world == null) {
+            return 0;
+        }
         final int minX = Location.locToBlock(x - xzMargin) / 16;
         final int maxX = Location.locToBlock(x + xzMargin) / 16;
         final int minZ = Location.locToBlock(z - xzMargin) / 16;

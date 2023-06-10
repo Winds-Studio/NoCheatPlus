@@ -23,7 +23,7 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.IBridgeCrossPlugin;
-import fr.neatmonster.nocheatplus.compat.Folia;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
@@ -193,7 +193,7 @@ public class GodMode extends Check {
             && crossPlugin.getHandle().isNativeEntity(player)) {
             try {
                 // Schedule a task to be executed in roughly 1.5 seconds.
-                Folia.runSyncDelayedTaskForEntity(player, Bukkit.getPluginManager().getPlugin("NoCheatPlus"), (arg) -> {
+                SchedulerHelper.runSyncDelayedTaskForEntity(player, Bukkit.getPluginManager().getPlugin("NoCheatPlus"), (arg) -> {
                     try {
                         // Check again if the player should be dead, and if the game didn't mark them as dead.
                         if (mcAccess.getHandle().shouldBeZombie(player)){

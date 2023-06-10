@@ -28,7 +28,6 @@ import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -43,6 +42,7 @@ import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 /**
  * Watch over open inventories - check with "combined" static access, put here because it has too much to do with inventories.
@@ -191,11 +191,14 @@ public class Open extends Check implements IDisableListener {
                 pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)
                 || thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.001)
             )
-            // Cannot press the space bar if the inventory is open (only count the actual jumping moment)
-            || thisMove.canJump && thisMove.to.getY() > thisMove.from.getY() && thisMove.yDistance > 0.0
-            // Obviously, you cannot press WASD keys if the inventory is open.
-            || thisMove.from.inLiquid && (thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.001))) {
-            // TODO: Ascending in liquid envelopes.
+            // Jumping
+            || thisMove.canJump && thisMove.from.onGround && !thisMove.to.onGround
+            && thisMove.yDistance > mData.liftOffEnvelope.getJumpGain(mData.jumpAmplifier, mData.lastStuckInBlockVertical) - Magic.GRAVITY_SPAN
+            // Player has more horizontal speed than the liquid pushing speed (in other words, they are actively pressing a WASD key to move)
+            //|| thisMove.from.inLiquid && thisMove.hDistance > from.getLiquidPushingVector(player, to.getX()-from.getX(), to.getZ()-from.getZ()).length()
+            // Speed was maintained for two moves, assume actively moving.
+            || thisMove.hAllowedDistance >= lastMove.hAllowedDistance && !thisMove.from.inLiquid
+            ) {
             
             // Feed the improbable.
             if (cc.openImprobableWeight > 0.0) {

@@ -147,16 +147,6 @@ public class DefaultComponentFactory {
 
         // Add components (try-catch).
         // TODO: catch ClassNotFound, incompatibleXY rather !?
-
-        // Check: inventory.gutenberg.
-        try {
-            Gutenberg.testAvailability();
-            available.add(new Gutenberg());
-            NCPAPIProvider.getNoCheatPlusAPI().addFeatureTags("checks", Arrays.asList(Gutenberg.class.getSimpleName()));
-        } catch (Throwable t) {
-            StaticLog.logInfo("Inventory checks: Gutenberg is not available.");
-        }
-
         // Hot fix: falling block end portal.
         try {
             HotFixFallingBlockPortalEnter.testAvailability();

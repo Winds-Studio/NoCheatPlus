@@ -25,6 +25,9 @@ import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
+/**
+ * Check if the player destroys another block than interacted with last.
+ */
 public class WrongBlock extends Check {
 
     public WrongBlock() {
@@ -32,21 +35,19 @@ public class WrongBlock extends Check {
     }
 
     /**
-     * Check if the player destroys another block than interacted with last.<br>
-     * This does occasionally trigger for players that destroy grass or snow, 
-     * probably due to packet delaying issues for insta breaking.
+     * Checks a player 
+     * 
      * @param player
      * @param block
      * @param cc 
      * @param data 
      * @param pData
      * @param isInstaBreak 
-     * @return
+     * @return true, if to cancel
      */
     public boolean check(final Player player, final Block block, 
                          final BlockBreakConfig cc, final BlockBreakData data, final IPlayerData pData,
                          final AlmostBoolean isInstaBreak) {
-
         boolean cancel = false;
         final boolean wrongTime = data.fastBreakfirstDamage < data.fastBreakBreakTime;
         final int dist = Math.min(4, data.clickedX == Integer.MAX_VALUE ? 100 : TrigUtil.manhattan(data.clickedX, data.clickedY, data.clickedZ, block));

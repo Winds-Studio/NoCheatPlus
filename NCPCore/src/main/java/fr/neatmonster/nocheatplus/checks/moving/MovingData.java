@@ -248,8 +248,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public int sfHoverLoginTicks = 0;
     /** Fake in air flag: set with any violation, reset once on ground. */
     public boolean sfVLInAir = false;
-    /** Old remainder of the previous Y axis handling (pre-vDistRel): keep track of yDistance to enforce gravity by a minimum amount (against glide hacks) */
-    public final ActionAccumulator vDistAcc = new ActionAccumulator(3, 3); // 3 buckets with max capacity of 3 events
     /** Workarounds (AirWorkarounds,LiquidWorkarounds). */
     public final WorkaroundSet ws;
     /** Will be set to true on BedEnterEvent, then checked for on BedLeaveEvent. */
@@ -274,7 +272,10 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     // HOT FIX / WORKAROUNDS                    //
     //////////////////////////////////////////////
-    /** Set to true after login/respawn, only if the set back is reset there. Reset in MovingListener after handling PlayerMoveEvent */
+    /** 
+     * Set to true after login/respawn, only if the set back is reset there. Reset in MovingListener after handling PlayerMoveEvent.
+     * For more details see: https://github.com/Updated-NoCheatPlus/NoCheatPlus/commit/6d6f908512543f6289b51bb4c60a1940bcea9d4d 
+     */
     public boolean joinOrRespawn = false;
     /** Number of (player/vehicle) move events since set.back. Update after running standard checks on that EventPriority level (not MONITOR). */
     public int timeSinceSetBack = 0;
@@ -357,7 +358,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         jumpAmplifier = 0;
         setBack = null;
         sfZeroVdistRepeat = 0;
-        clearAccounting();
         clearNoFallData();
         removeAllPlayerSpeedModifiers();
         sfHoverTicks = sfHoverLoginTicks = -1;
@@ -387,7 +387,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public void onSetBack(final PlayerLocation setBack, final Location loc, final MovingConfig cc, final Player player) {
         // Reset positions (a teleport should follow, though).
         this.morePacketsSetback = null;
-        clearAccounting(); // Might be more safe to do this.
         // Keep no-fall data.
         // Fly data: problem is we don't remember the settings for the set back location.
         // Assume the player to start falling from there rather, or be on ground.
@@ -426,7 +425,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public void prepareSetBack(final Location loc) {
         playerMoves.invalidate();
         vehicleMoves.invalidate();
-        clearAccounting();
         sfJumpPhase = 0;
         sfZeroVdistRepeat = 0;
         verticalBounce = null;
@@ -547,15 +545,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
             lastMove.vehicleType = entity.getType();
         }
     }
-
-
-    /**
-     * Clear the legacy gravity check (vacc) data.
-     */
-    public void clearAccounting() {
-        vDistAcc.clear();
-    }
-
 
 
     /**
@@ -1411,7 +1400,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         timeRiptiding = Math.min(timeRiptiding, time);
         delayWorkaround = Math.min(delayWorkaround, time);
         vehicleMorePacketsLastTime = Math.min(vehicleMorePacketsLastTime, time);
-        clearAccounting(); // Not sure: adding up might not be nice.
         removeAllPlayerSpeedModifiers(); // TODO: This likely leads to problems.
         // (ActionFrequency can handle this.)
     }

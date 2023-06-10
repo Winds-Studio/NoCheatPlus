@@ -125,7 +125,7 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
         BlockFlags.addFlags("AZALEA", BlockFlags.F_GROUND);
         BlockProperties.setBlockProps("FLOWERING_AZALEA", BlockProperties.instantType);
         BlockFlags.addFlags("FLOWERING_AZALEA", BlockFlags.F_GROUND);
-        // This is temporary ground.
+        //
         BlockFlags.addFlags("BIG_DRIPLEAF", BlockFlags.F_GROUND);
         BlockProperties.setBlockProps("BIG_DRIPLEAF", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f));
         BlockProperties.setBlockProps("BIG_DRIPLEAF_STEM", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f));
@@ -154,7 +154,7 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
         BlockProperties.setBlockProps("LARGE_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
         BlockProperties.setBlockProps("AMETHYST_CLUSTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
         //Amethyst blocks
-        BlockProperties.setBlockProps("BUDDING_AMETHYST", new BlockProperties.BlockProps(BlockProperties.noTool, 1.5f));
+        BlockProperties.setBlockProps("BUDDING_AMETHYST", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
         BlockProperties.setBlockProps("AMETHYST_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
 
         // Not done

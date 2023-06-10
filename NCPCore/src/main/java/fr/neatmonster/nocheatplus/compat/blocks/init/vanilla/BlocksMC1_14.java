@@ -26,7 +26,6 @@ public class BlocksMC1_14 implements BlockPropertiesSetup{
     public void setupBlockProperties(WorldConfigProvider<?> worldConfigProvider) {
         // TODO: Clean up the mess
 
-        BlockFlags.addFlags("VINE", BlockFlags.F_CLIMBUPABLE);
         final BlockProperties.BlockProps instant = BlockProperties.instantType;
         BlockInit.setPropsAs("END_STONE_BRICK_WALL", BridgeMaterial.END_STONE_BRICKS);
         BlockInit.setPropsAs("END_STONE_BRICK_STAIRS", BridgeMaterial.END_STONE_BRICKS);

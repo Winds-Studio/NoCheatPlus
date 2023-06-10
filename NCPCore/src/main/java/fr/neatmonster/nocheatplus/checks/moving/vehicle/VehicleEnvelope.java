@@ -33,9 +33,9 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.workaround.LostGroundVehicle;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.workaround.VehicleWorkarounds;
 import fr.neatmonster.nocheatplus.checks.moving.location.setback.SetBackEntry;
-import fr.neatmonster.nocheatplus.checks.moving.magic.LostGroundVehicle;
-import fr.neatmonster.nocheatplus.checks.moving.magic.MagicVehicle;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveInfo;
@@ -49,6 +49,7 @@ import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.MagicVehicle;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
@@ -374,7 +375,7 @@ public class VehicleEnvelope extends Check {
             // Special case moving up after falling.
             // TODO: Check past moves for falling (not yet available).
             // TODO: Check if the target location somehow is the surface.
-            if (MagicVehicle.oddInWater(thisMove, checkDetails, data)) {
+            if (VehicleWorkarounds.oddInWater(thisMove, checkDetails, data)) {
                 // (Assume players can't control sinking boats for now.)
                 checkDetails.checkDescendMuch = checkDetails.checkAscendMuch = false;
                 violation = false;
@@ -681,7 +682,7 @@ public class VehicleEnvelope extends Check {
         }
         if (violation) {
             // Post violation detection workarounds.
-            if (MagicVehicle.oddInAir(thisMove, minDescend, maxDescend, checkDetails, data)) {
+            if (VehicleWorkarounds.oddInAir(thisMove, minDescend, maxDescend, checkDetails, data)) {
                 violation = false;
                 checkDetails.checkDescendMuch = checkDetails.checkAscendMuch = false; // (Full envelope has been checked.)
             }

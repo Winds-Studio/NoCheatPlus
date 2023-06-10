@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.utilities.moving.bounce;
+package fr.neatmonster.nocheatplus.checks.moving.envelope;
 
 import java.util.UUID;
 
@@ -22,7 +22,7 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.magic.Magic;
+import fr.neatmonster.nocheatplus.checks.moving.model.BounceType;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
@@ -33,7 +33,7 @@ import fr.neatmonster.nocheatplus.components.debug.IDebugPlayer;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
-import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
@@ -42,16 +42,15 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
  * @author asofold 
  * 
  */
-public class BounceUtil {
+public class BounceHandler {
 
     private static final long FLAGS_VELOCITY_BOUNCE_BLOCK = VelocityFlags.ORIGIN_BLOCK_BOUNCE;
-    private static final long FLAGS_VELOCITY_BOUNCE_BLOCK_MOVE_ASCEND = FLAGS_VELOCITY_BOUNCE_BLOCK | VelocityFlags.SPLIT_ABOVE_0_42 
-                                                                        | VelocityFlags.SPLIT_RETAIN_ACTCOUNT | VelocityFlags.ORIGIN_BLOCK_MOVE;
+    private static final long FLAGS_VELOCITY_BOUNCE_BLOCK_MOVE_ASCEND = FLAGS_VELOCITY_BOUNCE_BLOCK | VelocityFlags.SPLIT_ABOVE_0_42 | VelocityFlags.SPLIT_RETAIN_ACTCOUNT | VelocityFlags.ORIGIN_BLOCK_MOVE;
 
     /**
-     * Adjust data to allow bouncing back and/or removing fall damage.<br>
-     * yDistance is < 0, the middle of the player is above a slime block (to) +
-     * on ground. This might be a micro-move onto ground.
+     * Prepare velocity: adjust data to allow bouncing back and/or removing fall damage.<br>
+     * yDistance is < 0, the middle of the player is above a slime block (to) + on ground. 
+     * This might be a micro-move onto ground.
      * 
      * @param player
      * @param verticalBounce 
@@ -62,19 +61,20 @@ public class BounceUtil {
      */
     public static void processBounce(final Player player,final double fromY, final double toY, final BounceType bounceType, final int tick, final IDebugPlayer idp,
                                      final MovingData data, final MovingConfig cc, final IPlayerData pData) {
-        // Prepare velocity.
-        final double fallDistance = MovingUtil.getRealisticFallDistance(player, fromY, toY, data, pData);
-        final double base =  Math.sqrt(fallDistance) / 3.3;
+        /** Takes into accounto micro moves */
+    	double fallDistance = MovingUtil.getRealisticFallDistance(player, fromY, toY, data, pData);
+        double base =  Math.sqrt(fallDistance) / 3.3;
         double effect = Math.min(Magic.BOUNCE_VERTICAL_MAX_DIST, base + Math.min(base / 10.0, Magic.GRAVITY_MAX)); // Ancient Greek technology with gravity added.
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final boolean debug = pData.isDebugActive(CheckType.MOVING);
-
         if (effect > 0.415 && lastMove.toIsValid) {
-            // Extra cap by last y distance(s).
-            final double max_gain = Math.abs(lastMove.yDistance < 0.0 ? Math.min(lastMove.yDistance, toY - fromY) : (toY - fromY)) - Magic.GRAVITY_SPAN;
-            if (max_gain < effect) {
-                effect = max_gain;
-                if (debug) idp.debug(player, "Cap bounce effect by recent y-distances.");
+            /** Extra cap by last y distance(s). Prevents bouncing higher and higher. */
+            final double maxBounceGain = Math.abs(lastMove.yDistance < 0.0 ? Math.min(lastMove.yDistance, toY - fromY) : (toY - fromY)) - Magic.GRAVITY_SPAN;
+            if (maxBounceGain < effect) {
+                effect = maxBounceGain;
+                if (pData.isDebugActive(CheckType.MOVING)) {
+                	idp.debug(player, "Cap bounce effect by recent y-distances.");
+                }
             }
         }
         if (bounceType == BounceType.STATIC_PAST_AND_PUSH) {
@@ -86,7 +86,9 @@ public class BounceUtil {
              */
         }
         // (Actually observed max. is near 3.5.) TODO: Why 3.14 then?
-        if (debug) idp.debug(player, "Set bounce effect (dY=" + fallDistance + " / " + bounceType + "): " + effect); 
+        if (debug) {
+            idp.debug(player, "Set bounce effect (dY=" + fallDistance + " / " + bounceType + "): " + effect); 
+        }
         data.noFallSkipAirCheck = true;
         data.verticalBounce = new SimpleEntry(tick, effect, FLAGS_VELOCITY_BOUNCE_BLOCK, 1); // Just bounce for now.
     }
@@ -125,7 +127,6 @@ public class BounceUtil {
                 data.useVerticalBounce(player);
             }
             return true;
-            // TODO: Find % of verticalBounce.value or abs. value for X: yDistance > 0, deviation from effect < X -> set sfNoLowJump
         }
         else {
             data.verticalBounce = null;
@@ -276,42 +277,5 @@ public class BounceUtil {
         }
         // TODO: There is a special case with 1.0 up on pistons pushing horizontal only (!).
         return BounceType.NO_BOUNCE;
-    }
-
-
-    /**
-     * Pre conditions: A slime block is underneath and the player isn't really
-     * sneaking. This does not account for pistons pushing (slime) blocks.<br>
-     * 
-     * @param player
-     * @param from
-     * @param to
-     * @param data
-     * @param cc
-     * @return
-     */
-    public static boolean checkBounceEnvelope(final Player player, final PlayerLocation from, final PlayerLocation to, 
-                                              final MovingData data, final MovingConfig cc, final IPlayerData pData) {
-        
-        // Workaround/fix for bed bouncing. getBlockY() would return an int, while a bed's maxY is 0.5625, causing this method to always return false.
-        // A better way to do this would to get the maxY through another method, just can't seem to find it :/
-        // Collect block flags at the current location as they may not already be there, and cause NullPointer errors.
-        to.collectBlockFlags();
-        double blockY = ((to.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0) 
-                        && ((to.getY() + 0.4375) % 1 == 0) ? to.getY() : to.getBlockY();
-        return 
-                // 0: Normal envelope (forestall NoFall).
-                (
-                    // 1: Ordinary.
-                    to.getY() - blockY <= Math.max(cc.yOnGround, cc.noFallyOnGround)
-                    // 1: With carpet.
-                    || BlockProperties.isCarpet(to.getTypeId()) && to.getY() - to.getBlockY() <= 0.9
-                )
-                && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) > 1.0
-                // 0: Within wobble-distance.
-                || to.getY() - blockY < 0.286 && to.getY() - from.getY() > -0.9
-                && to.getY() - from.getY() < -Magic.GRAVITY_MIN
-                && !to.isOnGround()
-                ;
     }
 }

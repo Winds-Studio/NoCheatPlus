@@ -16,102 +16,100 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
 
 /**
  * Basic preset envelopes for moving off one medium.
+ * Jump speed values are from Minecraft (JumpPower); heights are our estimations.
  * 
  * @author asofold
  *
  */
 public enum LiftOffEnvelope {
-    /** Normal in-air lift off without any restrictions/specialties. */
-    NORMAL(0.42, 1.35, 1.15, 6, true),
-    /** Weak or no limit moving off liquid from liquid near ground. T */
-    LIMIT_NEAR_GROUND(0.42, 1.35, 1.15, 6, false), // TODO: 0.385 / not jump on top of 1 high wall from water.
-    /** Simple calm water surface, stronger limit */
+    /** Normal in-air lift off, without any restrictions/specialties. */
+    NORMAL(0.42, 1.26, 1.15, 6, true),
+    /** (Non-vanilla) Weak or no limit moving off liquid from liquid near ground. */
+    LIMIT_NEAR_GROUND(0.42, 1.26, 1.15, 6, false), // TODO: 0.385 / not jump on top of 1 high wall from water.
+    /** (Non-vanilla) Simple calm water surface, stronger limit */
     LIMIT_LIQUID(0.1, 0.27, 0.1, 3, false),
-    /** Moving off water, having two in-air moves. Rather meant for 1.13+ clients but not necessarily */
+    /** (Non-vanilla) Moving off water, having two in-air moves. Rather meant for 1.13+ clients but not necessarily */
     //LIMIT_SURFACE(0.1, 0.372, 0.1, 2, false),
     // TODO: Remove later.
     LIMIT_SURFACE(0.1, 1.16, 0.1, 4, false),
     //    /** Flowing water / strong(-est) limit. */
     //    LIMIT_LIQUID_STRONG(...), // TODO
-    /** Web jump envelope.. */
-    LIMIT_WEBS(0.0, 0.0, 0.0, 0, true),
-    /** Like NO_JUMP, just to distinguish from being in web. */
-    UNKNOWN(0.0, 0.0, 0.0, 0, false),
+    // NOTE: Stuck-speed all have a jump height that is equal to lift-off speed.
+    /** Web jump envelope (stuck-speed) */
+    LIMIT_WEBS(0.021, 0.021, 0.015, 0, true),
+    /** Berry bush jump envelope (stuck-speed). */
+    LIMIT_SWEET_BERRY(0.315, 0.315, 0.201, 0, true), 
+    /** Powder snow jump envelope (stuck-speed). */
+    LIMIT_POWDER_SNOW(0.63, 0.63, 0.52, 0, true),
     /** Honey block jump envelope. */
-    LIMIT_HONEY_BLOCK(0.21, 0.4, 0.21, 4, true), 
-    /** Berry bush jump envelope. */
-    LIMIT_SWEET_BERRY(0.315, 0.5, 0.315, 0, true), 
-    /** Powder snow jump envelope. */
-    LIMIT_POWDER_SNOW(0.63, 0.63, 0.5, 0, true)
+    LIMIT_HONEY_BLOCK(0.21, 0.4, 0.15, 4, true), 
+    /** This medium is not covered by the enum */
+    UNKNOWN(0.0, 0.0, 0.0, 0, false)
     ;
 
-    private double maxJumpGain;
+    private double jumpGain;
     private double maxJumpHeight;
+    // TODO: To be removed.
     private double minJumpHeight;
     private int maxJumpPhase;
     private boolean jumpEffectApplies;
 
-    private LiftOffEnvelope(double maxJumpGain, double maxJumpHeight, double minJumpHeight, int maxJumpPhase, boolean jumpEffectApplies) {
-        this.maxJumpGain = maxJumpGain; //(Lift-off speed gain)
-        this.maxJumpHeight = maxJumpHeight; //(Actual jump height)
+    private LiftOffEnvelope(double jumpGain, double maxJumpHeight, double minJumpHeight, int maxJumpPhase, boolean jumpEffectApplies) {
+        this.jumpGain = jumpGain;
+        this.maxJumpHeight = maxJumpHeight;
         this.minJumpHeight = minJumpHeight;
         this.maxJumpPhase = maxJumpPhase;
         this.jumpEffectApplies = jumpEffectApplies;
     }
 
     /**
-     * Minimal distance expected with lift-off.
+     * The expected speed with lift-off.
      * 
      * @param jumpAmplifier
-     * @return The minimum yDistance players can achieve for this envelope with lift-off
+     * @return The lift-off speed.
      */
-    public double getMinJumpGain(double jumpAmplifier) {
+    public double getJumpGain(double jumpAmplifier) {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
-            return Math.max(0.0, maxJumpGain + 0.1 * jumpAmplifier);
+            return Math.max(0.0, jumpGain + 0.1 * jumpAmplifier);
         }
-        return maxJumpGain;
+        return jumpGain;
     }
 
     /**
-     * Minimal distance expected with lift-off, with a custom factor for the jump amplifier.
-     * @param jumpAmplifier
-     * @param factor
-     * @return
-     */
-    public double getMinJumpGain(double jumpAmplifier, double factor) {
-        if (jumpEffectApplies && jumpAmplifier != 0.0) {
-            return Math.max(0.0, maxJumpGain + 0.1 * jumpAmplifier * factor);
-        }
-        return maxJumpGain;
-    }
-
-    /**
-     * Maximum distance expected with lift-off.
+     * The expected speed with lift-off, with a custom factor for the jump amplifier.
      * 
      * @param jumpAmplifier
-     * @return The maximum yDistance players can achieve for this envelope with lift-off
+     * @param factor 
+     *             Meant for stuck-speed
+     * @return The lift-off speed.
      */
-    public double getMaxJumpGain(double jumpAmplifier) {
+    public double getJumpGain(double jumpAmplifier, double factor) {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
-            return Math.max(0.0, maxJumpGain + 0.2 * jumpAmplifier);
+            return Math.max(0.0, jumpGain + 0.1 * jumpAmplifier * factor);
         }
-        return maxJumpGain;
+        return jumpGain;
     }
+
 
     /**
      * Minimal jump height in blocks.
+     * (The minJumpHeight value is just an estimation, you won't find a reference in the game's code for it)
+     * 
      * @param jumpAmplifier
-     * @return
+     * @return The minimum height of the jump
+     * @Deprecated Will soon be removed with the vDistRel rework (which will outclass all jump-height checks: vidstsb and lowjump). 
      */
+    @Deprecated
     public double getMinJumpHeight(double jumpAmplifier) {
         if (jumpEffectApplies && jumpAmplifier != 0.0) {
-            return Math.max(0.0, minJumpHeight + (0.5 * jumpAmplifier));
+            return Math.max(0.0, minJumpHeight + 0.5 * jumpAmplifier);
         }
         return minJumpHeight;
     }
     
     /**
      * Maximum jump height in blocks.
+     * Might not be the most accurate value; partly taken from various sources, partly from testing.
      * 
      * @param jumpAmplifier
      * @return The maximum jump height for this envelope
@@ -124,7 +122,7 @@ public enum LiftOffEnvelope {
                 // TODO: Can be confined more.
                 return maxJumpHeight + 0.6 + jumpAmplifier - 1.0;
             }
-            else if (jumpAmplifier < 19){
+            else if (jumpAmplifier < 19) {
                 // Quadratic, without accounting for gravity.
                 return 0.6 + (jumpAmplifier + 3.2) * (jumpAmplifier + 3.2) / 16.0;
             }
@@ -138,10 +136,11 @@ public enum LiftOffEnvelope {
     }
     
     /**
-     * How many in-air events players can achieve before losing altitude.
+     * The maximum phases (read as: moving-events) a jump can have before the player is expected to lose altitude.
+     * Intended for true in-air phases only. Thus stuck-speed blocks will have a phase of 0.
      * 
      * @param jumpAmplifier
-     * @return The maximum jump phase for this envelope.
+     * @return The maximum jump phase.
      */
     public int getMaxJumpPhase(double jumpAmplifier) {
         if (jumpEffectApplies && jumpAmplifier > 0.0) {
@@ -150,7 +149,10 @@ public enum LiftOffEnvelope {
         // TODO: < 0.0 ?
         return maxJumpPhase;
     }
-   
+    
+    /**
+     * @return Whether the jump boost potion/effect applies for this envelope.
+     */
     public boolean jumpEffectApplies() {
         return jumpEffectApplies;
     }

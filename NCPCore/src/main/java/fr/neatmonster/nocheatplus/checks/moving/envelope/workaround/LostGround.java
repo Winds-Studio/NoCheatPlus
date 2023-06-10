@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.checks.moving.magic;
+package fr.neatmonster.nocheatplus.checks.moving.envelope.workaround;
 
 import java.util.Collection;
 
@@ -35,6 +35,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 
@@ -50,7 +51,9 @@ public class LostGround {
 
 
     /**
-     * Check if touching the ground was lost (client did not send / server did not put it through / false negatives on NCP's side).
+     * Check if touching the ground was lost.
+     * (Client did not send / server did not put it through / false negatives on NCP's side / "Blip" glitch).
+     * 
      * @param player
      * @param from
      * @param to
@@ -72,7 +75,7 @@ public class LostGround {
         // TODO: Remove :)
         data.snowFix = (from.getBlockFlags() & BlockFlags.F_HEIGHT_8_INC) != 0;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        if (yDistance >= -0.7 && yDistance <= Math.max(cc.sfStepHeight, LiftOffEnvelope.NORMAL.getMaxJumpGain(data.jumpAmplifier) + 0.174)) { // Where does this magic come from!?
+        if (yDistance >= -0.7 && yDistance <= Math.max(cc.sfStepHeight, LiftOffEnvelope.NORMAL.getJumpGain(data.jumpAmplifier) + 0.174)) { // Where does this magic come from!?
 
             // Ascending
             if (yDistance >= 0.0 && lastMove.toIsValid) {
@@ -83,6 +86,10 @@ public class LostGround {
 
             // Descending.
             // Check for sprinting down blocks.
+            /*
+             * NOTE: this is not a lost-ground case, but a false negative on NCP's side due to the different collision system
+             * Remove, once (well, IF rather) we have Minecraft collision's logic/function 
+             */
             if (MathUtil.between(0, data.sfJumpPhase, 7) && lastMove.toIsValid
                 && thisMove.setBackYDistance < 0.0 && lastMove.setBackYDistance < 0.0
                 && MathUtil.between(Magic.GRAVITY_MAX, yDistance - lastMove.yDistance, 0.2)
@@ -142,6 +149,10 @@ public class LostGround {
 
         // Micro lost ground, appear when respawn, lantern
         // TODO: hDistance is to confine, need to test
+        // Context: The client has a threshold for sending a position packet/update to the server which is 0.03; the client won't inform the server that it has moved if the movement is smaller than this.
+        //          (To be precise, on 1.8 you do get an empty position packet. On 1.9+, you don't even get that. Thanks, Mojang)
+        // Now, Can 0.03 cases even happen with Bukkit? Bukkit has a higher threshold for Player Move events 0.0625
+        //  
         if (hDistance <= 0.03 && from.isOnGround(0.03) 
             && (thisMove.headObstructed && MaterialUtil.LANTERNS.contains(from.getTypeIdAbove()) || data.joinOrRespawn)) {
             return applyLostGround(player, from, true, thisMove , data, "micro", tags);
@@ -163,10 +174,14 @@ public class LostGround {
                 // Check for sprint-jumping on fences with trapdoors above (missing trapdoor's edge touch on server-side, player lands directly onto the fence)
                 // This is rather a false negative: NCP's collision differs from MC's; NCP won't detect this specific collision while MC does.
                 // [Tested in 1.18: Still needed although it would be best if this could be fixed in BlockProperties, rather than resorting to a workaround]
+                /*
+                 * NOTE: this is not a lost-ground case, but a false negative on NCP's side due to the different collision system
+                 * Remove, once (well, IF rather) we have Minecraft collision's logic/function 
+                 */
                 if (setBackYDistance > 1.0 && setBackYDistance <= 1.5 
                     && setBackYMargin < 0.6 && data.bunnyhopDelay > 0 
                     && yDistance > from.getyOnGround() && lastMove.yDistance <= Magic.GRAVITY_MAX
-                    && (yDistance < Magic.GRAVITY_MIN || yDistance <= data.liftOffEnvelope.getMaxJumpGain(0.0) / 1.52)) {
+                    && (yDistance < Magic.GRAVITY_MIN || yDistance <= data.liftOffEnvelope.getJumpGain(0.0) / 1.52)) {
 
                     to.collectBlockFlags();
                     // (Doesn't seem to be a problem with carpets)
@@ -185,7 +200,11 @@ public class LostGround {
 
                 // Noob tower (moving up placing blocks underneath). Rather since 1.9: player jumps off with 0.4 speed but ground within 0.42.
                 // TODO: Confine by actually having placed a block nearby.
-                final double maxJumpGain = data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier);
+                /*
+                 * NOTE: this is not a lost-ground case, but a false negative on NCP's side due to the different collision system
+                 * Remove, once (well, IF rather) we have Minecraft collision's logic/function 
+                 */
+                final double maxJumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
                 if (maxJumpGain > yDistance && MathUtil.inRange(0, data.sfJumpPhase, 7)
                     && (
                         // 0: Typical: distance to ground + yDistance roughly covers maxJumpGain.
@@ -204,7 +223,8 @@ public class LostGround {
 
             // Could step up (but might move to another direction, potentially).
             if (lastMove.yDistance < 0.0 && !lastMove.touchedGroundWorkaround && hDistance > 0.0001) { 
-                // Generic could step.
+                // Generic could step. 
+                // This likely refers to the "blip" glitch
                 // TODO: Possibly confine margin depending on side, moving direction (see client code).
                 if (from.isOnGround(1.0) && thisMove.hDistance <= thisMove.hAllowedDistance + 0.0001
                     && BlockProperties.isOnGroundShuffled(to.getWorld(), to.getBlockCache(), from.getX(), from.getY() + cc.sfStepHeight, from.getZ(), to.getX(), 
@@ -287,7 +307,7 @@ public class LostGround {
                                           final PlayerMoveData lastMove, final MovingData data, final MovingConfig cc, 
                                           final Collection<String> tags) {
         if ((lastMove.yDistance == 0.0 && lastMove.touchedGround || lastMove.yDistance < 0.0)
-            && data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier) > yDistance
+            && data.liftOffEnvelope.getJumpGain(data.jumpAmplifier) > yDistance
             && noobTowerStillCommon(to, yDistance)) {
             // TODO: Ensure set back is slightly lower, if still on ground.
             final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
@@ -438,8 +458,6 @@ public class LostGround {
         data.sfJumpPhase = 0;
         // Update the jump amplifier because we assume the player to be able to jump here.
         data.jumpAmplifier = MovingUtil.getJumpAmplifier(player, mcAccess);
-        // Clear data for the (old) gravity check
-        data.clearAccounting();
         // Update speed factors the the speed estimation.
         data.adjustMediumProperties(player.getLocation(), DataManager.getPlayerData(player).getGenericInstance(MovingConfig.class), player, data.playerMoves.getCurrentMove());
         // Tell NoFall that we assume the player to have been on ground somehow.

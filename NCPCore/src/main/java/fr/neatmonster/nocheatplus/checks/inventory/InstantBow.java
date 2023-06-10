@@ -25,7 +25,8 @@ import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 
 /**
- * Legacy check. It will find out if a player pulled the string of their bow too fast.
+ * Legacy check. It will find out if a player pulled the string of their bow too fast. <br>
+ * Will be disabled on 1.8 and later.
  */
 public class InstantBow extends Check {
 

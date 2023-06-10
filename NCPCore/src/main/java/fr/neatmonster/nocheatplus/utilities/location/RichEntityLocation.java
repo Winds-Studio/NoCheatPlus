@@ -15,16 +15,26 @@
 package fr.neatmonster.nocheatplus.utilities.location;
 
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -34,8 +44,6 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
  *
  */
 public class RichEntityLocation extends RichBoundsLocation {
-
-    private final boolean is1_13Above = ServerVersion.compareMinecraftVersion("1.13") >= 0;
     
     /*
      * TODO: HumanEntity default with + height (1.11.2): elytra 0.6/0.6,
@@ -203,19 +211,199 @@ public class RichEntityLocation extends RichBoundsLocation {
     public boolean isOnGroundDueToStandingOnAnEntity() {
         return isOnGround() && standsOnEntity; // Just ensure it is initialized.
     }
+    
+    /**
+     * Entity.java, updateFluidHeightAndDoFluidPushing()
+     * 
+     * @param xDistance
+     * @param zDistance
+     * @param liquidTypeFlag The flags F_LAVA or F_WATER.
+     * @return A vector representing the force of the liquid's flow.
+     */
+    public Vector getLiquidPushingVector(final double xDistance, final double zDistance, final long liquidTypeFlag) {
+        if (!isInLiquid()) {
+            return new Vector();
+        }
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (isInLava() && pData.getClientVersion().isOlderThan(ClientVersion.V_1_16)) {
+            // Lava pushes entities starting from the nether update (1.16+)
+            return new Vector();
+        }
+        // No Location#locToBlock() here (!)
+        final int iMinX = MathUtil.floor(minX + 0.001);
+        final int iMaxX = MathUtil.ceil(maxX - 0.001);
+        final int iMinY = MathUtil.floor(minY + 0.001); // (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13) ? (0.4 + 0.001) : 0.0));
+        final int iMaxY = MathUtil.ceil(maxY - 0.001);
+        final int iMinZ = MathUtil.floor(minZ + 0.001);
+        final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
+        double d2 = 0.0;
+        Vector pushingVector = new Vector();
+        int k1 = 0;
+        // NMS collision method. We need to check for a second collision because of how Minecraft handles fluid pushing
+        // (And we need the exact speed for predictions)
+        for (int iX = iMinX; iX < iMaxX; iX++) {
+            for (int iY = iMinY; iY < iMaxY; iY++) {
+                for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
+                    // LEGACY 1.13-
+                    if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidTypeFlag);
+                        if (liquidHeight != 0.0) {
+                            double d0 = (float) (iY + 1) - liquidHeight;
+                            if (!p.isFlying() && iMaxY >= d0) {
+                                // Collided
+                                Vector flowVector = getFlowVector(iX, iY, iZ, liquidTypeFlag);
+                                pushingVector.add(flowVector);
+                            }
+                        }
+                    }
+                    // MODERN 1.13+
+                    else {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidTypeFlag);
+                        double liquidHeightToWorld = iY + liquidHeight;
+                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0
+                           && !p.isFlying()) {
+                            // Collided.
+                            d2 = Math.max(liquidHeightToWorld - (minY + 0.001), d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
+                            // Determine pushing speed by using the current flow of the liquid.
+                            Vector flowVector = getFlowVector(iX, iY, iZ, liquidTypeFlag);
+                            if (d2 < 0.4) {
+                                flowVector = flowVector.multiply(d2);
+                            }
+                            pushingVector = pushingVector.add(flowVector);
+                            k1++ ;
+                        }
+                    }
+                }
+            }
+        }
+        // LEGACY
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+            if (isInWater() && pushingVector.lengthSquared() > 0.0) {
+                pushingVector.normalize();
+                pushingVector.multiply(0.014);
+            }
+        }
+        // MODERN
+        else {
+            // In Entity.java:
+            // LAVA: 0.0023333333333333335 if in any other world that isn't nether, 0.007 otherwise.
+            // WATER: 0.014
+            // NOTE: Water first then Lava (fixes issue with the player's box being both in water and in lava)
+            double flowSpeedMultiplier = isInWater() ? 0.014 : (world.getEnvironment() == World.Environment.NETHER ? 0.007 : 0.0023333333333333335);
+            if (pushingVector.lengthSquared() > 0.0) {
+                if (k1 > 0) {
+                   pushingVector = pushingVector.multiply(1.0 / k1);
+                }
+                if (p.isInsideVehicle()) {
+                    // Normalize the vector anyway if inside liquid on a vehicle... (ease some work with the (future) vehicle rework)
+                    pushingVector = pushingVector.normalize();
+                }
+                pushingVector = pushingVector.multiply(flowSpeedMultiplier); 
+                if (Math.abs(xDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD 
+                    && Math.abs(zDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD
+                    && pushingVector.length() < 0.0045000000000000005) {
+                    pushingVector = pushingVector.normalize().multiply(0.0045000000000000005);
+                }
+            }
+        }
+        // p.sendMessage("pushingVector: " + pushingVector.toString());
+        return pushingVector;
+    }
+    
+    // (Taken from Grim :p)
+    private static boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidTypeFlag) {
+        return BlockProperties.getLiquidHeight(access, x, y, z, liquidTypeFlag) == 0
+               || BlockProperties.getLiquidHeight(access, x, y, z, liquidTypeFlag) > 0 
+               && BlockProperties.getLiquidHeight(access, x1, y1, z1, liquidTypeFlag) > 0; 
+    }
+    
+    // (Taken from Grim :p)
+    private static Vector normalizedVectorWithoutNaN(Vector vector) {
+        double var0 = vector.length();
+        return var0 < 1.0E-4 ? new Vector() : vector.multiply(1 / var0);
+    }
+    
+    /**
+     * FlowingFluid.java, getFlow()
+     * 
+     * @param access
+     * @param x
+     * @param y
+     * @param z
+     * @return the vector
+     */
+    public Vector getFlowVector(int x, int y, int z, final long liquidTypeFlag) {
+    	final Player p = (Player) entity;
+        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
+        if (!isInLiquid()) {
+            return new Vector();
+        }
+        double xModifier = 0.0D;
+        double zModifier = 0.0D;
+        for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+            int modX = x + hDirection.getModX();
+            int modZ = z + hDirection.getModZ();
+            if (affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidTypeFlag)) {  
+                float f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y, modZ) / 9.0f;
+                float f1 = 0.0F;
+                if (f == 0.0F) {
+                    final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
+                    final long flagsAtThisBlock = BlockFlags.getBlockFlags(node.getType());
+                    // VANILLA: block needs a hitbox to block motion
+                    //          if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
+                    // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions)
+                    if ((flagsAtThisBlock & (BlockFlags.F_GROUND | BlockFlags.F_SOLID)) == 0) { 
+                        if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
+                            f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y - 1, modZ) / 9.0f;
+                            if (f > 0.0F) {
+                                f1 = liquidLevel - (f - 0.8888889F);
+                            }
+                        }
+                    }
+                } 
+                else if (f > 0.0F) {
+                    f1 = liquidLevel - f;
+                }
+                if (f1 != 0.0F) {
+                    xModifier += (float) hDirection.getModX() * f1;
+                    zModifier += (float) hDirection.getModZ() * f1;
+                }
+            }
+        }
+        // Compose the speed vector
+        Vector flowingVector = new Vector(xModifier, 0.0D, zModifier);
+        // p.sendMessage("FlowingVector: " + flowingVector.toString());
+        //IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
+        // TODO: Implement & Research "isSolidFace" method.
+        /*if (BlockProperties.isLiquid(node.getType()) && node.getData(access, x, y, z) >= 8) { // 8-15 - falling liquid
+            for (BlockFace direction : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+                if (isSolidFace(player, x, y, z, direction) || isSolidFace(player, x, y + 1, z, direction)) {
+                    flowingVector = flowingVector.normalize().add(new Vector(0.0D, -6.0D, 0.0D));
+                    break;
+                }
+            }
+        }*/
+        return normalizedVectorWithoutNaN(flowingVector);
+    }
 
     /**
      * Check if a player may climb upwards (isOnClimbable returned true, player
      * does not move from/to ground).<br>
-     * Having checked the other stuff is prerequisite for calling this (!).
+     * Prerequisites are: vertical motion is positive and the player isn't touching the ground.
      *
-     * @param jumpHeigth
+     * @param jumpHeight
      *            Height the player is allowed to have jumped.
      * @return true, if successful
      */
-    public boolean canClimbUp(double jumpHeigth) {
-        // TODO: distinguish vines.
-        if (BlockProperties.isAttachedClimbable(getTypeId())) {
+    public boolean canClimbUp(double jumpHeight) {
+        final IPlayerData pData = DataManager.getPlayerData((Player) entity);
+        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
+            // Since 1.14, vines are climbable.
+            return true;
+        }
+        // Force legacy clients to behave with legacy mechanics.
+        if (BlockProperties.needsToBeAttachedToABlock(getTypeId())) {
             // Check if vine is attached to something solid
             if (BlockProperties.canClimbUp(blockCache, blockX, blockY, blockZ)) {
                 return true;
@@ -231,7 +419,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             }
             // Finally check possible jump height.
             // TODO: This too is inaccurate.
-            if (isOnGround(jumpHeigth)) {
+            if (isOnGround(jumpHeight)) {
                 // Here ladders are ok.
                 return true;
             }
@@ -249,7 +437,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return true, if is head obstructed
      */
     public boolean isHeadObstructed(double marginAboveEyeHeight) {
-        return isHeadObstructed(marginAboveEyeHeight, true); // TODO: This is changed behavior, need to check calls.
+        return isHeadObstructed(marginAboveEyeHeight, true);
     }
 
     /**
@@ -282,8 +470,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                 }
             }
         }
-        return BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, 
-                BlockFlags.F_GROUND | BlockFlags.F_SOLID);
+        return BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_GROUND | BlockFlags.F_SOLID);
     }
 
     /**
@@ -345,8 +532,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @param yOnGround
      *            the y on ground
      */
-    public void set(final Location location, final Entity entity, final double fullWidth, double fullHeight, 
-            final double yOnGround) {
+    public void set(final Location location, final Entity entity, final double fullWidth, double fullHeight, final double yOnGround) {
         doSet(location, entity, fullWidth, fullHeight, yOnGround);
     }
 
@@ -367,19 +553,19 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @param yOnGround
      *            the y on ground
      */
-    protected void doSet(final Location location, final Entity entity, final double fullWidth, double fullHeight, 
-            final double yOnGround) {
+    protected void doSet(final Location location, final Entity entity, final double fullWidth, double fullHeight, final double yOnGround) {
         final double eyeHeight;
         final boolean isLiving;
         if (entity instanceof LivingEntity) {
             isLiving = true;
             final LivingEntity living = (LivingEntity) entity;
+            final IPlayerData pData = DataManager.getPlayerData((Player) entity);
             eyeHeight = living.getEyeHeight();
             // Sneaking in Minecraft 1.14 and possibility later version will have lower height
             // But allow changing height in 1.13 too for on ground swimming
             // 0.179999?
-            fullHeight = is1_13Above || Bridge1_9.isGliding(living) ? 
-                    eyeHeight + 0.179 : Math.max(Math.max(fullHeight, eyeHeight), living.getEyeHeight(true));
+            // TODO: Better documentation.
+            fullHeight = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) || Bridge1_9.isGliding(living) ? eyeHeight + 0.179 : Math.max(Math.max(fullHeight, eyeHeight), living.getEyeHeight(true));
         }
         else {
             isLiving = false;
