@@ -154,7 +154,7 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
         BlockProperties.setBlockProps("LARGE_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
         BlockProperties.setBlockProps("AMETHYST_CLUSTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
         //Amethyst blocks
-        BlockProperties.setBlockProps("BUDDING_AMETHYST", new BlockProperties.BlockProps(BlockProperties.noTool, 1.5f));
+        BlockProperties.setBlockProps("BUDDING_AMETHYST", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
         BlockProperties.setBlockProps("AMETHYST_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
 
         // Not done
