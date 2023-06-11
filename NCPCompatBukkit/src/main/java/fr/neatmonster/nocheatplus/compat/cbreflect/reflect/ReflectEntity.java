@@ -64,17 +64,17 @@ public class ReflectEntity extends ReflectGetHandleBase<Entity> {
         nmsDead = ReflectionUtil.getField(nmsClass, "dead", boolean.class);
 
         // damageEntity(...)
+        // boolean hurt(net.minecraft.world.damagesource.DamageSource,float) -> a
         nmsDamageEntityNew = ReflectionUtil.getMethod(nmsClass, "a", new Class<?>[]{damageSource.nmsClass, float.class});
         nmsDamageEntity = nmsDamageEntityNew != null ? nmsDamageEntityNew : 
-        	              ReflectionUtil.getMethod(nmsClass, "damageEntity", 
+                          ReflectionUtil.getMethod(nmsClass, "damageEntity", 
                           new Class<?>[]{damageSource.nmsClass, float.class}, new Class<?>[]{damageSource.nmsClass, int.class});
         if (nmsDamageEntity != null) {
             nmsDamageEntityInt = nmsDamageEntity.getParameterTypes()[1] == int.class;
         } else {
             nmsDamageEntityInt = true; // Uncertain.
         }
-        nmsclearActiveItem = ReflectionUtil.getMethodNoArgs(nmsClass, "clearActiveItem") == null ? 
-        ReflectionUtil.getMethodNoArgs(nmsClass, "eR") : ReflectionUtil.getMethodNoArgs(nmsClass, "clearActiveItem");
+        nmsclearActiveItem = seekClearActiveItemMethod(nmsClass);
 
         // getBoundingBox
         if (reflectAxisAlignedBB == null) {
@@ -83,6 +83,19 @@ public class ReflectEntity extends ReflectGetHandleBase<Entity> {
         else {
             this.nmsGetBoundingBox = ReflectionUtil.getMethodNoArgs(nmsClass, "getBoundingBox", reflectAxisAlignedBB.nmsClass);
         }
+    }
+
+    private Method seekClearActiveItemMethod(Class<?> nmsClass) {
+        // void releaseUsingItem() -> fn(1.20)
+        //                            fj(1.19-19.4)
+        //                            eR(???)
+        //                            clearActiveItem(1.13-???)
+        String[] methodname = {"fn", "fj", "eR", "clearActiveItem"};
+        for (String name : methodname) {
+            Method method = ReflectionUtil.getMethodNoArgs(nmsClass, name);
+            if (method != null) return method;
+        }
+        return null;
     }
 
     @Override

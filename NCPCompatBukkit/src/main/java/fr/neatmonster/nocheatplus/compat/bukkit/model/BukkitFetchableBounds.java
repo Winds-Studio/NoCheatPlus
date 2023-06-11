@@ -31,6 +31,7 @@ public class BukkitFetchableBounds implements BukkitShapeModel {
         for (BoundingBox box : blockshape.getBoundingBoxes()) {
             res = add(res, toArray(box));
         }
+        if (res.length == 0) return null;
         return res;
     }
 
