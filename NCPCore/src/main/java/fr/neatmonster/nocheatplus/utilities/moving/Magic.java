@@ -66,7 +66,7 @@ public class Magic {
     /** Result of (0.6 * 0.91)^3. Used by legacy clients. Newer clients use the one above, not inertia. */
     public static final float CUBED_INERTIA = 0.16277136f;
     /** HoneyBlock */
-    public static final float SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13f;
+    public static final double SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13;
     /** HoneyBlock */
     public static final float SLIDE_SPEED_THROTTLE = 0.05f;
     /** EntityLiving, aiStep */
@@ -98,6 +98,8 @@ public class Magic {
     public static final double CraftBukkit_minMoveDistSq = 1f / 256;
     /** Minimum looking direction change for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
     public static final float CraftBukkit_minLookChange = 10f;
+    /** The minimum squared distance for clients to send flying packet to the server (EntityPlayerSP.java): movements smaller than this are not sent. (Thanks Mojang!) */
+    public static final double Minecraft_minMoveSqrtDistance = 0.03;
     
 
     

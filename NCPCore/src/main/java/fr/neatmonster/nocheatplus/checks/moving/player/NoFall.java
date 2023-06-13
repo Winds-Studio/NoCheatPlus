@@ -462,7 +462,7 @@ public class NoFall extends Check {
         final double minY = Math.min(fromY, toY);
         if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))
             || !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))
-            || pTo.isCollidingWithHoneyBlock() && !toOnGround) {
+            || pTo.isSlidingDown() && !toOnGround) {
             // Just reset
             data.clearNoFallData();
         }

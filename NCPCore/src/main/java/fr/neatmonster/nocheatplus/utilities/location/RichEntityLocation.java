@@ -22,6 +22,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
@@ -165,6 +167,40 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
 
     /**
+     * From HoneyBlock.java 
+     * Test if the player is sliding sideway with a honey block (NMS, checks for speed as well)
+     * 
+     * @return if the player is sliding on a honey block.
+     */
+    public boolean isSlidingDown() {
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        if (thisMove.touchedGround) {
+            // Not sliding, clearly.
+            return false;
+        }
+        // With the current implementation, this condition never is never run due to from.getBlockY(), it should be the location of the block not player's
+        //if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
+        //    // Too far from the block.
+        //    return false;
+        //} 
+        if (thisMove.yDistance >= -Magic.DEFAULT_GRAVITY) {
+            // Minimum speed.
+            return false;
+        }
+        // Done in honeyBlockSidewayCollision
+        // With the current implementation, this condition will always return false, see above
+        //double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
+        //double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
+        //double var7 = 0.4375D + (width / 2.0F);
+        //return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
+        return (blockFlags & BlockFlags.F_STICKY) != 0
+                && BlockProperties.collides(blockCache, minX - 0.01, minY, minZ - 0.01, maxZ + 0.01, maxY, maxZ + 0.01, BlockFlags.F_STICKY);
+    }
+
+    /**
      * Simple check with custom margins (Boat, Minecart). Does not update the
      * internally stored standsOnEntity field.
      *
@@ -177,8 +213,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return true, if successful
      */
     public boolean standsOnEntity(final double yOnGround, final double xzMargin, final double yMargin) {
-        return blockCache.standsOnEntity(entity, minX - xzMargin, minY - yOnGround - yMargin, minZ - xzMargin, 
-                maxX + xzMargin, minY + yMargin, maxZ + xzMargin);
+        return blockCache.standsOnEntity(entity, minX - xzMargin, minY - yOnGround - yMargin, minZ - xzMargin, maxX + xzMargin, minY + yMargin, maxZ + xzMargin);
     }
 
     /**
@@ -213,7 +248,8 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
-     * Entity.java, updateFluidHeightAndDoFluidPushing()
+     * How Minecraft calculates liquid flow speed (pushing the player).
+     * Can be found in: Entity.java, updateFluidHeightAndDoFluidPushing()
      * 
      * @param xDistance
      * @param zDistance

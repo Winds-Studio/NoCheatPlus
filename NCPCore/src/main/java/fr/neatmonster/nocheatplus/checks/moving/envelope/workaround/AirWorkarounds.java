@@ -324,6 +324,7 @@ public class AirWorkarounds {
 
    /**
     * Conditions for exemption from the VDistSB check (Vertical distance to set back)
+    * TODO: To be removed.
     * 
     * @param toOnGround
     * @param data

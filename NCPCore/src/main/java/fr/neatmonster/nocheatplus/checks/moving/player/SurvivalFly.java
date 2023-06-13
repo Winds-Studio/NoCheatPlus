@@ -741,8 +741,8 @@ public class SurvivalFly extends Check {
             }
         }
 
-        // Sliding speed
-        if (to.isCollidingWithHoneyBlock() && PlayerEnvelopes.isSlidingDown(from, mcAccess.getHandle().getWidth(player), thisMove, player)) {
+        // Sliding speed (honey block)
+        if (from.isSlidingDown()) {
             if (lastMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
                 thisMove.xAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / lastMove.yDistance;
                 thisMove.zAllowedDistance *= -Magic.SLIDE_SPEED_THROTTLE / lastMove.yDistance;
@@ -1134,9 +1134,8 @@ public class SurvivalFly extends Check {
          * 
          * MISSING: Back-to-ground speed collision logic (not sure if it's even possible to do on NCP's side, would require to port Minecraft's collision logic...)
          * - Same could be told for bumping head in a 2-blocks high space (the player jumps with 0.1 speed). Likely tied to noobtowering up as well.
-         * - Medium transitions.
+         * - Medium transitions ?
          * - Aim to finally be independent from oddGravity workarounds as well.
-         * - Honey block speed calculations instead of hard-coded magic.
          * 
          * TODO: Lost-ground cases won't cut it if we're going to overhaul vdistrel as well. 
          * We need the *exact* ground collision. Or at least a really close estimate to Minecraft's to reduce workarounds to a bare minimum.
@@ -1149,7 +1148,7 @@ public class SurvivalFly extends Check {
         // Handle ordinary moves.
         boolean hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9);
         if (PlayerEnvelopes.isStep(data, cc.sfStepHeight, tags.contains("lostground_couldstep"))) {
-            // Allow stepping
+            // Give priority to stepping.
             thisMove.vAllowedDistance = yDistance;
             thisMove.canStep = true;
         }
@@ -1162,15 +1161,16 @@ public class SurvivalFly extends Check {
             // Leaving ground, but with negative motion: stepping down a slope, not actually jumping
             thisMove.vAllowedDistance = 0.0;
         }
-        else if (!fromOnGround && toOnGround) {
+        else if (!fromOnGround && toOnGround && thisMove.yDistance < 0.0) {
             // TODO: Handle this stupid move in a way that can prevent 1-block step cheats and also be reliable enough.
-
+            // Allow the movement for the moment.
+            thisMove.vAllowedDistance = yDistance;
         }
         else {
             // Otherwise, a fully in-air move (friction)
             thisMove.vAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
             if (from.isHeadObstructed(0.03, false)) {
-                // Speed is set to 0 if bumping head with a solid block, then gravity is applied.
+                // Speed is set to 0 if bumping head with a solid block, then gravity is applied (and collision speed!!).
                 thisMove.vAllowedDistance = 0.0;
             }
             if (Math.abs(thisMove.vAllowedDistance) < (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) ? Magic.NEGLIGIBLE_SPEED_THRESHOLD : Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY)) {
@@ -1192,15 +1192,22 @@ public class SurvivalFly extends Check {
                 }
             }
             else if (BridgeMisc.hasGravity(player)) {
-                thisMove.vAllowedDistance -= thisMove.hasSlowfall && yDistance <= 0.0 ? Magic.DEFAULT_SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
+                // Only apply gravity if the player can be affected by it (slowfall simply reduces gravity)
+                thisMove.vAllowedDistance -= thisMove.hasSlowfall && thisMove.yDistance <= 0.0 ? Magic.DEFAULT_SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
             }
+            // Honey block sliding mechanic
+            if (from.isSlidingDown()) {
+                if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
+                    thisMove.vAllowedDistance = -Magic.SLIDE_SPEED_THROTTLE;
+                }
+            }
+            // Friction and stuck-speed
             thisMove.vAllowedDistance *= data.lastFrictionVertical;
             thisMove.vAllowedDistance *= (double) data.nextStuckInBlockVertical;
         }
 
         /** Expected difference from current to allowed */       
         final double yDistDiffEx = yDistance - thisMove.vAllowedDistance; 
-        final boolean honeyBlockCollision = to.isCollidingWithHoneyBlock() && (MathUtil.between(-0.128, yDistance, -0.125) || thisMove.hasSlowfall && MathUtil.between(-Magic.GRAVITY_MIN, yDistance, -Magic.GRAVITY_ODD));
         /** Vertical hacks, workarounds */
         final boolean VEnvHack = AirWorkarounds.venvHacks(from, to, yDistChange, data, resetFrom, resetTo, yDistDiffEx);
         /** More workarounds */
@@ -1208,7 +1215,7 @@ public class SurvivalFly extends Check {
         if (Math.abs(yDistDiffEx) < 0.0001) {
             // Accuracy margin.
         }
-        else if (VEnvHack || honeyBlockCollision || gravityEffects) {
+        else if (VEnvHack || gravityEffects) {
             // Non-predictable movement / non-ordinary moves.
         }
         else {

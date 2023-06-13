@@ -188,11 +188,12 @@ public class PlayerEnvelopes {
 	}
 
 	/**
-	 * Test if the player has jumped.
+	 * Test if this movement is a jump.
+	 * Minecraft does not offer a direct way to know if players could have jumped
 	 * 
 	 * @param data
 	 * @param hasLevitation
-	 * @param jumpGain
+	 * @param jumpGain The jump speed
 	 * @return
 	 */
 	public static boolean isJump(final MovingData data, boolean hasLevitation, double jumpGain, boolean headObstructed) {
@@ -213,8 +214,10 @@ public class PlayerEnvelopes {
     
     /**
      * Test if this was a step movement
+     * Minecraft does not offer a direct way to know if players could have stepped up a block
+     * 
      * @param data
-     * @param stepHeight
+     * @param stepHeight The step height (0.5, prior to 1.8, 0.6 from 1.8 and onwards)
      * @param couldStep
      * @return
      */
@@ -222,7 +225,7 @@ public class PlayerEnvelopes {
 		final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
 	    final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
 		if (couldStep) {
-			// Blip
+			// Special case, allow it.
 			return true;
 		}
 		return thisMove.from.onGround && thisMove.to.onGround && thisMove.yDistance > 0.0
@@ -255,39 +258,6 @@ public class PlayerEnvelopes {
 	    return !lastMove.toIsValid && data.sfJumpPhase == 0 && thisMove.multiMoveCount > 0
 	            && setBackYDistance > 0.0 && setBackYDistance < Magic.PAPER_DIST 
 	            && thisMove.yDistance > 0.0 && thisMove.yDistance < Magic.PAPER_DIST && Magic.inAir(thisMove);
-	}
-
-	/**
-	 * From HoneyBlock.java 
-	 * Test if the player is sliding sideway with a honey block (NMS, checks for speed as well)
-	 * 
-	 * @param from
-	 * @param width
-	 * @param thisMove
-	 * @param player
-	 * @return if the player is sliding on the honey block.
-	 */
-	public static boolean isSlidingDown(final PlayerLocation from, final double width, final PlayerMoveData thisMove, final Player player) {
-	    if (thisMove.touchedGround) {
-	        // Not sliding, clearly.
-	        return false;
-	    }
-	    // With current implementation, this condition never run due to from.getBlockY(), it should be the location of the block not player
-	    //if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
-	    //    // Too far from the block.
-	    //    return false;
-	    //} 
-	    if (thisMove.yDistance >= -Magic.DEFAULT_GRAVITY) {
-	        // Minimum speed.
-	        return false;
-	    }
-	    // Done in honeyBlockSidewayCollision
-	    // With current implementation, this condition always return false, reason same above
-	    //double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
-	    //double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
-	    //double var7 = 0.4375D + (width / 2.0F);
-	    //return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
-	    return true;
 	}
 
 	/**
