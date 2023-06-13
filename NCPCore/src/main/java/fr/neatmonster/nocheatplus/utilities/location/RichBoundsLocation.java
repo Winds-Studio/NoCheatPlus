@@ -821,18 +821,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         }
         return inWeb;
     }
-
-    /** 
-     * Test if the player collided horizontally with a honey block.
-     * Meant for checking if the player is sliding down.
-     * 
-     * @return
-     */
-    public boolean isCollidingWithHoneyBlock() {
-        return (blockFlags & BlockFlags.F_STICKY) != 0
-                && BlockProperties.collides(blockCache, minX - 0.01, minY, minZ - 0.01, maxZ + 0.01, maxY, maxZ + 0.01, BlockFlags.F_STICKY);
-    }
-
+    
     /**
      * Checks if the player is in powder snow.
      * 

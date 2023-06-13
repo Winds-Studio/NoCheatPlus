@@ -205,7 +205,7 @@ public class PlayerEnvelopes {
 	    if (headObstructed) {
 	    	//TODO: Need Minecraft collision speed logic here.
 	    	return MathUtil.almostEqual(thisMove.yDistance, 0.1 * data.lastStuckInBlockVertical, 0.0001)
-	    	       && (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 2);
+	    	       && (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 1);
 	    }
 	    return (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 2) 
 	           && thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, jumpGain, 0.0001)

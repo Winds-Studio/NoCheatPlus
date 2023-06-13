@@ -656,7 +656,8 @@ public class SurvivalFly extends Check {
          * IMPORTANT: The upcoming update 1.20 fixes the 12 year old bug of walking/moving on the very edge blocks not applying the properties of said block
          *            - HoneyBlocks will now restrict jumping even if on the very edge
          *            - Same for slime and everything else
-         * Order in mcp: LivingEntity.tick() 
+         * Order in mcp: 
+         * -> LivingEntity.tick() 
          * -> Entity.tick() 
          *    -> Entity.baseTick()
          *    -> Entity.updateInWaterStateAndDoFluidPushing()
@@ -856,7 +857,7 @@ public class SurvivalFly extends Check {
             }
         }
         
-        // Add the acceleration. (getInputVector, entity.java)
+        // Transform the input to a speed vector and then add the acceleration. (getInputVector, entity.java)
         float sinYaw = TrigUtil.sin(to.getYaw() * TrigUtil.toRadians);
         float cosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
         /** List of estimated X distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
@@ -1169,16 +1170,19 @@ public class SurvivalFly extends Check {
         else {
             // Otherwise, a fully in-air move (friction)
             thisMove.vAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
-            if (from.isHeadObstructed(0.03, false)) {
-                // Speed is set to 0 if bumping head with a solid block, then gravity is applied (and collision speed!!).
+            // Honey block sliding mechanic (levitation is not applied)
+            if (from.isSlidingDown() && !hasLevitation) {
+                if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
+                    // Speed is static.
+                    thisMove.vAllowedDistance = -Magic.SLIDE_SPEED_THROTTLE;
+                }
+            }
+            if (data.lastStuckInBlockVertical != 1.0) {
+                // Stuck-speed works by resetting speed every tick the player is in such a block. Thus, players are expected to immediately descend after jumping (with static speed)
                 thisMove.vAllowedDistance = 0.0;
             }
             if (Math.abs(thisMove.vAllowedDistance) < (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) ? Magic.NEGLIGIBLE_SPEED_THRESHOLD : Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY)) {
                 // Negligible speed reset.
-                thisMove.vAllowedDistance = 0.0;
-            }
-            if (data.lastStuckInBlockVertical != 1.0) {
-                // Stuck-speed works by resetting speed every tick the player is in such a block. Thus, players are expected to immediately descend after jumping (with static speed)
                 thisMove.vAllowedDistance = 0.0;
             }
             if (hasLevitation) {
@@ -1190,20 +1194,19 @@ public class SurvivalFly extends Check {
                     thisMove.vAllowedDistance = thisMove.yDistance;
                     vDistanceAboveLimit = 0.0;
                 }
+                // (Levitation before head obstruction check.)
             }
-            else if (BridgeMisc.hasGravity(player)) {
+            if (BridgeMisc.hasGravity(player) && !hasLevitation) {
                 // Only apply gravity if the player can be affected by it (slowfall simply reduces gravity)
                 thisMove.vAllowedDistance -= thisMove.hasSlowfall && thisMove.yDistance <= 0.0 ? Magic.DEFAULT_SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
-            }
-            // Honey block sliding mechanic
-            if (from.isSlidingDown()) {
-                if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
-                    thisMove.vAllowedDistance = -Magic.SLIDE_SPEED_THROTTLE;
-                }
             }
             // Friction and stuck-speed
             thisMove.vAllowedDistance *= data.lastFrictionVertical;
             thisMove.vAllowedDistance *= (double) data.nextStuckInBlockVertical;
+            if (from.isHeadObstructed(0.03, false)) {
+                // Speed is set to 0 if bumping head with a solid block, then gravity is applied (and collision speed!!).
+                thisMove.vAllowedDistance = 0.0;
+            }
         }
 
         /** Expected difference from current to allowed */       
