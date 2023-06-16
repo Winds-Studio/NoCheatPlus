@@ -33,7 +33,7 @@ public class PlayerEnvelopes {
 	 */
 	public static boolean noobJumpsOffTower(final double yDistance, final double maxJumpGain, 
 	                                        final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingData data) {
-	                                        final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
+	    final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
 	    return (
 	            data.sfJumpPhase == 1 && lastMove.touchedGroundWorkaround // TODO: Not observed though.
 	            || data.sfJumpPhase == 2 && Magic.inAir(lastMove)
@@ -197,7 +197,6 @@ public class PlayerEnvelopes {
 	 * @return
 	 */
 	public static boolean isJump(final MovingData data, boolean hasLevitation, double jumpGain, boolean headObstructed) {
-		final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
 	    final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
 	    if (hasLevitation) {
 	    	return false;
@@ -208,8 +207,7 @@ public class PlayerEnvelopes {
 	    	       && (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 1);
 	    }
 	    return (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 2) 
-	           && thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, jumpGain, 0.0001)
-	           && thisMove.setBackYDistance > 0.0;
+	           && thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, jumpGain, 0.0001);
 	}
     
     /**

@@ -364,13 +364,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     }
 
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerToggleSneak(final PlayerToggleSneakEvent event) {
         survivalFly.setReallySneaking(event.getPlayer(), event.isSneaking());
     }
 
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerToggleSprint(final PlayerToggleSprintEvent event) {
         if (!event.isSprinting()) DataManager.getGenericInstance(event.getPlayer(), MovingData.class).timeSprinting = 0;
     }
@@ -460,15 +460,12 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
 
     /** LOWEST checks, indicate cancel processing player move. */
-    @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onPlayerTeleportLowest(final PlayerTeleportEvent event) {
         final Player player = event.getPlayer();
         // Prevent further moving processing for nested events.
         processingEvents.remove(player.getName());
         // Various early return conditions.
-        if (event.isCancelled()) {
-            return;
-        }
         final TeleportCause cause = event.getCause();
         switch (cause) {
             case COMMAND:
@@ -897,7 +894,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // Now, to fix this, we'd need to re-code NCP to run movement checks on packet level instead. Such is out of the question: would require a massive work which we don't have the manpower for, hence this mechanic which -albeit convoluted- works well.
         // Essentially, after Bukkit fires a PlayerMoveEvent, NCP will check if it had been fired normally. If it not, the flying-packet queue is used to get the correct "from" and "to" locations.
         // (Overall, this forces NCP to pretty much hard-depend on ProtocolLib, but it's the most sensible choice anyway, as working with Bukkit events has proven to be unreliable on the longer run)
-        // (For simplicity, the mechanic is internally refferred to as "split move", because the event is essentially split by how many moves were lost, with a cap)
+        // (For simplicity, the mechanic is internally referred to as "split move", because the event is essentially split by how many moves were lost, with a cap)
         final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
         final Location loc = player.getLocation(moveInfo.useLoc);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
@@ -905,7 +902,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         
         if (
             // 0: A regular PlayerMoveEvent will always fire a "from" loc reflecting player#getLocation().
-            //    If these don't match, something happened on Bukkit-level, and this move cannot be used as is.
+            //    If not, player#getLocation() will reflect a skipped move between from and to (for which no event was fired).
             TrigUtil.isSamePos(from, loc)
             // 0: Special case / bug? (Which/why, which version of MC/spigot?)
             || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())) {
@@ -1177,22 +1174,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         pFrom = moveInfo.from;
         pTo = moveInfo.to;
         
-
-        ///////////////////////////////////////////
-        // Powder snow ground handling 1.17+     //
-        ///////////////////////////////////////////
-        if (BridgeMisc.hasIsFrozen()) {
-            boolean hasBoots = BridgeMisc.hasLeatherBootsOn(player);
-            if (pTo.isOnGround() && !hasBoots 
-                && pTo.adjustOnGround(!pTo.isOnGroundDueToStandingOnAnEntity() && !pTo.isOnGround(cc.yOnGround, BlockFlags.F_POWDERSNOW)) && debug) {
-                debug(player, "Powder Snow: Ground collision was detected but the player is un-equipped with leather boots. Reset the from.onGround flag.");
-            }
-            if (pFrom.isOnGround() && !hasBoots 
-                && pFrom.adjustOnGround(!pFrom.isOnGroundDueToStandingOnAnEntity() && !pFrom.isOnGround(cc.yOnGround, BlockFlags.F_POWDERSNOW)) && debug) {
-                debug(player, "Powder Snow: Ground collision was detected but the player is un-equipped with leather boots. Reset the to.onGround flag.");
-            }
-        }
-
 
         //////////////////////////////////////////////
         // HOT FIX - for VehicleLeaveEvent missing. //

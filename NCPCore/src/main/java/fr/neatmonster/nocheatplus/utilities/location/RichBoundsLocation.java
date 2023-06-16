@@ -1009,7 +1009,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Checks if the thing is on ground, including entities such as Minecart, Boat.
+     * Checks if the thing is on ground, including entities (RichEntityLocation) such as Boat.
      * 
      * @return true, if the player is on ground
      */
@@ -1064,14 +1064,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             notOnGroundMaxY = Math.max(notOnGroundMaxY, yOnGround);
         }
         return onGround;
-    }
-
-    public boolean adjustOnGround(boolean change) {
-        if (onGround != null && onGround && change) {
-            onGround = false;
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -1142,7 +1134,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Simple block-on-ground check for given margin (no entities).<br> Meant for
+     * Simple block-on-ground check for given margin (no entities, [RichEntityLocation]).<br> Meant for
      * checking bigger margin than the normal yOnGround.
      *
      * @param yOnGround

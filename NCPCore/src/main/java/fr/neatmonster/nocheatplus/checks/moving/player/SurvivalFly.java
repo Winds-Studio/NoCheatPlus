@@ -1004,7 +1004,7 @@ public class SurvivalFly extends Check {
                     || from.isInWeb() && data.bunnyhopDelay <= 7) {
                     data.bunnyhopDelay = 0;
                 }
-                else if (data.bunnyhopDelay <= 6 && !thisMove.headObstructed 
+                else if (data.bunnyhopDelay <= 7 && !thisMove.headObstructed 
                         // The player actually jumped up a slope: this movement has a higher altitude than the bunnyhop move.
                         && thisMove.from.getY() > data.playerMoves.getPastMove(Magic.BUNNYHOP_MAX_DELAY - data.bunnyhopDelay).from.getY()) {
                     // (Ground check is checked above)
@@ -1165,15 +1165,15 @@ public class SurvivalFly extends Check {
         else if (!fromOnGround && toOnGround && thisMove.yDistance < 0.0) {
             // TODO: Handle this stupid move in a way that can prevent 1-block step cheats and also be reliable enough.
             // Allow the movement for the moment.
-            thisMove.vAllowedDistance = yDistance;
+            thisMove.vAllowedDistance = thisMove.yDistance;
         }
         else {
             // Otherwise, a fully in-air move (friction)
             thisMove.vAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
             // Honey block sliding mechanic (levitation is not applied)
             if (from.isSlidingDown() && !hasLevitation) {
-                if (thisMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
-                    // Speed is static.
+                if (lastMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
+                    // Speed is static in this case
                     thisMove.vAllowedDistance = -Magic.SLIDE_SPEED_THROTTLE;
                 }
             }
@@ -1233,6 +1233,7 @@ public class SurvivalFly extends Check {
          * 
          * 
          * Once we have the final vDistRel implementation get rid of all these checks.
+         * (Redundant + less stuff to care about)
          * 
          * 
          */
@@ -1739,7 +1740,7 @@ public class SurvivalFly extends Check {
 
    /**
     * Powder snow vertical distance checking (1.17+): behaves similarly to a climbable block.<br>
-    * This does not concern if the player can actually stand on the block (See MovingListener#checkPlayerMove for that)
+    * This does not concern if the player can actually stand on the block (See RichEntityLocation for that)
     * 
     * @param yDistance
     * @param from

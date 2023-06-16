@@ -150,7 +150,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
 
     @Override
     public String getMCVersion() {
-        return "1.13-1.19|?";
+        return "1.13-1.20";
     }
 
     @Override
@@ -221,7 +221,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         for (Material mat : BridgeMaterial.getAllBlocks(
             "azalea", "flowering_azalea",
             "sculk_sensor", "pointed_dripstone", "frogspawn",
-            "sniffer_egg", "decorated_pot", "pitcher_crop")) {
+            "sniffer_egg", "decorated_pot", "pitcher_crop", "calibrated_sculk_sensor")) {
             addModel(mat, MODEL_AUTO_FETCH);
         }
 

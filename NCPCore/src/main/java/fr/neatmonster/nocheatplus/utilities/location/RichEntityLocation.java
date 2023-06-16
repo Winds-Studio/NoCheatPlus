@@ -25,6 +25,7 @@ import org.bukkit.util.Vector;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
@@ -38,7 +39,6 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
-// TODO: Auto-generated Javadoc
 /**
  * A location with an entity with a lot of extra stuff.
  * 
@@ -177,6 +177,9 @@ public class RichEntityLocation extends RichBoundsLocation {
         final IPlayerData pData = DataManager.getPlayerData(p);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        if (p == null) {
+            return false;
+        }
         if (thisMove.touchedGround) {
             // Not sliding, clearly.
             return false;
@@ -196,8 +199,8 @@ public class RichEntityLocation extends RichBoundsLocation {
         //double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
         //double var7 = 0.4375D + (width / 2.0F);
         //return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
-        return (blockFlags & BlockFlags.F_STICKY) != 0
-                && BlockProperties.collides(blockCache, minX - 0.01, minY, minZ - 0.01, maxZ + 0.01, maxY, maxZ + 0.01, BlockFlags.F_STICKY);
+        // Not really NMS :) But this essentially replicates NMS collision, so.
+        return (blockFlags & BlockFlags.F_STICKY) != 0 && BlockProperties.collides(blockCache, minX - 0.01, minY, minZ - 0.01, maxZ + 0.01, maxY, maxZ + 0.01, BlockFlags.F_STICKY);
     }
 
     /**
@@ -217,7 +220,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
 
     /**
-     * Checks if the entity is on ground, including entities such as Minecart, Boat.
+     * Checks if the entity is on ground, including entities such as Boat.
      * 
      * @return true, if the player is on ground
      */
@@ -226,12 +229,18 @@ public class RichEntityLocation extends RichBoundsLocation {
             return onGround;
         }
         boolean res = super.isOnGround();
+        Player p = (Player) entity;
+        if (res) {
+            // Player is on ground: check for powder snow.
+            if ((blockFlags & BlockFlags.F_POWDERSNOW) != 0 && p != null && !BridgeMisc.hasLeatherBootsOn(p)) {
+                // If the player is on powder snow and doesn't have boots, they are not allowed to stay on it.
+                res = onGround = false;
+            }
+        }
         if (!res) {
-            // Check if standing on an entity.
-            // TODO: Get rid of needing an entity for checking this (!). Move to RichBoundsLocation.
+            // Player is not on ground: check if they are standing on an entity.
             final double d1 = 0.25;
-            if (blockCache.standsOnEntity(entity, minX - d1, minY - yOnGround, minZ - d1, 
-                    maxX + d1, minY, maxZ + d1)) {
+            if (blockCache.standsOnEntity(entity, minX - d1, minY - yOnGround, minZ - d1, maxX + d1, minY, maxZ + d1)) {
                 res = onGround = standsOnEntity = true;
             }
         }
@@ -261,6 +270,9 @@ public class RichEntityLocation extends RichBoundsLocation {
             return new Vector();
         }
         final Player p = (Player) entity;
+        if (p == null) {
+            return new Vector();
+        }
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (isInLava() && pData.getClientVersion().isOlderThan(ClientVersion.V_1_16)) {
             // Lava pushes entities starting from the nether update (1.16+)
@@ -371,6 +383,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      */
     public Vector getFlowVector(int x, int y, int z, final long liquidTypeFlag) {
     	final Player p = (Player) entity;
+        if (p == null) {
+            return new Vector();
+        }
         float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
         if (!isInLiquid()) {
             return new Vector();
@@ -433,8 +448,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return true, if successful
      */
     public boolean canClimbUp(double jumpHeight) {
-        final IPlayerData pData = DataManager.getPlayerData((Player) entity);
-        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (pData != null && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
             // Since 1.14, vines are climbable.
             return true;
         }
