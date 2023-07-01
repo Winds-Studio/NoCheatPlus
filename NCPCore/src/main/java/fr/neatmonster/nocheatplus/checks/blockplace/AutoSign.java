@@ -33,7 +33,7 @@ import fr.neatmonster.nocheatplus.utilities.TickTask;
 
 public class AutoSign extends Check {
 
-    // TODO: Make these configurable.
+    // TODO: Make these configurable. <- No.:)
     /** Reference time that is needed to edit the most complicated sign :). */
     private static long maxEditTime = 1500;
     /** Fastest time "possible" estimate for an empty sign. */
@@ -50,45 +50,54 @@ public class AutoSign extends Check {
     public AutoSign() {
         super(CheckType.BLOCKPLACE_AUTOSIGN);
     }
-
-    public boolean check(final Player player, final Block block, final String[] lines,
-            final IPlayerData pData) {
-        // TODO: Might want to reset time + hash ?
-        final long time = System.currentTimeMillis();
+    
+    /**
+     * Checks a player
+     * 
+     * @param player
+     * @param block
+     * @param lines
+     * @param pData
+     * @return true if the player failed the check.
+     */
+    public boolean check(final Player player, final Block block, final String[] lines, final IPlayerData pData) {
         tags.clear();
+        final long time = System.currentTimeMillis();
         final BlockPlaceData data = pData.getGenericInstance(BlockPlaceData.class);
         final BlockPlaceConfig cc = pData.getGenericInstance(BlockPlaceConfig.class);
         Material mat = block.getType();
-        
         String s = mat.toString();
         if (s.endsWith("_WALL_SIGN")) {
         	s = s.replace("_WALL_SIGN", "_SIGN");
         	mat = Material.getMaterial(s);
-        } else if (s.endsWith("WALL_SIGN")) {
+        } 
+        else if (s.endsWith("WALL_SIGN")) {
         	s = s.replace("WALL_", "");
         	mat = Material.getMaterial(s);
         }
         if (s.equals("SIGN_POST")) {
         	mat = Material.getMaterial("SIGN");
         }
-        if (data.autoSignPlacedHash != BlockPlaceListener.getBlockPlaceHash(block, mat)){
+
+        // Check hash match
+        if (data.autoSignPlacedHash != BlockPlaceListener.getBlockPlaceHash(block, mat)
+            // If a player triggered a sign event and the hash is 0, that means they edited an already placed sign, no need to check here.
+            && data.autoSignPlacedHash != 0) {
             tags.add("block_mismatch");
             return handleViolation(player, maxEditTime, data, cc);
         }
-        if (time < data.autoSignPlacedTime){
+        if (time < data.autoSignPlacedTime) {
             data.autoSignPlacedTime = 0;
             return false;
         }
 
-        // check time, mind lag.
-
+        // Check time, mind lag.
         final long editTime = time - data.autoSignPlacedTime;
         long expected = getExpectedEditTime(lines, cc.autoSignSkipEmpty);
         if (expected == 0) {
             return false;
         }
         expected = (long) (expected / TickTask.getLag(expected, true));
-
         if (expected > editTime){
             tags.add("edit_time");
             return handleViolation(player, expected - editTime, data, cc);
@@ -128,12 +137,10 @@ public class AutoSign extends Check {
      * @param data
      * @return
      */
-    private boolean handleViolation(final Player player, final long violationTime, 
-            final BlockPlaceData data, final BlockPlaceConfig cc) {
+    private boolean handleViolation(final Player player, final long violationTime, final BlockPlaceData data, final BlockPlaceConfig cc) {
         final double addedVL = 10.0 * Math.min(maxEditTime, violationTime) / maxEditTime;
         data.autoSignVL += addedVL;
-        final ViolationData vd = new ViolationData(
-                this, player, data.autoSignVL, addedVL, cc.autoSignActions);
+        final ViolationData vd = new ViolationData(this, player, data.autoSignVL, addedVL, cc.autoSignActions);
         if (vd.needsParameters()){
             vd.setParameter(ParameterName.TAGS, StringUtil.join(tags, "+"));
         }

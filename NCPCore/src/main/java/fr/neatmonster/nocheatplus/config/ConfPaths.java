@@ -690,7 +690,6 @@ public abstract class ConfPaths {
     public static final String  MOVING_LOADCHUNKS_MOVE                      = MOVING_LOADCHUNKS + "move";
     public static final String  MOVING_LOADCHUNKS_TELEPORT                  = MOVING_LOADCHUNKS + "teleport";
     public static final String  MOVING_LOADCHUNKS_WORLDCHANGE               = MOVING_LOADCHUNKS + "world-change";
-    public static final String  MOVING_SPRINTINGGRACE                       = MOVING + "sprinting-grace";
     public static final String  MOVING_SPEEDGRACE                           = MOVING + "speed-grace";
     public static final String  MOVING_ENFORCELOCATION                      = MOVING + "enforce-location";
     private static final String MOVING_SETBACK                              = MOVING + "setback.";
@@ -852,6 +851,8 @@ public abstract class ConfPaths {
     public static final String  MOVING_MOREPACKETSVEHICLE_ACTIONS        = "checks.moving.morepacketsvehicle.actions";
 
     // Deprecated paths (just removed).
+    @Deprecated
+    public static final String  MOVING_SPRINTINGGRACE                       = MOVING + "sprinting-grace";
     @Deprecated
     public static final String  MOVING_SPLITMOVES                           = MOVING + "split-moves"; // Needs better categories...
     @Deprecated

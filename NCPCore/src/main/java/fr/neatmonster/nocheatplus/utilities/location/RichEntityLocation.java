@@ -15,6 +15,7 @@
 package fr.neatmonster.nocheatplus.utilities.location;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -28,14 +29,13 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
-import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
+import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
-import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
@@ -180,7 +180,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (p == null) {
             return false;
         }
-        if (thisMove.touchedGround) {
+        if (isOnGround()) {
             // Not sliding, clearly.
             return false;
         }
@@ -200,6 +200,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         //double var7 = 0.4375D + (width / 2.0F);
         //return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
         // Not really NMS :) But this essentially replicates NMS collision, so.
+        collectBlockFlags(); // Do call here, else NPE for some places.
         return (blockFlags & BlockFlags.F_STICKY) != 0 && BlockProperties.collides(blockCache, minX - 0.01, minY, minZ - 0.01, maxZ + 0.01, maxY, maxZ + 0.01, BlockFlags.F_STICKY);
     }
 
@@ -231,13 +232,19 @@ public class RichEntityLocation extends RichBoundsLocation {
         boolean res = super.isOnGround();
         Player p = (Player) entity;
         if (res) {
-            // Player is on ground: check for powder snow.
-            if ((blockFlags & BlockFlags.F_POWDERSNOW) != 0 && p != null && !BridgeMisc.hasLeatherBootsOn(p)) {
+            collectBlockFlags();
+            final Material typeId = getTypeIdBelow();
+            final long belowFlags = BlockFlags.getBlockFlags(typeId);
+            // Is the player really on ground?
+            if ((blockFlags & BlockFlags.F_POWDERSNOW) != 0 && p != null && !BridgeMisc.hasLeatherBootsOn(p)
+                // Check only if above powder snow, if inside, it will be handled as a normal ground block (without the GROUND_HEIGHT flag, players cannot stand between maximum and minimum height anyway)
+            	&& !isInPowderSnow()) { 
                 // If the player is on powder snow and doesn't have boots, they are not allowed to stay on it.
                 res = onGround = false;
             }
         }
         if (!res) {
+            // Is the player actually off ground? 
             // Player is not on ground: check if they are standing on an entity.
             final double d1 = 0.25;
             if (blockCache.standsOnEntity(entity, minX - d1, minY - yOnGround, minZ - d1, maxX + d1, minY, maxZ + d1)) {
@@ -451,7 +458,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData != null && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
-            // Since 1.14, vines are climbable.
+            // Since 1.14, all climbable are climbable upwards with no solid block attached to it..
             return true;
         }
         // Force legacy clients to behave with legacy mechanics.
@@ -505,11 +512,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      *             If marginAboveEyeHeight is smaller than 0.
      */
     public boolean isHeadObstructed(double marginAboveEyeHeight, boolean stepCorrection) {
-        // TODO: Add an isObstructed method with extra height parameter to RichBoundsLocation?
         if (marginAboveEyeHeight < 0.0) {
             throw new IllegalArgumentException("marginAboveEyeHeight must be greater than 0.");
         }
-        // TODO: Add test for this bit of code.
         // Step correction: see https://github.com/NoCheatPlus/NoCheatPlus/commit/f22bf88824372de2207e6dca5e1c264f3d251897
         if (stepCorrection) {
             double ref = maxY + marginAboveEyeHeight;
@@ -522,7 +527,16 @@ public class RichEntityLocation extends RichBoundsLocation {
                 }
             }
         }
-        return BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_GROUND | BlockFlags.F_SOLID);
+        // isSlidingDown exclusion: needed because the player's AABB would be INSIDE the block (thus, the maxY's AABB would result as hitting the honey block above)
+        /* 
+         * Powder snow: hack around NCP not having per-player blocks / dynamic removal or addition of flags.
+         * This would always return true due to the block having the GROUND flag, but for the purpose of THIS check, powder snow cannot obstruct a player's head/jump (jumping with powder snow above will simply let the player go through it).
+         */
+        return BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_GROUND | BlockFlags.F_SOLID)
+               // (Is there a more elegant way to do this?)
+        	   && !BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_POWDERSNOW)
+        	   // Only if not sliding against a wall of honey blocks with head clear above.
+        	   && !isSlidingDown();
     }
 
     /**

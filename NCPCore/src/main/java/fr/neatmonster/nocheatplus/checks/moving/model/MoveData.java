@@ -88,11 +88,6 @@ public class MoveData {
      * (See: MovingListener, RichEntityLocation)
      */
     public boolean headObstructed;
-   
-    /**
-     * Like isDownStream specifically for vertical move.
-     */
-    public boolean inWaterfall;
 
     /**
      * Somehow the player has touched ground with this move (including

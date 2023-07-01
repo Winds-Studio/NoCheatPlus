@@ -372,7 +372,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerToggleSprint(final PlayerToggleSprintEvent event) {
-        if (!event.isSprinting()) DataManager.getGenericInstance(event.getPlayer(), MovingData.class).timeSprinting = 0;
+        // if (!event.isSprinting()) DataManager.getGenericInstance(event.getPlayer(), MovingData.class).timeSprinting = 0;
     }
 
 
@@ -1150,21 +1150,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             newTo = enforceLocation(player, from, data);
             playersEnforce.remove(playerName);
         }
-
-
-        //////////////////////////////////////////////
-        // Check for sprinting                      //
-        //////////////////////////////////////////////
-        if (player.isSprinting()) {
-            // TODO: Collect all these properties within a context object (abstraction + avoid re-fetching). 
-            if (player.getFoodLevel() > 5 || player.getAllowFlight() || player.isFlying()) {
-                data.timeSprinting = time;
-            }
-            else if (time < data.timeSprinting) {
-                data.timeSprinting = 0;
-            }
-        }
-        else if (time < data.timeSprinting) data.timeSprinting = 0;
         
 
         /////////////////////////////////////
@@ -1190,8 +1175,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.set(pFrom, pTo);
         // Set this split move phase.
         thisMove.multiMoveCount = multiMoveCount;
-        // Set flag for swimming in a waterfall
-        thisMove.inWaterfall = pFrom.isWaterfall(thisMove.yDistance);
         // Check if head is obstructed.
         thisMove.headObstructed = (thisMove.yDistance > 0.0 ? pFrom.isHeadObstructed(thisMove.yDistance) : pFrom.isHeadObstructed());
         // Get the distance to set-back.
@@ -1545,7 +1528,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 }
             }
             data.sfHoverTicks = -1;
-            data.sfLowJump = false;
         }
         // No fly checking :(.
         else data.clearFlyData();

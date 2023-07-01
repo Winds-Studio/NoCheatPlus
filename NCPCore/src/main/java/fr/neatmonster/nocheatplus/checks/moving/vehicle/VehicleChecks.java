@@ -224,7 +224,6 @@ public class VehicleChecks extends CheckListener {
         data.wasInVehicle = true;
         data.sfHoverTicks = -1;
         data.removeAllVelocity();
-        data.sfLowJump = false;
         // TODO: What with processingEvents.remove(player.getName());
         if (vehicle == null || vehicle.isDead() || !vehicle.isValid()) {
             // TODO: Note special case, if ever players can move with dead vehicles for a while.
@@ -512,11 +511,9 @@ public class VehicleChecks extends CheckListener {
         }
 
         SetBackEntry newTo = null;
-        data.sfNoLowJump = true;
         if (cc.noFallVehicleReset) {
             // Reset noFall data.
             data.noFallSkipAirCheck = true; // Might allow one time cheat.
-            data.sfLowJump = false;
             data.clearNoFallData();
         }
         if (debug) {
@@ -808,7 +805,6 @@ public class VehicleChecks extends CheckListener {
         //      if (BlockProperties.isRails(pFrom.getTypeId())) {
         // Always clear no fall data, let Minecraft do fall damage.
         data.noFallSkipAirCheck = true; // Might allow one time cheat.
-        data.sfLowJump = false;
         data.clearNoFallData();
         // TODO: What with processingEvents.remove(player.getName());
         //      }

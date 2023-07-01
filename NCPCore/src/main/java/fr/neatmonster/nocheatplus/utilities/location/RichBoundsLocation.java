@@ -481,17 +481,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Convenience method: delegate to BlockProperties.isWaterfall.
-     *
-     * @param yDistance
-     *            the y distance
-     * @return true, if is in waterfall
-     */
-    public boolean isWaterfall(final double yDistance) {
-        return BlockProperties.isWaterfall(blockCache, blockX, blockY, blockZ, getData(), yDistance);
-    }
-
-    /**
      * Get existing or create.
      * @return
      */

@@ -292,21 +292,6 @@ public class Magic {
                 ;
     }
 
-
-    public static boolean recentlyInWaterfall(final MovingData data, int limit) {
-        limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
-        for (int i = 0; i < limit; i++) {
-            final PlayerMoveData move = data.playerMoves.getPastMove(i);
-            if (!move.toIsValid) {
-                return false;
-            }
-            else if (move.inWaterfall) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Fully in-air move.
      * 

@@ -828,7 +828,7 @@ public class BlockProperties {
     }
 
     /**
-     * Returns true if the material is null0
+     * Returns true if the material is null.
      *
      * @param mat
      *            the mat. If null, will yield true.
@@ -3131,8 +3131,7 @@ public class BlockProperties {
                                                      final int bz, final double fx, final double fy, final double fz, 
                                                      final IBlockCacheNode node, final double dX, final double dY, 
                                                      final double dZ, final double dT) {
-        return isPassableWorkaround(access, bx, by, bz, fx, fy, fz, node, dX, dY, dZ,
-                                    fx + bx, fy + by, fz + bz, fx + bx, fy + by, fz + bz, dT);
+        return isPassableWorkaround(access, bx, by, bz, fx, fy, fz, node, dX, dY, dZ, fx + bx, fy + by, fz + bz, fx + bx, fy + by, fz + bz, dT);
     }
 
     /**
@@ -4483,60 +4482,6 @@ public class BlockProperties {
     }
 
     /**
-     *
-     * @param from
-     *            the from
-     * @param to
-     *            the to
-     * @return true, if is in waterfall
-     */
-    public static final boolean isWaterfall(final PlayerLocation from, final PlayerLocation to) {
-        return isWaterfall(from.getBlockCache(), from.getBlockX(), from.getBlockY(), from.getBlockZ(), 
-                           from.getData(), to.getY() - from.getY());
-    }
-
-    /**
-     * Check if a player is moving inside a waterfall, determined by the yDistance
-     *
-     * @param access
-     *            the access
-     * @param x
-     *            the x
-     * @param y
-     *            the y
-     * @param z
-     *            the z
-     * @param data
-     *            the data
-     * @param dY
-     *            the d y
-     * @return true, if is moving in a waterfall
-     */
-    public static final boolean isWaterfall(final BlockCache access, final int x, final int y, final int z, final int data, final double dY) {
-        if ((data & 0x8) == 0) {
-            if ((dY > 0)) {
-                if (data < 7 && BlockProperties.isLiquid(access.getType(x, y + 1, z)) && access.getData(x, y + 1, z) > data) {
-                    return true;
-                }
-                else if (data > 0 && BlockProperties.isLiquid(access.getType(x, y - 1, z)) && access.getData(x, y - 1, z) < data) {
-                    // reverse direction.
-                    return true;
-                }
-            } 
-            else if (dY < 0) {
-                if (data < 7 && BlockProperties.isLiquid(access.getType(x, y - 1, z)) && access.getData(x, y + 1, z) > data) {
-                    return true;
-                }
-                else if (data > 0  && BlockProperties.isLiquid(access.getType(x, y + 1, z)) && access.getData(x, y + 1, z) < data) {
-                    // reverse direction.
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
      * Collect all flags of blocks touched by the bounds, this does not check
      * versus the blocks bounding box.
      *
@@ -4702,8 +4647,7 @@ public class BlockProperties {
             maxZ = dZ * dT + oZ + blockZ;
             minZ = oZ + blockZ;
         }
-        if (!collidesBlock(access, minX, minY, minZ, maxX, maxY, maxZ, blockX, blockY, blockZ, node, null, 
-                           BlockFlags.getBlockFlags(node.getType()) | BlockFlags.F_COLLIDE_EDGES)) {
+        if (!collidesBlock(access, minX, minY, minZ, maxX, maxY, maxZ, blockX, blockY, blockZ, node, null, BlockFlags.getBlockFlags(node.getType()) | BlockFlags.F_COLLIDE_EDGES)) {
             // TODO: Might check for fence too, here.
             return true;
         }

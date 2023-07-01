@@ -150,7 +150,6 @@ public class MovingConfig extends ACheckConfig {
     public final boolean loadChunksOnMove;
     public final boolean loadChunksOnTeleport;
     public final boolean loadChunksOnWorldChange;
-    public final long sprintingGrace;
     public final int speedGrace;
     public final boolean enforceLocation;
     public final boolean trackBlockMove;
@@ -279,7 +278,6 @@ public class MovingConfig extends ACheckConfig {
         loadChunksOnMove = config.getBoolean(ConfPaths.MOVING_LOADCHUNKS_MOVE);
         loadChunksOnTeleport = config.getBoolean(ConfPaths.MOVING_LOADCHUNKS_TELEPORT);
         loadChunksOnWorldChange = config.getBoolean(ConfPaths.MOVING_LOADCHUNKS_WORLDCHANGE);
-        sprintingGrace = Math.max(0L, (long) (config.getDouble(ConfPaths.MOVING_SPRINTINGGRACE) * 1000.0)); // Config: seconds.
         speedGrace = Math.max(0, (int) Math.round(config.getDouble(ConfPaths.MOVING_SPEEDGRACE) * 20.0)); // Config: seconds
         AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.MOVING_ENFORCELOCATION, AlmostBoolean.MAYBE);
         enforceLocation = ref == AlmostBoolean.MAYBE ? Bugs.shouldEnforceLocation() : ref.decide();

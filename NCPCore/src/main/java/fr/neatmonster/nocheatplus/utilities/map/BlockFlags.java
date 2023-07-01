@@ -179,11 +179,6 @@ public class BlockFlags {
      */
     public static final long F_ATTACHED_LOW2_SNEW           = f_flag();
 
-    /**
-     * The hacky way to force sfNoLowJump when the block at from has this flag.
-     */
-    public static final long F_ALLOW_LOWJUMP                = f_flag();
-
     /** One eighth block height (0.125). */
     public static final long F_HEIGHT8_1                    = f_flag();
 

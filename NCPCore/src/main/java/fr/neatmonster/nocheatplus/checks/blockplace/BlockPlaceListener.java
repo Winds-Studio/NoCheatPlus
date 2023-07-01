@@ -314,7 +314,6 @@ public class BlockPlaceListener extends CheckListener {
                 }
             }
 
-
             // Direction check.
             if (!cancelled && !shouldSkipSome) {
                 if (isInteractBlock && bdata.isPassedCheck(CheckType.BLOCKINTERACT_DIRECTION)) {

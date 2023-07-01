@@ -206,11 +206,10 @@ public class BlockInteractListener extends CheckListener {
                 data.setPlayerInteractEventResolution(event);
                 return;
         }
-
+        
         if (event.isCancelled() && event.useInteractedBlock() != Result.ALLOW) {
             if (event.useItemInHand() == Result.ALLOW) {
                 blockChecks = false;
-                // TODO: Some potential for plugin features...
             }
             else {
                 // Can't do more than prevent all (could: set to prevent on highest, if desired).
@@ -224,9 +223,8 @@ public class BlockInteractListener extends CheckListener {
         final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
         boolean preventUseItem = false;
         boolean cancelled = false;
-
         // TODO: Always run all checks, also for !isBlock ?
-        // Interaction speed.
+        // Interaction speed is always checked.
         if (!cancelled && speed.isEnabled(player, pData) && speed.check(player, data, cc)) {
             cancelled = true;
             preventUseItem = true;

@@ -28,10 +28,6 @@ public enum LiftOffEnvelope {
     LIMIT_NEAR_GROUND(0.42, 1.26, 1.15, 6, false), // TODO: 0.385 / not jump on top of 1 high wall from water.
     /** (Non-vanilla) Simple calm water surface, stronger limit */
     LIMIT_LIQUID(0.1, 0.27, 0.1, 3, false),
-    /** (Non-vanilla) Moving off water, having two in-air moves. Rather meant for 1.13+ clients but not necessarily */
-    //LIMIT_SURFACE(0.1, 0.372, 0.1, 2, false),
-    // TODO: Remove later.
-    LIMIT_SURFACE(0.1, 1.16, 0.1, 4, false),
     //    /** Flowing water / strong(-est) limit. */
     //    LIMIT_LIQUID_STRONG(...), // TODO
     // NOTE: Stuck-speed all have a jump height that is equal to lift-off speed.

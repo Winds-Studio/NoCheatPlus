@@ -51,45 +51,6 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 public class AirWorkarounds {
 
     /**
-     * Hack for slimes.
-     * 
-     * @param from
-     * @param to
-     * @param yDistChange
-     * @param data
-     * @param resetFrom
-     * @param resetTo
-     * @param yDistDiffEx
-     * @return If to skip those sub-checks.
-     */
-    public static boolean venvHacks(final PlayerLocation from, final PlayerLocation to, 
-                                    final double yDistChange, final MovingData data, 
-                                    final boolean resetFrom, final boolean resetTo, final double yDistDiffEx) {
-        
-        // Only for air phases.
-        if (!resetFrom && !resetTo) {
-            return false;
-        }
-        if (data.lastStuckInBlockVertical != 1.0) {
-            // Ignore stuck-speed)
-            return false;
-        }
-        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        return 
-                // 0: Jumping on slimes, change viewing direction at the max. height.
-                // NOTE: Implicitly removed condition: hdist < 0.125
-                // NOTE: Doesn't check for jump amplifier on purpose.
-                // CHECK: Was this due to a micro-move? If so, this can be removed.
-                thisMove.yDistance == 0.0 && data.sfZeroVdistRepeat == 1 
-                && (data.isVelocityJumpPhase() || data.hasSetBack() && MathUtil.between(0.0, to.getY() - data.getSetBackY(), LiftOffEnvelope.NORMAL.getMaxJumpHeight(0.0)))
-                // Block is within jump height
-                && BlockProperties.isSlime(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() - LiftOffEnvelope.NORMAL.getMaxJumpHeight(0.0)), from.getBlockZ()))
-                && data.ws.use(WRPT.W_M_SF_SLIME_JP_2X0)
-                ;
-    }
-
-    /**
      * Search for velocity entries that have a bounce origin. On match, set the friction jump phase for thisMove/lastMove.
      * @param to
      * @param yDistance
@@ -134,7 +95,6 @@ public class AirWorkarounds {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         return // 0: Can't ascend if head is obstructed
             (thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed && lastMove.yDistance >= 0.0) 
-            && !BlockProperties.isPowderSnow(from.getTypeIdAbove())
             // 0: Players can still press the space bar in powder snow to boost ascending speed.
             || from.isInPowderSnow() && MathUtil.between(thisMove.vAllowedDistance, thisMove.yDistance, thisMove.vAllowedDistance + LiftOffEnvelope.LIMIT_POWDER_SNOW.getJumpGain(0.0))
             && thisMove.yDistance > 0.0 && lastMove.yDistance > 0.0 && BridgeMisc.hasLeatherBootsOn(player) && thisMove.yDistance - lastMove.yDistance == 0.0
@@ -172,7 +132,6 @@ public class AirWorkarounds {
                 && Math.abs(yDistDiffEx) < 2.0 * Magic.GRAVITY_SPAN 
                 && lastMove.yDistance > 0.0 && thisMove.yDistance < lastMove.yDistance
                 && to.getY() - data.getSetBackY() <= data.liftOffEnvelope.getMaxJumpHeight(data.jumpAmplifier)
-                && !data.sfLowJump
                 && (
                     // 1: Decrease more after lost-ground cases with more y-distance than normal lift-off.
                     MathUtil.between(maxJumpGain, lastMove.yDistance, 1.05 * maxJumpGain) 
@@ -237,6 +196,9 @@ public class AirWorkarounds {
             // TO be cleaned up...
             return true;
         }
+        if (thisMove.hasLevitation) {
+            return false;
+        }
       
         return 
                 // 0: Any envelope (supposedly normal) near 0 yDistance.
@@ -298,16 +260,17 @@ public class AirWorkarounds {
                         || MathUtil.between(-Magic.GRAVITY_MIN, yDistChange, -Magic.GRAVITY_ODD)
                         && MathUtil.between(0.4, lastMove.yDistance, 0.5)
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_VEL_4)
-                        // 1: Small decrease after high edge.
                 )
                 // 0: Small distance to setback.
                 // TODO: is the absolute part needed?
-                || data.hasSetBack() && Math.abs(data.getSetBackY() - from.getY()) < 1.0 && !data.sfLowJump 
+                || data.hasSetBack() && Math.abs(data.getSetBackY() - from.getY()) < 1.0 
                 && (
                         // 1: Near ground small decrease.
                         MathUtil.between(Magic.GRAVITY_MAX, lastMove.yDistance, 3.0 * Magic.GRAVITY_MAX)
                         && MathUtil.between(-Magic.GRAVITY_MIN, yDistChange, -Magic.GRAVITY_ODD)
                         && data.ws.use(WRPT.W_M_SF_ODDGRAVITY_SETBACK)
+                        // 1: Jump was obstructed by a collision above. Demand ascending move.
+                        || from.isHeadObstructed(0.03, false) && thisMove.yDistance > 0.0
                 )
                 // 0: Another near 0 yDistance case.
                 // TODO: Inaugurate into some more generic envelope.
@@ -320,56 +283,6 @@ public class AirWorkarounds {
                 && data.ws.use(WRPT.W_M_SF_OUT_OF_ENVELOPE_3)
             ;
     }
-
-
-   /**
-    * Conditions for exemption from the VDistSB check (Vertical distance to set back)
-    * TODO: To be removed.
-    * 
-    * @param toOnGround
-    * @param data
-    * @param cc
-    * @param now
-    * @param player
-    * @param totalVDistViolation
-    * @param fromOnGround
-    * @param tags
-    * @param to
-    * @param from
-    * @return true, if to skip this subcheck
-    */
-    public static boolean vDistSBExemptions(final boolean toOnGround, final MovingData data, final MovingConfig cc, final long now, final Player player, 
-                                            double totalVDistViolation, final boolean fromOnGround,
-                                            final Collection<String> tags, final PlayerLocation to, final PlayerLocation from) {
-        final double SetBackYDistance = to.getY() - data.getSetBackY();
-        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        final IPlayerData pData = DataManager.getPlayerData(player);
-        return 
-                // 0: Ignore: Legitimate step.
-                ((fromOnGround || thisMove.touchedGroundWorkaround || lastMove.touchedGround)
-                && toOnGround && thisMove.yDistance <= cc.sfStepHeight)
-                // 0: Teleport to in-air (PaperSpigot 1.7.10).
-                // TODO: Legacy, could drop it at this point...
-                || PlayerEnvelopes.skipPaper(thisMove, lastMove, data)
-                // 0: Bunnyhop into a 1-block wide waterfall to reduce vertical water friction -> ascend in water -> leave waterfall 
-                // -> have two, in-air ascending phases -> double VdistSB violation due to a too high jump, since speed wasn't reduced by enough when in water.
-                || data.sfJumpPhase <= 3 && data.liftOffEnvelope == LiftOffEnvelope.LIMIT_LIQUID
-                && data.insideMediumCount < 6 && Bridge1_13.hasIsSwimming() && Magic.recentlyInWaterfall(data, 20)
-                && (Magic.inAir(thisMove) || Magic.leavingWater(thisMove)) && SetBackYDistance < cc.sfStepHeight 
-                && thisMove.yDistance < LiftOffEnvelope.NORMAL.getJumpGain(0.0) 
-                && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) 
-                // 0: Lost ground cases
-                || thisMove.touchedGroundWorkaround 
-                && ( 
-                    // 1: Skip if the player could step up by lostground_couldstep.
-                    thisMove.yDistance <= cc.sfStepHeight && tags.contains("lostground_couldstep")
-                    // 1: Server-sided-trapdoor-touch-miss: player lands directly onto the fence as if it were 1.0 block high
-                    || thisMove.yDistance < data.liftOffEnvelope.getJumpGain(0.0) && tags.contains("lostground_trapfence")
-                )
-        ;
-    }
-
 
     /**
      * Several types of odd in-air moves, mostly with gravity near maximum,

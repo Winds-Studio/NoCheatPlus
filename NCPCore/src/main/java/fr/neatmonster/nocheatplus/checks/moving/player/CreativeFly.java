@@ -115,7 +115,7 @@ public class CreativeFly extends Check {
         final double yDistance = thisMove.yDistance;
         final double hDistance = thisMove.hDistance;
         final boolean flying = gameMode == BridgeMisc.GAME_MODE_SPECTATOR || player.isFlying();
-        final boolean sprinting = time <= data.timeSprinting + cc.sprintingGrace;
+        final boolean sprinting = player.isSprinting();
         final long now = System.currentTimeMillis();
         boolean lostGround = false;
 

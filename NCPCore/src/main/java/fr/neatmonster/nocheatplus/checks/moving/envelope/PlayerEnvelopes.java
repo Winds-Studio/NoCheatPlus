@@ -152,10 +152,6 @@ public class PlayerEnvelopes {
 	        // This bunnyfly phase hasn't ended yet. Too soon to apply the boost.
 	        return false;
 	    }
-	    if (data.sfLowJump) {
-	        // Blatant cheating: if low-jumping, deny the boost.
-	        return false;
-	    }
 	    if (!sprinting) {
 	        // This mechanic is applied only if the player is sprinting
 	        return false;
@@ -201,13 +197,15 @@ public class PlayerEnvelopes {
 	    if (hasLevitation) {
 	    	return false;
 	    }
-	    if (headObstructed) {
-	    	//TODO: Need Minecraft collision speed logic here.
-	    	return MathUtil.almostEqual(thisMove.yDistance, 0.1 * data.lastStuckInBlockVertical, 0.0001)
-	    	       && (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 1);
+	    boolean obstructedJump = headObstructed && MathUtil.almostEqual(thisMove.yDistance, 0.1 * data.lastStuckInBlockVertical, 0.0001)
+	    	                   && (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 1);
+	    boolean jump = (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 2) 
+	                   && thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, jumpGain, 0.0001);
+	    if (jump || obstructedJump) {
+	    	thisMove.canJump = true;
+	    	return true;
 	    }
-	    return (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 2) 
-	           && thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, jumpGain, 0.0001);
+	    return false;
 	}
     
     /**
@@ -222,12 +220,13 @@ public class PlayerEnvelopes {
 	public static boolean isStep(final MovingData data, double stepHeight, boolean couldStep) {
 		final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
 	    final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-		if (couldStep) {
-			// Special case, allow it.
+		boolean step = thisMove.from.onGround && thisMove.to.onGround && thisMove.yDistance > 0.0
+		               && MathUtil.almostEqual(thisMove.yDistance, stepHeight, 0.0001);
+		if (step || couldStep) {
+			thisMove.canStep = true;
 			return true;
 		}
-		return thisMove.from.onGround && thisMove.to.onGround && thisMove.yDistance > 0.0
-		       && MathUtil.almostEqual(thisMove.yDistance, stepHeight, 0.0001);
+		return false;
 	}
 
 	/**

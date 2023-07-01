@@ -106,8 +106,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public double jumpAmplifier = 0;
     /** Used in workaroundFlyCheckTransition() in the MovingListener for velocity. */
     public long delayWorkaround = 0;
-    /** Last time the player was actually sprinting. */
-    public long timeSprinting = 0;
     /** Last time the player was riptiding */
     public long timeRiptiding = 0;
     /** Represents how long a vehicle has been tossed up by a bubble column */
@@ -234,10 +232,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public int sfZeroVdistRepeat = 0;
     /** "Dirty" flag, for receiving velocity and similar while in air. */
     private boolean sfDirty = false;
-    /** Indicates that this descending phase is due to a low-jump (likely cheating). */
-    public boolean sfLowJump = false;
-    /** Hacky way to indicate that this movement cannot be a lowjump. */
-    public boolean sfNoLowJump = false; 
     /** Basic envelope constraints/presets for lifting off ground. */
     public LiftOffEnvelope liftOffEnvelope = defaultLiftOffEnvelope;
     /** Count how many moves have been made inside a medium (other than air). */
@@ -362,7 +356,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         removeAllPlayerSpeedModifiers();
         sfHoverTicks = sfHoverLoginTicks = -1;
         sfDirty = false;
-        sfLowJump = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
         vehicleConsistency = MoveConsistency.INCONSISTENT;
@@ -396,7 +389,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // keep jump phase.
         sfHoverTicks = -1; // 0 ?
         sfDirty = false;
-        sfLowJump = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
         removeAllPlayerSpeedModifiers();
@@ -514,7 +506,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         playerMoves.invalidate();
         sfZeroVdistRepeat = 0;
         sfDirty = false;
-        sfLowJump = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;
         verticalBounce = null;
@@ -879,7 +870,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
         // Set dirty flag here.
         sfDirty = true; // TODO: Set on using the velocity, due to latency !
-        sfNoLowJump = true; // TODO: Set on using the velocity, due to latency !
     }
 
 
@@ -1120,7 +1110,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         if (available != null) {
             playerMoves.getCurrentMove().verVelUsed = available;
             sfDirty = true;
-            // TODO: Consider sfNoLowJump = true;
         }
         return available;
     }
@@ -1396,7 +1385,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
     public void handleTimeRanBackwards() {
         final long time = System.currentTimeMillis();
-        timeSprinting = Math.min(timeSprinting, time);
         timeRiptiding = Math.min(timeRiptiding, time);
         delayWorkaround = Math.min(delayWorkaround, time);
         vehicleMorePacketsLastTime = Math.min(vehicleMorePacketsLastTime, time);

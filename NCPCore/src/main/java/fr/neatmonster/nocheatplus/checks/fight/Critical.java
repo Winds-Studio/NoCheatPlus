@@ -89,7 +89,7 @@ public class Critical extends Check {
                 debug(player, 
                     "Fall distances: MC(" + StringUtil.fdec3.format(mcFallDistance) +") | NCP("+ StringUtil.fdec3.format(ncpFallDistance) +") | R("+ StringUtil.fdec3.format(realisticFallDistance) +")"
                     + "\nfD diff: " + StringUtil.fdec3.format(Math.abs(ncpFallDistance - mcFallDistance))
-                    + "\nJumpPhase: " + mData.sfJumpPhase + " | LowJump: " + mData.sfLowJump + " | NCP onGround: " + (thisMove.from.onGround ? "ground -> " : "--- -> ") + (thisMove.to.onGround ? "ground" : "---") + " | MC onGround: " + player.isOnGround()
+                    + "\nJumpPhase: " + mData.sfJumpPhase + " | NCP onGround: " + (thisMove.from.onGround ? "ground -> " : "--- -> ") + (thisMove.to.onGround ? "ground" : "---") + " | MC onGround: " + player.isOnGround()
                 ); // + ", packet onGround: " + packet.onGround); 
             }
 
@@ -107,11 +107,6 @@ public class Critical extends Check {
                 && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
                tags.add("fakejump");
                violation = true;
-            }
-            // Detect lowjumping
-            else if (mData.sfLowJump) {
-                tags.add("lowjump");
-                violation = true;
             }
             // Always invalidate critical hits if the player is judged to be on ground with server-sided fall distance
             // (Might want to skip the fall distance difference part. Just checking if the player has fall distance present while on ground should suffice.)
@@ -134,6 +129,7 @@ public class Critical extends Check {
                 violation = true;
                 // (Technically already detected by the methods above. Just to be sure)
             }
+            // (Low-jumping is catched by vDistRel)
 
             // Handle violations
             if (violation) {

@@ -88,9 +88,6 @@ public class MovingUtil {
                                                        final MovingData data, final MovingConfig cc, final IPlayerData pData) {
 
         final GameMode gameMode = player.getGameMode();
-        final double yDistance = data.playerMoves.getCurrentMove().yDistance;
-        final boolean toOnground = toLocation != null && toLocation.getWorld() != null && toLocation.isOnGround();
-
         return  
                 // Sf is active (duh..)
                 // (Full activation check - use permission caching for performance rather.)
