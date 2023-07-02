@@ -168,12 +168,6 @@ public class Permissions {
     public static final RegisteredPermission  MOVING_NOFALL                = add(MOVING + ".nofall");
     public static final RegisteredPermission  MOVING_PASSABLE              = add(MOVING + ".passable");
     public static final RegisteredPermission  MOVING_SURVIVALFLY           = add(MOVING + ".survivalfly");
-    public static final RegisteredPermission  MOVING_SURVIVALFLY_BLOCKING  = add(MOVING_SURVIVALFLY + ".blocking");
-    public static final RegisteredPermission  MOVING_SURVIVALFLY_SNEAKING  = add(MOVING_SURVIVALFLY + ".sneaking");
-    public static final RegisteredPermission  MOVING_SURVIVALFLY_SPEEDING  = add(MOVING_SURVIVALFLY + ".speeding");
-    public static final RegisteredPermission  MOVING_SURVIVALFLY_SPRINTING = add(MOVING_SURVIVALFLY + ".sprinting");
-	public static final RegisteredPermission  MOVING_SURVIVALFLY_WATERWALK = add(MOVING_SURVIVALFLY + ".waterwalk");
-    public static final RegisteredPermission  MOVING_SURVIVALFLY_STEP      = add(MOVING_SURVIVALFLY + ".step");
     public static final RegisteredPermission  MOVING_VEHICLE               = add(MOVING + ".vehicle");
     public static final RegisteredPermission  MOVING_VEHICLE_MOREPACKETS   = add(MOVING_VEHICLE + ".morepackets");
     public static final RegisteredPermission  MOVING_VEHICLE_ENVELOPE      = add(MOVING_VEHICLE + ".envelope");

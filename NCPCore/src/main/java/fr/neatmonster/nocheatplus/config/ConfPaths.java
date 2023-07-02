@@ -636,12 +636,6 @@ public abstract class ConfPaths {
 
     private static final String MOVING_SURVIVALFLY                          = MOVING + "survivalfly.";
     public static final String MOVING_SURVIVALFLY_CHECK                     = MOVING_SURVIVALFLY + SUB_ACTIVE;
-    public static final String MOVING_SURVIVALFLY_BLOCKINGSPEED             = MOVING_SURVIVALFLY + "blockingspeed";
-    public static final String MOVING_SURVIVALFLY_SNEAKINGSPEED             = MOVING_SURVIVALFLY + "sneakingspeed";
-    public static final String MOVING_SURVIVALFLY_SPEEDINGSPEED             = MOVING_SURVIVALFLY + "speedingspeed";
-    public static final String MOVING_SURVIVALFLY_SPRINTINGSPEED            = MOVING_SURVIVALFLY + "sprintingspeed";
-    public static final String MOVING_SURVIVALFLY_SWIMMINGSPEED             = MOVING_SURVIVALFLY + "swimmingspeed";
-    public static final String MOVING_SURVIVALFLY_WALKINGSPEED              = MOVING_SURVIVALFLY + "walkingspeed";
     public static final String MOVING_SURVIVALFLY_STEPHEIGHT                = MOVING_SURVIVALFLY + "stepheight";
     private static final String MOVING_SURVIVALFLY_EXTENDED                 = MOVING_SURVIVALFLY + "extended.";
     // public static final String MOVING_SURVIVALFLY_EXTENDED_HACC             = MOVING_SURVIVALFLY_EXTENDED + "horizontal-accounting";

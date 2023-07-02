@@ -293,19 +293,6 @@ permissions:
                         description: Allow bypassing the Passable check.
                     nocheatplus.checks.moving.survivalfly:
                         description: Allow the player to bypass the SurvivalFly check.
-                        children:
-                            nocheatplus.checks.moving.survivalfly.blocking:
-                                description: Allow the player to move without speed limits and to attack entities while blocking.
-                            nocheatplus.checks.moving.survivalfly.sneaking:
-                                description: Allow the player to move without speed limits while sneaking.
-                            nocheatplus.checks.moving.survivalfly.speeding:
-                                description: Allow the player to move at higher speeds.
-                            nocheatplus.checks.moving.survivalfly.sprinting:
-                                description: Allow the player to sprint backwards.
-                            nocheatplus.checks.moving.survivalfly.step:
-                                description: Allow the player to use the 'step' functionality of their client.
-                            nocheatplus.checks.moving.survivalfly.waterwalk:
-                                description: Allow the player to use the 'waterwalk' functionality of their client.
                     nocheatplus.checks.moving.vehicle:
                         description: Allow bypassing all checks for players moving as passengers of vehicles/other.
                         children:

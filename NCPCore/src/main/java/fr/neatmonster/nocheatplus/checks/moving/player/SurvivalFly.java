@@ -215,7 +215,7 @@ public class SurvivalFly extends Check {
         // Run through all hDistance checks if the player has actually some horizontal distance (saves some performance)
         if (HasHorizontalDistance) {
             // Set the allowed distance and determine the distance above limit
-            double[] estimationRes = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, true, tick, 
+            double[] estimationRes = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, 
                                               useBlockChangeTracker, fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove);
             hAllowedDistance = estimationRes[0];
             hDistanceAboveLimit = estimationRes[1];
@@ -582,7 +582,7 @@ public class SurvivalFly extends Check {
     * @return 
     */ 
    private void estimateNextSpeed(final Player player, float movementSpeed, final IPlayerData pData, 
-                                  final boolean sneaking, boolean checkPermissions, final Collection<String> tags, 
+                                  final boolean sneaking, final Collection<String> tags, 
                                   final PlayerLocation to, final PlayerLocation from, final boolean debug,
                                   final boolean fromOnGround, final boolean toOnGround, 
                                   final boolean onGround, final PlayerMoveData lastMove, 
@@ -650,24 +650,20 @@ public class SurvivalFly extends Check {
         }
 
         // From KeyboardInput.java (MC-Reborn tool)
-        if (sneaking && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))) {
+        if (sneaking) {
             tags.add("sneaking");
             // (Formula is from LocalPlayer aiStep)
             float SwiftSneakIncrement = MathUtil.clamp(BridgeEnchant.getSwiftSneakLevel(player) * 0.15f, 0.0f, 1.0f);
             for (i = 0; i < 9; i++) {
                 // Multiply all combinations
                 directions[i].calculateDir(Magic.SNEAK_MULTIPLIER + SwiftSneakIncrement, Magic.SNEAK_MULTIPLIER + SwiftSneakIncrement, 1);
-                // Account for NCP base speed modifiers.
-                directions[i].calculateDir(cc.survivalFlySneakingSpeed / 100f, cc.survivalFlySneakingSpeed / 100f, 1);
             }
         }
         // From LocalPlayer.java.aiStep()
-        if ((cData.isUsingItem || player.isBlocking()) 
-            && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player))) {
+        if (cData.isUsingItem || player.isBlocking()) {
             tags.add("usingitem");
             for (i = 0; i < 9; i++) {
                 directions[i].calculateDir(Magic.USING_ITEM_MULTIPLIER, Magic.USING_ITEM_MULTIPLIER, 1);
-                directions[i].calculateDir(cc.survivalFlySneakingSpeed / 100f, cc.survivalFlySneakingSpeed / 100f, 1);
             }
         }
 
@@ -676,8 +672,6 @@ public class SurvivalFly extends Check {
             Vector liquidFlowVector = from.getLiquidPushingVector(thisMove.xAllowedDistance, thisMove.zAllowedDistance, BlockFlags.F_WATER);
             thisMove.xAllowedDistance += liquidFlowVector.getX();
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
-            thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
-            thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
         }
         
         // Slime speed
@@ -760,8 +754,6 @@ public class SurvivalFly extends Check {
             Vector liquidFlowVector = from.getLiquidPushingVector(thisMove.xAllowedDistance, thisMove.zAllowedDistance, from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA);
             thisMove.xAllowedDistance += liquidFlowVector.getX();
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
-            thisMove.xAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
-            thisMove.zAllowedDistance *= cc.survivalFlySwimmingSpeed / 100;
         }
 
         // Before calculating the acceleration, check if momentum is below the negligible speed threshold and cancel it.
@@ -799,11 +791,6 @@ public class SurvivalFly extends Check {
                 thisMove.xAllowedDistance = MathUtil.clamp(thisMove.xAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
                 thisMove.zAllowedDistance = MathUtil.clamp(thisMove.zAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
             }
-            if (onGround) {
-                // Ground speed modifier.
-                thisMove.xAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
-                thisMove.zAllowedDistance *= cc.survivalFlyWalkingSpeed / 100;
-            }
         }
         
         // Transform the input to a speed vector and then add the acceleration. (getInputVector, entity.java)
@@ -814,7 +801,7 @@ public class SurvivalFly extends Check {
         /** List of estimated Z distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
         double zAllowedDistances[] = new double[9];
         for (i = 0; i < 9; i++) {
-            // First, put momentum that has been calculated thus far in each array slot.
+            // First, put the momentum that has been calculated thus far in each array slot.
             xAllowedDistances[i] = thisMove.xAllowedDistance;
             zAllowedDistances[i] = thisMove.zAllowedDistance;
             // Proceed to compute all possible accelerations with all input combos.
@@ -831,7 +818,7 @@ public class SurvivalFly extends Check {
                         directions[i].calculateDir(inputForce, inputForce, 2);
                     }
                 }
-                // Multiply by movement speed favctor.
+                // Multiply inputs by movement speed.
                 directions[i].calculateDir(movementSpeed, movementSpeed, 1);
                 // Add all accelerations to the momentum
                 xAllowedDistances[i] += directions[i].getStrafe() * (double)cosYaw - directions[i].getForward() * (double)sinYaw;
@@ -846,7 +833,7 @@ public class SurvivalFly extends Check {
         }
 
         /** 
-         * True will check the X/Z axis individually (against strafe-like cheats and anything of that sort that relies on the specific direction of the move).
+         * True will check X/Z axis individually (against strafe-like cheats and anything of that sort that relies on the specific direction of the move).
          * Will also perform some auxiliary checks.
          * Otherwise, check using the horizontal distance.
          */
@@ -868,7 +855,7 @@ public class SurvivalFly extends Check {
                         tags.add("illegalsprint");
                         Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
                     } 
-                    else if (cData.isHackingRI && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player))) {
+                    else if (cData.isHackingRI) {
                         // Blatant cheat attempt, do not set speed.
                         cData.isHackingRI = false;
                         Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
@@ -917,7 +904,7 @@ public class SurvivalFly extends Check {
      */
     private final double[] hDistRel(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, final Player player, 
                                        final MovingData data, final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingConfig cc,
-                                       boolean checkPermissions, final int tick, final boolean useBlockChangeTracker,
+                                       final int tick, final boolean useBlockChangeTracker,
                                        final boolean fromOnGround, final boolean toOnGround, final boolean debug, final int multiMoveCount, 
                                        final boolean isNormalOrPacketSplitMove) {
         final boolean sneaking = player.isSneaking() && reallySneaking.contains(player.getName());
@@ -992,11 +979,11 @@ public class SurvivalFly extends Check {
                     data.nextInertia = Magic.DOLPHIN_GRACE_INERTIA; 
                 }
                 // Run through all operations
-                estimateNextSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug, fromOnGround, toOnGround, onGround, lastMove, tick, useBlockChangeTracker);
+                estimateNextSpeed(player, acceleration, pData, sneaking, tags, to, from, debug, fromOnGround, toOnGround, onGround, lastMove, tick, useBlockChangeTracker);
             }
             else if (from.isInLava()) {
                 data.nextInertia = Magic.LAVA_HORIZONTAL_INERTIA; 
-                estimateNextSpeed(player, Magic.LIQUID_BASE_ACCELERATION, pData, sneaking, checkPermissions, tags, to, from, debug, fromOnGround, toOnGround, onGround, lastMove, tick, useBlockChangeTracker);
+                estimateNextSpeed(player, Magic.LIQUID_BASE_ACCELERATION, pData, sneaking, tags, to, from, debug, fromOnGround, toOnGround, onGround, lastMove, tick, useBlockChangeTracker);
             }
             else {
                 data.nextInertia = onGround ? data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;
@@ -1009,7 +996,7 @@ public class SurvivalFly extends Check {
                     acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).
                     acceleration *= cc.survivalFlySprintingSpeed / 100;
                 }
-                estimateNextSpeed(player, acceleration, pData, sneaking, checkPermissions, tags, to, from, debug, fromOnGround, toOnGround, onGround, lastMove, tick, useBlockChangeTracker);
+                estimateNextSpeed(player, acceleration, pData, sneaking, tags, to, from, debug, fromOnGround, toOnGround, onGround, lastMove, tick, useBlockChangeTracker);
             }
         }
         else {
@@ -1022,29 +1009,18 @@ public class SurvivalFly extends Check {
             }
         }
         
-        // Set the estimated distance in this move.
-        thisMove.hAllowedDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
-
-        // Global speed bypass modifier (can be combined with the other bypass modifiers. Only applies to hDist!)
-        if (checkPermissions && pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SPEEDING, player)) {
-            thisMove.hAllowedDistance *= cc.survivalFlySpeedingSpeed / 100;
-        }
-        
         /** Expected difference from current to allowed */
-        final double hDistDiffEx = thisMove.hDistance - thisMove.hAllowedDistance;
+        final double hDistDiffEx = thisMove.hDistance - MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
         if (debug) {
             // TODO: REMOVE 
             player.sendMessage((Math.abs(thisMove.hDistance - thisMove.hAllowedDistance) < 0.0001 ? "" : "[-----]") + "c/e: " + thisMove.hDistance + " / " + thisMove.hAllowedDistance);
         }
-        if (hDistDiffEx <= 0.0) {
-            // Speed is lower than estimated.
-        }
-        else if (hDistDiffEx < 0.0001) {
-            // Accuracy margin
+        if (hDistDiffEx <= 0.0 || hDistDiffEx < 0.0001) {
+            // Only set the distance in this move, if speed is lower than estimated or within the accuracy margin.
             // (Judging from some testings, we could be even stricter)
+            thisMove.hAllowedDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
         }
         else {
-            // At this point, a violation.
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, hDistDiffEx);
             tags.add("hdistrel");
         }
@@ -1120,7 +1096,8 @@ public class SurvivalFly extends Check {
             thisMove.vAllowedDistance = thisMove.yDistance;
         }
         else {
-            // Otherwise, a fully in-air move (friction)
+            // Otherwise, a fully in-air move (friction).
+            // Initialize with momentum.
             thisMove.vAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
             // Honey block sliding mechanic (levitation is not applied)
             if (from.isSlidingDown() && !hasLevitation) {
@@ -1307,8 +1284,8 @@ public class SurvivalFly extends Check {
                 cData.isUsingItem = false;
             }
             if (!cData.isUsingItem) {
-                double[] estimationRes = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, false, tick, useBlockChangeTracker, 
-                                                     fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove);
+                double[] estimationRes = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
+                                                  fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove);
                 hAllowedDistance = estimationRes[0];
                 hDistanceAboveLimit = estimationRes[1];
             }
