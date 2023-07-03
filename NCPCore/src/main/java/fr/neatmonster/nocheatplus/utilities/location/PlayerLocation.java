@@ -175,21 +175,6 @@ public class PlayerLocation extends RichEntityLocation {
     }
 
     /**
-     * Check absolute coordinates and stance for (typical) exploits.
-     *
-     * @return true, if is illegal
-     * @deprecated Not used anymore (hasIllegalCoords and hasIllegalStance are
-     *             used individually instead).
-     */
-    public boolean isIllegal() {
-        if (hasIllegalCoords()) {
-            return true;
-        } else {
-            return hasIllegalStance();
-        }
-    }
-
-    /**
      * Check for bounding box properties that might crash the server (if
      * available, not the absolute coordinates).
      *

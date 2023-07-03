@@ -152,37 +152,18 @@ import fr.neatmonster.nocheatplus.worlds.WorldDataManager;
 public class NoCheatPlus extends JavaPlugin implements NoCheatPlusAPI {
 
     private static final Object lockableAPIsecret = new Object();
-    private static final ILockable lockableAPI = new BasicLockable(lockableAPIsecret, 
-            true, true, true);
-
-    private static final String MSG_NOTIFY_OFF = ChatColor.RED + "NCP: " + ChatColor.WHITE + "Notifications are turned " + ChatColor.RED + "OFF" + ChatColor.WHITE + ".";
-
-    // Static API
-
-    /**
-     * Convenience method.
-     * @deprecated Use fr.neatmonster.nocheatplus.utilities.NCPAPIProvider.getNoCheatPlusAPI() instead, this method might get removed.
-     * @return
-     */
-    public static NoCheatPlusAPI getAPI() {
-        return NCPAPIProvider.getNoCheatPlusAPI();
-    }
+    private static final ILockable lockableAPI = new BasicLockable(lockableAPIsecret, true, true, true);
+    private static final String MSG_NOTIFY_OFF = ChatColor.GRAY +""+ ChatColor.BOLD + "[" + ChatColor.RED + "NC+" + ChatColor.GRAY +""+ ChatColor.BOLD + "] " + ChatColor.GRAY;
 
     // Not static.
-
     /** Central logging access point. */
     private BukkitLogManager logManager = null; // Not final, but intended to stay, once set [change to init=syso?].
-
     /** Lower case player name to milliseconds point of time of release */
     private final Map<String, Long> denyLoginNames = Collections.synchronizedMap(new HashMap<String, Long>());
-
     /** Configuration problems (send to chat). */
     private String configProblemsChat = null;
     /** Configuration problems (send to log files). */
     private String configProblemsFile = null;
-
-    //    /** Is a new update available? */
-    //    private boolean              updateAvailable = false;
 
     // TODO: per world permission registry (!).
     private final PermissionRegistry permissionRegistry = new PermissionRegistry(10000);

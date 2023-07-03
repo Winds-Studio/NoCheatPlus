@@ -105,18 +105,8 @@ public class MovingConfig extends ACheckConfig {
     public final boolean passableUntrackedCommandCheck;
     public final boolean passableUntrackedCommandTryTeleport;
     public final SimpleCharPrefixTree passableUntrackedCommandPrefixes = new SimpleCharPrefixTree();
-
-    public final int survivalFlyBlockingSpeed;
-    public final int survivalFlySneakingSpeed;
-    public final int survivalFlySpeedingSpeed;
-    public final int survivalFlySprintingSpeed;
-    public final int survivalFlySwimmingSpeed;
-    public final int survivalFlyWalkingSpeed;
    
     public final double sfStepHeight;
-    // public final boolean survivalFlyAccountingH;
-    public final boolean survivalFlyAccountingV;
-    public final boolean survivalFlyAccountingStep;
     public final boolean survivalFlyResetItem;
     // Leniency settings.
     public final long survivalFlyVLFreezeCount;
@@ -231,16 +221,6 @@ public class MovingConfig extends ACheckConfig {
         passableUntrackedCommandTryTeleport = config.getBoolean(ConfPaths.MOVING_PASSABLE_UNTRACKED_CMD_TRYTELEPORT);
         CommandUtil.feedCommands(passableUntrackedCommandPrefixes, config, ConfPaths.MOVING_PASSABLE_UNTRACKED_CMD_PREFIXES, true);
 
-        // Default values are specified here because this settings aren't showed by default into the configuration file.
-        survivalFlyBlockingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_BLOCKINGSPEED, 100);
-        survivalFlySneakingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_SNEAKINGSPEED, 100);
-        survivalFlySpeedingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_SPEEDINGSPEED, 200);
-        survivalFlySprintingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_SPRINTINGSPEED, 100);
-        survivalFlySwimmingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_SWIMMINGSPEED, 100);
-        survivalFlyWalkingSpeed = config.getInt(ConfPaths.MOVING_SURVIVALFLY_WALKINGSPEED, 100);
-        // survivalFlyAccountingH = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_HACC);
-        survivalFlyAccountingV = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_VACC);
-        survivalFlyAccountingStep = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_STEP);
         survivalFlyResetItem = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_RESETITEM);
         sfSetBackPolicyFallDamage = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_SETBACKPOLICY_FALLDAMAGE);
         sfSetBackPolicyVoid = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_SETBACKPOLICY_VOIDTOVOID);

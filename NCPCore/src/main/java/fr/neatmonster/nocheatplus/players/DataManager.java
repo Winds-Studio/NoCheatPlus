@@ -52,10 +52,10 @@ public class DataManager {
     /**
      * Used by checks to register the history for external access.<br>
      * NOTE: This method is not really meant ot be used from outside NCP.
+     * Do note that this method was meant to be deprecated due to a new implementation pending by the original developer.
      * 
      * @param type
      * @param histories
-     * @deprecated New implementation pending.
      */
     public static void registerExecutionHistory(CheckType type, Map<String, ExecutionHistory> histories) {
         instance.registerExecutionHistory(type, histories);
@@ -63,12 +63,12 @@ public class DataManager {
 
     /**
      * Access method to the the execution history for check type for a player.
+     * Do note that this method was meant to be deprecated due to a new implementation pending by the original developer.
      * 
      * @param type
      * @param playerName
      *            Exact case for player name.
      * @return null if not present.
-     * @deprecated New implementation pending.
      */
     public static ExecutionHistory getExecutionHistory(final CheckType type, final String playerName) {
         return instance.getExecutionHistory(type, playerName);
@@ -76,11 +76,11 @@ public class DataManager {
 
     /**
      * Remove the execution history for a player for the given check type.
+     * Do note that this method was meant to be deprecated due to a new implementation pending by the original developer.
      * 
      * @param type
      * @param playerName
      * @return
-     * @deprecated New implementation pending.
      */
     public static boolean removeExecutionHistory(final CheckType type, final String playerName) {
         return instance.removeExecutionHistory(type, playerName);

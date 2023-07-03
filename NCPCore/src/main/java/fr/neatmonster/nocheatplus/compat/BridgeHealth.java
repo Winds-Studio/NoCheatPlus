@@ -137,11 +137,6 @@ public class BridgeHealth {
         }
     }
 
-    @Deprecated
-    public static double getDamage(final EntityDamageEvent event) {
-        return getRawDamage(event);
-    }
-
     /**
      * Damage amount after applying modifiers (if/as available).
      * 

@@ -236,12 +236,6 @@ public class ViolationData implements IViolationInfo, ActionData {
     }
 
     @Override
-    @Deprecated
-    public boolean hasCancel() {
-        return willCancel();
-    }
-
-    @Override
     public String getParameter(final ParameterName parameterName) {
         if (parameterName == null) {
             return "<???>";

@@ -45,7 +45,6 @@ import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
-// TODO: Auto-generated Javadoc
 /**
  * A location with bounds with a lot of extra stuff.
  * 

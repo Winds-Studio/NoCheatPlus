@@ -497,9 +497,6 @@ public class DefaultConfig extends ConfigFile {
         // SurvivalFly
         set(ConfPaths.MOVING_SURVIVALFLY_CHECK, "default", 154);
         set(ConfPaths.MOVING_SURVIVALFLY_STEPHEIGHT, "default", 154);
-        set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_VACC, true, 154);
-        // set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_HACC, true, 154);
-        set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_STEP, true, 154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_NOSLOW, true, 154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_RESETITEM, true, 154);
         // SurvivalFly - ViolationFrequencyHook

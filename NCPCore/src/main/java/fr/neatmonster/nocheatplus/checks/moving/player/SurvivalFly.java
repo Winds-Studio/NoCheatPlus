@@ -994,7 +994,6 @@ public class SurvivalFly extends Check {
                     // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
                     // Multiplying by 1.3f seems to cause precision loss, so use the total multiply result.
                     acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).
-                    acceleration *= cc.survivalFlySprintingSpeed / 100;
                 }
                 estimateNextSpeed(player, acceleration, pData, sneaking, tags, to, from, debug, fromOnGround, toOnGround, onGround, lastMove, tick, useBlockChangeTracker);
             }

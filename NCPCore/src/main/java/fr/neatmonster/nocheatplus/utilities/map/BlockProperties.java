@@ -88,7 +88,6 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
  * - reading (all) the default properties from a file too.
  *
  */
-@SuppressWarnings("deprecation")
 public class BlockProperties {
 
     /**
@@ -151,19 +150,6 @@ public class BlockProperties {
         private MaterialBase(int index, float breakMultiplier) {
             this.index = index;
             this.breakMultiplier = breakMultiplier;
-        }
-
-        /**
-         * Gets the by id.
-         *
-         * @param id
-         *            the id
-         * @return the by id
-         * @deprecated Nothing to do with ids.
-         */
-        @Deprecated
-        public static final MaterialBase getById(final int id) {
-            return getByIndex(id);
         }
 
         /**
@@ -309,9 +295,9 @@ public class BlockProperties {
                     breakingTimes[i] = breakingTimes[0];
                 } 
                 else if (hardness > 0.0) {
-                    float speed = MaterialBase.getById(i).breakMultiplier;
+                    float speed = MaterialBase.getByIndex(i).breakMultiplier;
                     float damage = speed / hardness;
-                    damage /= isRightToolMaterial(null, tool.materialBase, MaterialBase.getById(i), true) ? 30f : 100f;
+                    damage /= isRightToolMaterial(null, tool.materialBase, MaterialBase.getByIndex(i), true) ? 30f : 100f;
                     breakingTimes[i] = damage >= 1 ? 0 : Math.round(1 / damage) * 50;
                 }
                 else {

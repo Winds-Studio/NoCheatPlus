@@ -770,7 +770,7 @@ public class CreativeFly extends Check {
         else if(from.isInLiquid()) {
 
             if (Bridge1_13.isRiptiding(player)) return new double[] {0.0, 0.0};
-            allowedElytraHDistance = thisMove.hAllowedDistance * cc.survivalFlyWalkingSpeed / 100D;
+            allowedElytraHDistance = thisMove.hAllowedDistance;
             final int level = BridgeEnchant.getDepthStriderLevel(player);
             
             // if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
