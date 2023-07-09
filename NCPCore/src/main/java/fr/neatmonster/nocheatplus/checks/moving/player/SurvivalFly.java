@@ -602,7 +602,7 @@ public class SurvivalFly extends Check {
          *      Actually, this should be handled by Passable instead: SurvivalFly won't run if Passable triggers, so we wouldn't have to deal with this function.
          *   - A proper sneaking handling, which seems to be broken somehow. 
          *   - We absolutely need to code a global latency-compensation system (not just LocationTrace) as well some framework against desync issues.
-         * IMPORTANT: The upcoming update 1.20 fixes the 12 year old bug of walking/moving on the very edge blocks not applying the properties of said block
+         * IMPORTANT: The 1.20 update fixes the 12 year old bug of walking/moving on the very edge blocks not applying the properties of said block
          *            - HoneyBlocks will now restrict jumping even if on the very edge
          *            - Same for slime and everything else
          * Order in mcp: 
@@ -665,6 +665,14 @@ public class SurvivalFly extends Check {
             for (i = 0; i < 9; i++) {
                 directions[i].calculateDir(Magic.USING_ITEM_MULTIPLIER, Magic.USING_ITEM_MULTIPLIER, 1);
             }
+        }
+
+        // Collision reset.
+        if (from.isNextToSolid(0.0001, 0.0)) {
+            thisMove.xAllowedDistance = 0.0;
+        }
+        if (from.isNextToSolid(0.0, 0.0001)) {
+            thisMove.zAllowedDistance = 0.0;
         }
 
         // (Calling from checkFallDamage() in vanilla)
@@ -1000,21 +1008,17 @@ public class SurvivalFly extends Check {
         }
         else {
             // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (and without ProtocolLib, it's nearly impossible to achieve precision here)
-            // Besides, no need to predict speed for a move that has been slowed down so much to the point of being considered micro..
+            // Besides, no need to predict speed for a move that has been slowed down so much to the point of being considered micro.
             thisMove.xAllowedDistance = thisMove.to.getX() - thisMove.from.getX();
             thisMove.zAllowedDistance = thisMove.to.getZ() - thisMove.from.getZ();
             if (debug) {
-                debug(player, "(hDistRel): Skip speed estimation on micro bukkit move.");
+                debug(player, "(hDistRel): Missed PlayerMoveEvent(s) between 'from' and 'to' (Bukkit): skip prediction for this event.");
             }
         }
         
         /** Expected difference from current to allowed */
         final double hDistDiffEx = thisMove.hDistance - MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
-        if (debug) {
-            // TODO: REMOVE 
-            player.sendMessage((Math.abs(thisMove.hDistance - thisMove.hAllowedDistance) < 0.0001 ? "" : "[-----]") + "c/e: " + thisMove.hDistance + " / " + thisMove.hAllowedDistance);
-        }
-        if (hDistDiffEx <= 0.0 || hDistDiffEx < 0.0001) {
+        if (hDistDiffEx < 0.0001) {
             // Only set the distance in this move, if speed is lower than estimated or within the accuracy margin.
             // (Judging from some testings, we could be even stricter)
             thisMove.hAllowedDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
@@ -1022,6 +1026,10 @@ public class SurvivalFly extends Check {
         else {
             hDistanceAboveLimit = Math.max(hDistanceAboveLimit, hDistDiffEx);
             tags.add("hdistrel");
+        }
+        if (debug) {
+            // TODO: REMOVE 
+            player.sendMessage((Math.abs(thisMove.hDistance - thisMove.hAllowedDistance) < 0.0001 ? "" : "[-----]") + "c/e: " + thisMove.hDistance + " / " + thisMove.hAllowedDistance);
         }
         return new double[]{thisMove.hAllowedDistance, hDistanceAboveLimit};
     }
@@ -1098,7 +1106,7 @@ public class SurvivalFly extends Check {
             // Otherwise, a fully in-air move (friction).
             // Initialize with momentum.
             thisMove.vAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
-            // Honey block sliding mechanic (levitation is not applied)
+            // Honey block sliding mechanic (With levitation, the player will ascend)
             if (from.isSlidingDown() && !hasLevitation) {
                 if (lastMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
                     // Speed is static in this case

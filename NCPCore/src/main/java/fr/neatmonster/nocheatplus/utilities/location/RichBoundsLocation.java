@@ -742,7 +742,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check if solid blocks hit the box.
+     * Check if ground-like blocks hit the box.
      *
      * @param xzMargin
      *            the xz margin
@@ -752,6 +752,19 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isNextToGround(final double xzMargin, final double yMargin) {
         return BlockProperties.collides(blockCache, minX - xzMargin, minY - yMargin, minZ - xzMargin, maxX + xzMargin, maxY + yMargin, maxZ + xzMargin, BlockFlags.F_GROUND);
+    }
+
+    /**
+     * Check if solid blocks hit the box.
+     *
+     * @param xzMargin
+     *            the xz margin
+     * @param yMargin
+     *            the y margin
+     * @return true, if is next to ground
+     */
+    public boolean isNextToSolid(final double xMargin, final double zMargin) {
+        return BlockProperties.collides(blockCache, minX - xMargin, minY, minZ - zMargin, maxX + xMargin, maxY, maxZ + zMargin, BlockFlags.F_SOLID);
     }
 
     /**
