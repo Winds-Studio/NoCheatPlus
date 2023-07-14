@@ -14,12 +14,15 @@
  */
 package fr.neatmonster.nocheatplus.compat.blocks.init.vanilla;
 
+import org.bukkit.Material;
+
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.config.*;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 public class BlocksMC1_20 implements BlockPropertiesSetup {
     public BlocksMC1_20() {
@@ -37,6 +40,12 @@ public class BlocksMC1_20 implements BlockPropertiesSetup {
         
         BlockFlags.setBlockFlags("SNIFFER_EGG", BlockFlags.SOLID_GROUND);
         BlockProperties.setBlockProps("SNIFFER_EGG", new BlockProperties.BlockProps(BlockProperties.noTool, 0.5f));
+        
+        for (Material mat : MaterialUtil.WALL_HANGING_SIGNS) {
+            // These are solid
+            BlockFlags.addFlags(mat, BlockFlags.SOLID_GROUND);
+        }
+        // (Hanging signs are treated as a normal sign and added in BlocksMC1_14)
         
 
         ConfigFile config = ConfigManager.getConfigFile();

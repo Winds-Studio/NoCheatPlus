@@ -224,6 +224,12 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
             "sniffer_egg", "decorated_pot", "pitcher_crop", "calibrated_sculk_sensor")) {
             addModel(mat, MODEL_AUTO_FETCH);
         }
+        
+        // Wall hanging signs have a collision box. Hanging signs don't, so they are treated as an ordinary sign.
+        for (Material mat : MaterialUtil.WALL_HANGING_SIGNS) {
+            // Only the post has an actual collision box, the rest is all hit box. 
+            addModel(mat, MODEL_AUTO_FETCH);
+        }
 
         for (Material mat : BridgeMaterial.getAllBlocks(
             "stonecutter", "chain")) {

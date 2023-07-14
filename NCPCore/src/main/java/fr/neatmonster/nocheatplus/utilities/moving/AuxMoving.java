@@ -54,7 +54,7 @@ public class AuxMoving implements IRegisterAsGenericInstance {
 
     private final IGenericInstanceHandle<MCAccess> mcAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(MCAccess.class);
 
-    public PlayerMoveInfo usePlayerMoveInfo() {
+    public synchronized PlayerMoveInfo usePlayerMoveInfo() {
         if (parkedPlayerMoveInfo.isEmpty()) {
             return new PlayerMoveInfo(mcAccess);
         }
@@ -67,12 +67,12 @@ public class AuxMoving implements IRegisterAsGenericInstance {
      * Cleanup and add to parked.
      * @param moveInfo
      */
-    public void returnPlayerMoveInfo(final PlayerMoveInfo moveInfo) {
+    public synchronized void returnPlayerMoveInfo(final PlayerMoveInfo moveInfo) {
         moveInfo.cleanup();
         parkedPlayerMoveInfo.add(moveInfo);
     }
 
-    public VehicleMoveInfo useVehicleMoveInfo() {
+    public synchronized VehicleMoveInfo useVehicleMoveInfo() {
         if (parkedVehicleMoveInfo.isEmpty()) {
             return new VehicleMoveInfo(mcAccess);
         }
@@ -85,7 +85,7 @@ public class AuxMoving implements IRegisterAsGenericInstance {
      * Cleanup and add to parked.
      * @param moveInfo
      */
-    public void returnVehicleMoveInfo(final VehicleMoveInfo moveInfo) {
+    public synchronized void returnVehicleMoveInfo(final VehicleMoveInfo moveInfo) {
         moveInfo.cleanup();
         parkedVehicleMoveInfo.add(moveInfo);
     }
@@ -96,7 +96,7 @@ public class AuxMoving implements IRegisterAsGenericInstance {
      * @param mcPlayer
      * @return
      */
-    public final double getJumpAmplifier(final Player player) {
+    public synchronized final double getJumpAmplifier(final Player player) {
         return MovingUtil.getJumpAmplifier(player, mcAccess.getHandle());
     }
 
@@ -110,7 +110,7 @@ public class AuxMoving implements IRegisterAsGenericInstance {
      * @param data
      * @param cc
      */
-    public void resetPositionsAndMediumProperties(final Player player, final Location loc, final MovingData data, final MovingConfig cc) {
+    public synchronized void resetPositionsAndMediumProperties(final Player player, final Location loc, final MovingData data, final MovingConfig cc) {
         final PlayerMoveInfo moveInfo = usePlayerMoveInfo();
         moveInfo.set(player, loc, null, cc.yOnGround);
         data.resetPlayerPositions(moveInfo.from);
@@ -129,7 +129,7 @@ public class AuxMoving implements IRegisterAsGenericInstance {
      * @param data
      * @param cc
      */
-    public void resetVehiclePositions(final Entity vehicle, final Location vehicleLocation, final MovingData data, final MovingConfig cc) {
+    public synchronized void resetVehiclePositions(final Entity vehicle, final Location vehicleLocation, final MovingData data, final MovingConfig cc) {
         final VehicleMoveInfo vMoveInfo = useVehicleMoveInfo();
         vMoveInfo.set(vehicle, vehicleLocation, null, cc.yOnGround);
         data.resetVehiclePositions(vMoveInfo.from);
@@ -140,7 +140,7 @@ public class AuxMoving implements IRegisterAsGenericInstance {
      * Clear parked MovingInfo instances. Called on reload and data removal and
      * setMCAccess.
      */
-    public void clear() {
+    public synchronized void clear() {
         // Call cleanup on all parked info, just in case.
         // (Players)
         for (final PlayerMoveInfo info : parkedPlayerMoveInfo) {

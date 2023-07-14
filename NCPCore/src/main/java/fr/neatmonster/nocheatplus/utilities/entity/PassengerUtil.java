@@ -22,12 +22,15 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.World;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
+import fr.neatmonster.nocheatplus.checks.moving.util.AuxMoving;
 import fr.neatmonster.nocheatplus.checks.moving.vehicle.VehicleSetPassengerTask;
 import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
@@ -38,8 +41,7 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
-import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
-import fr.neatmonster.nocheatplus.utilities.moving.AuxMoving;
+import fr.neatmonster.nocheatplus.utilities.location.TrigUtil;
 
 /**
  * Vehicle/passenger related static utility. Registered as generic instance for
@@ -176,12 +178,9 @@ public class PassengerUtil {
      * @param debug
      *            the debug
      */
-    public void teleportWithPassengers(final Entity vehicle, final Player player, 
-            final Location location, final boolean debug, final IPlayerData pData) {
+    public void teleportWithPassengers(final Entity vehicle, final Player player, final Location location, final boolean debug, final IPlayerData pData) {
         final List<Entity> originalPassengers = handleVehicle.getHandle().getEntityPassengers(vehicle);
-        teleportWithPassengers(vehicle, player, location, debug, 
-                originalPassengers.toArray(new Entity[originalPassengers.size()]), 
-                false, pData);
+        teleportWithPassengers(vehicle, player, location, debug, originalPassengers.toArray(new Entity[originalPassengers.size()]), false, pData);
     }
 
     /**
@@ -202,9 +201,8 @@ public class PassengerUtil {
      * @param CheckPassengers Set to true to compare current with original passengers.
      */
     public void teleportWithPassengers(final Entity vehicle, final Player player, final Location location, 
-            final boolean debug, final Entity[] originalPassengers, final boolean checkPassengers,
-            final IPlayerData pData) {
-
+                                       final boolean debug, final Entity[] originalPassengers, final boolean checkPassengers,
+                                       final IPlayerData pData) {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final String pWorld = player.getWorld().getName();
         final String vWorld = vehicle.getWorld() != null ? vehicle.getWorld().getName() : "";
@@ -222,8 +220,7 @@ public class PassengerUtil {
                 break;
             }
             else if (originalPassengers[i] instanceof Player) {
-                DataManager.getGenericInstance((Player) originalPassengers[i], 
-                        MovingData.class).isVehicleSetBack = true;
+                DataManager.getGenericInstance((Player) originalPassengers[i], MovingData.class).isVehicleSetBack = true;
                 otherPlayers ++;
             }
         }
@@ -252,7 +249,6 @@ public class PassengerUtil {
         boolean vehicleTeleported = false;
         boolean playerTeleported = false;
         int otherPlayersTeleported = 0;
-
         if (vehicle.isDead() || !vehicle.isValid()) {
             // TODO: Still consider teleporting the player.
             vehicleTeleported = false;
@@ -277,8 +273,7 @@ public class PassengerUtil {
                 // Teleport the vehicle independently.
                 vehicle.eject(); // NOTE: VehicleExit fires, unknown TP fires.
                 // TODO: Confirm eject worked, handle if not.
-                //vehicleTeleported = vehicle.teleport(LocUtil.clone(location), 
-                //        BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
+                //vehicleTeleported = vehicle.teleport(LocUtil.clone(location), BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
                 vehicleTeleported = SchedulerHelper.teleportEntity(vehicle, LocUtil.clone(location), BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
             }
         }
@@ -287,8 +282,7 @@ public class PassengerUtil {
             // Add the player first,  if not an original passenger (special case, idk, replaced by squids perhaps).
             if (!playerIsOriginalPassenger) {
                 // (Not sure: always add first, until another case is needed.)
-                teleportPlayerPassenger(player, vehicle, location, vehicleTeleported, 
-                        data, debug);
+                teleportPlayerPassenger(player, vehicle, location, vehicleTeleported, data, debug);
             }
             // Add all other original passengers in a generic way, distinguish players.
             for (int i = 0; i < originalPassengers.length; i++) {
@@ -297,10 +291,7 @@ public class PassengerUtil {
 
                     // Cross world cases? -> Seems like it :)
                     if (passenger instanceof Player) {
-                        if (teleportPlayerPassenger((Player) passenger, 
-                                vehicle, location, vehicleTeleported, 
-                                DataManager.getGenericInstance((Player) passenger, MovingData.class),
-                                debug)) {
+                        if (teleportPlayerPassenger((Player) passenger, vehicle, location, vehicleTeleported, DataManager.getGenericInstance((Player) passenger, MovingData.class), debug)) {
                             if (player.equals(passenger)) {
                                 playerTeleported = true;
                             }
@@ -311,8 +302,7 @@ public class PassengerUtil {
                     }
                     else {
                         if (SchedulerHelper.teleportEntity(passenger, location, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)
-                                && vehicleTeleported 
-                                && passenger.getLocation(useLoc2).distance(vehicle.getLocation(useLoc)) < 1.5) {
+                            && vehicleTeleported && TrigUtil.distance(passenger.getLocation(useLoc2), vehicle.getLocation(useLoc)) < 1.5) {
                             if (!handleVehicle.getHandle().addPassenger(passenger, vehicle)) {
                                 // TODO: What?
                             }
@@ -346,12 +336,8 @@ public class PassengerUtil {
      * @param data
      * @return
      */
-    private final boolean teleportPlayerPassenger(final Player player, final Entity vehicle, 
-            final Location location, final boolean vehicleTeleported, final MovingData data,
-            final boolean debug) {
-        
+    private final boolean teleportPlayerPassenger(final Player player, final Entity vehicle, final Location location, final boolean vehicleTeleported, final MovingData data, final boolean debug) {
         final boolean playerTeleported;
-
         if (player.isOnline() && !player.isDead()) {
             final MovingConfig cc = DataManager.getGenericInstance(player, MovingConfig.class);
             // Mask player teleport as a set back.
