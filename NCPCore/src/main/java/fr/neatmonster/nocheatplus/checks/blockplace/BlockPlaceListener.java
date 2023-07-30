@@ -46,12 +46,10 @@ import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.checks.moving.util.MovingUtil;
 import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
-import fr.neatmonster.nocheatplus.compat.Folia;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
@@ -64,10 +62,11 @@ import fr.neatmonster.nocheatplus.players.PlayerFactoryArgument;
 import fr.neatmonster.nocheatplus.stats.Counters;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
-import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
+import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
 
 import java.util.Arrays;
@@ -120,7 +119,7 @@ public class BlockPlaceListener extends CheckListener {
     private final Reach reach = addCheck(new Reach());
 
     /** The scaffold check. */
-    private final Scaffold Scaffold = addCheck(new Scaffold());
+    private final Scaffold scaffold = addCheck(new Scaffold());
 
     /** The speed check. */
     private final Speed speed = addCheck(new Speed());
@@ -136,13 +135,12 @@ public class BlockPlaceListener extends CheckListener {
 
     private final Class<?> blockMultiPlaceEvent = ReflectionUtil.getClass("org.bukkit.event.block.BlockMultiPlaceEvent");
     private final boolean hasGetReplacedState = ReflectionUtil.getMethodNoArgs(BlockPlaceEvent.class, "getReplacedState", BlockState.class) != null;
-    public final List<BlockFace> faces;
+    public final List<BlockFace> faces = Arrays.asList(new BlockFace[] {BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST, BlockFace.NORTH});
 
     @SuppressWarnings("unchecked")
     public BlockPlaceListener() {
         super(CheckType.BLOCKPLACE);
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
-        faces = Arrays.asList(new BlockFace[] {BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST, BlockFace.NORTH});
         api.register(api.newRegistrationContext()
                 // BlockPlaceConfig
                 .registerConfigWorld(BlockPlaceConfig.class)
@@ -264,8 +262,7 @@ public class BlockPlaceListener extends CheckListener {
         }
 
         // Scaffold Check
-        // Null check because I guess it can return null sometimes?
-        if (Scaffold.isEnabled(player, pData) && placedFace != null) {
+        if (scaffold.isEnabled(player, pData) && placedFace != null) {
             final PlayerMoveData thisMove = pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
             if (faces.contains(placedFace) 
                 && thisMove.from.getY() - blockPlaced.getY() < 2.0
@@ -279,7 +276,7 @@ public class BlockPlaceListener extends CheckListener {
                 }
                 // Always check for Scaffold whatever yawrate says. 
                 if (data.cancelNextPlace && (Math.abs(data.currentTick - TickTask.getTick()) < 10)
-                    || Scaffold.check(player, placedFace, pData, data, cc, event.isCancelled(), thisMove.yDistance, pData.getGenericInstance(MovingData.class).sfJumpPhase)) {
+                    || scaffold.check(player, placedFace, pData, data, cc, event.isCancelled(), thisMove.yDistance, pData.getGenericInstance(MovingData.class).sfJumpPhase)) {
                     cancelled = true;
                 }
                 // If not cancelled, do feed the Improbable.
@@ -391,7 +388,6 @@ public class BlockPlaceListener extends CheckListener {
     /** We listen to this event for the swining animation */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerAnimation(final PlayerAnimationEvent event) {
-        // Just set a flag to true when the arm was swung.
         final BlockPlaceData data = DataManager.getGenericInstance(event.getPlayer(), BlockPlaceData.class);
         data.noSwingCount = Math.max(data.noSwingCount - 1, 0);
     } 
@@ -415,9 +411,7 @@ public class BlockPlaceListener extends CheckListener {
         final Material type = stack.getType();
         if (MaterialUtil.isBoat(type)) {
             if (cc.boatsOnWaterOnly) {
-                // TODO: Alter config (activation, allow on top of ground).
-                // TODO: Version/plugin specific alteration for 'default'.
-                checkBoatPlaceResult(player, event, pData);
+                denyOrAllowBoatPlacement(player, event, pData);
             }
         }
         else if (MaterialUtil.isSpawnEgg(type)) {
@@ -440,29 +434,32 @@ public class BlockPlaceListener extends CheckListener {
         //     }
         // }
     }
-
-    private void checkBoatsAnywhere(final Player player, final PlayerInteractEvent event, final IPlayerData pData) {
-        // Check boats-anywhere.
+    
+    /**
+     * Check if the boat can be placed on ground, provided CachedConfig.boatsOnWaterOnly returned true.
+     * 
+     * @param player
+     * @param event
+     * @param pData
+     */
+    private void denyOrAllowBoatPlacement(final Player player, final PlayerInteractEvent event, final IPlayerData pData) {
         final Block block = event.getClickedBlock();
         final Material mat = block.getType();
-
-        // TODO: allow lava ?
         if (BlockProperties.isWater(mat)) {
+            // Allow placement
             return;
         }
-
         // TODO: Shouldn't this be the opposite face?
         final BlockFace blockFace = event.getBlockFace();
         final Block relBlock = block.getRelative(blockFace);
         final Material relMat = relBlock.getType();
-
         // TODO: Placing inside of water, but not "against" ?
         if (BlockProperties.isWater(relMat)) {
+            // Allow placement
             return;
         }
-
-        // TODO: Add a check type for exemption?
-        if (!pData.hasPermission(Permissions.BLOCKPLACE_BOATSANYWHERE, player)) {
+        // Interacted with a non-water block, deny.
+        if (!pData.hasPermission(Permissions.BLOCKPLACE_BOATSONWATERONLY, player)) {
             final Result previousUseBlock = event.useInteractedBlock();
             event.setCancelled(true);
             event.setUseItemInHand(Result.DENY);
@@ -481,15 +478,13 @@ public class BlockPlaceListener extends CheckListener {
         if (player == null) {
             return;
         }
-
-        if (!DataManager.getPlayerData(player).isCheckActive(CheckType.BLOCKPLACE, player)) return;
-
+        if (!DataManager.getPlayerData(player).isCheckActive(CheckType.BLOCKPLACE, player)) {
+            return;
+        }
         if (MovingUtil.hasScheduledPlayerSetBack(player)) {
-            // TODO: Should log.
             event.setCancelled(true);
             return;
         }
-
         // And the projectile must be one the following:
         EntityType type = event.getEntityType();
         switch (type) {
@@ -530,12 +525,8 @@ public class BlockPlaceListener extends CheckListener {
         }
 
         // Ender pearl glitch (ab-) use.
-        if (!cancel && type == EntityType.ENDER_PEARL) {
-            if (!pData.getGenericInstance(CombinedConfig.class).enderPearlCheck) {
-                // Do nothing !
-                // TODO: Might have further flags?
-            }
-            else if (!BlockProperties.isPassable(projectile.getLocation(useLoc))) {
+        if (!cancel && type == EntityType.ENDER_PEARL && pData.getGenericInstance(CombinedConfig.class).enderPearlCheck) {
+            if (!BlockProperties.isPassable(projectile.getLocation(useLoc))) {
                 // Launch into a block.
                 cancel = true;
             }
@@ -562,7 +553,6 @@ public class BlockPlaceListener extends CheckListener {
             }
         }
 
-        // Cancelled ?
         if (cancel) {
             event.setCancelled(true);
         }

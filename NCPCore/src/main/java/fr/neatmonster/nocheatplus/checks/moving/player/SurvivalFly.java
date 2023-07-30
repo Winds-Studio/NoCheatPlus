@@ -668,10 +668,10 @@ public class SurvivalFly extends Check {
         }
 
         // Collision reset.
-        if (from.isNextToSolid(0.0001, 0.0)) {
+        if (from.isNextToSolid(0.01, 0.0)) {
             thisMove.xAllowedDistance = 0.0;
         }
-        if (from.isNextToSolid(0.0, 0.0001)) {
+        if (from.isNextToSolid(0.0, 0.01)) {
             thisMove.zAllowedDistance = 0.0;
         }
 
@@ -805,13 +805,13 @@ public class SurvivalFly extends Check {
         float sinYaw = TrigUtil.sin(to.getYaw() * TrigUtil.toRadians);
         float cosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
         /** List of estimated X distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
-        double xAllowedDistances[] = new double[9];
+        double xTheoreticalDistance[] = new double[9];
         /** List of estimated Z distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
-        double zAllowedDistances[] = new double[9];
+        double zTheoreticalDistance[] = new double[9];
         for (i = 0; i < 9; i++) {
             // First, put the momentum that has been calculated thus far in each array slot.
-            xAllowedDistances[i] = thisMove.xAllowedDistance;
-            zAllowedDistances[i] = thisMove.zAllowedDistance;
+            xTheoreticalDistance[i] = thisMove.xAllowedDistance;
+            zTheoreticalDistance[i] = thisMove.zAllowedDistance;
             // Proceed to compute all possible accelerations with all input combos.
             double inputSq = MathUtil.square((double)directions[i].getStrafe()) + MathUtil.square((double)directions[i].getForward()); // Cast to a double because the client does it
             if (inputSq >= 1.0E-7) {
@@ -829,15 +829,15 @@ public class SurvivalFly extends Check {
                 // Multiply inputs by movement speed.
                 directions[i].calculateDir(movementSpeed, movementSpeed, 1);
                 // Add all accelerations to the momentum
-                xAllowedDistances[i] += directions[i].getStrafe() * (double)cosYaw - directions[i].getForward() * (double)sinYaw;
-                zAllowedDistances[i] += directions[i].getForward() * (double)cosYaw + directions[i].getStrafe() * (double)sinYaw;
+                xTheoreticalDistance[i] += directions[i].getStrafe() * (double)cosYaw - directions[i].getForward() * (double)sinYaw;
+                zTheoreticalDistance[i] += directions[i].getForward() * (double)cosYaw + directions[i].getStrafe() * (double)sinYaw;
             }
         }
 
         // Stuck speed after update for accuracy's sake.
         for (i = 0; i < 9; i++) {
-            xAllowedDistances[i] *= (double) data.nextStuckInBlockHorizontal;
-            zAllowedDistances[i] *= (double) data.nextStuckInBlockHorizontal;
+            xTheoreticalDistance[i] *= (double) data.nextStuckInBlockHorizontal;
+            zTheoreticalDistance[i] *= (double) data.nextStuckInBlockHorizontal;
         }
 
         /** 
@@ -853,9 +853,9 @@ public class SurvivalFly extends Check {
         boolean found = false;
         for (i = 0; i < 9; i++) {
             // Calculate all possible hDistances
-            double hDistanceInList = MathUtil.dist(xAllowedDistances[i], zAllowedDistances[i]);
+            double theoreticalHDistance = MathUtil.dist(xTheoreticalDistance[i], zTheoreticalDistance[i]);
             if (strict) {
-                if (Math.abs(to.getX() - from.getX() - xAllowedDistances[i]) < 0.0001 && Math.abs(to.getZ() - from.getZ() - zAllowedDistances[i]) < 0.0001) {
+                if (Math.abs(to.getX() - from.getX() - xTheoreticalDistance[i]) < 0.0001 && Math.abs(to.getZ() - from.getZ() - zTheoreticalDistance[i]) < 0.0001) {
                     if (player.isSprinting() 
                         && (directions[i].getForwardDir() != ForwardDirection.FORWARD && directions[i].getStrafeDir() != StrafeDirection.NONE
                             || player.getFoodLevel() <= 5)) {
@@ -883,7 +883,7 @@ public class SurvivalFly extends Check {
             } 
             else {
                 // Simply compare the overall speed otherwise.
-                if (Math.abs(hDistanceInList - thisMove.hDistance) < 0.0001) { 
+                if (Math.abs(theoreticalHDistance - thisMove.hDistance) < 0.0001) { 
                     found = true;
                 }
             }
@@ -901,8 +901,8 @@ public class SurvivalFly extends Check {
                 player.sendMessage("[SurvivalFly] (estimateNextSpeed) Can not find correct direction, set default: NONE | NONE");
             }
         }
-        thisMove.xAllowedDistance = xAllowedDistances[i];
-        thisMove.zAllowedDistance = zAllowedDistances[i];
+        thisMove.xAllowedDistance = xTheoreticalDistance[i];
+        thisMove.zAllowedDistance = zTheoreticalDistance[i];
    }
 
 
@@ -1008,7 +1008,8 @@ public class SurvivalFly extends Check {
         }
         else {
             // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (and without ProtocolLib, it's nearly impossible to achieve precision here)
-            // Besides, no need to predict speed for a move that has been slowed down so much to the point of being considered micro.
+            // Technically, one could attempt to predict missed positions given the from and to locations... Just like for the 0.03 threshold, but what's the point? We are not paied to deal with this bullshit).
+            // Besides, there's no need to predict speed when the movement has been slowed down to the point of being considered micro by Bukkit.
             thisMove.xAllowedDistance = thisMove.to.getX() - thisMove.from.getX();
             thisMove.zAllowedDistance = thisMove.to.getZ() - thisMove.from.getZ();
             if (debug) {
@@ -1082,31 +1083,33 @@ public class SurvivalFly extends Check {
          * 
          * 
          */
-        // Handle ordinary moves.
+        // General direction is: handle everything that is not a fully in-air movement first (landing, jumping, stepping, collision).
+        // If nothing special happened, then fall-back to friction.
         boolean hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9);
         if (PlayerEnvelopes.isStep(data, cc.sfStepHeight, tags.contains("lostground_couldstep"))
             || PlayerEnvelopes.isJump(data, hasLevitation, minJumpGain, from.isHeadObstructed(0.03, false))) {
-            // Give priority to stepping.
-            thisMove.vAllowedDistance = yDistance;
+            // Stepping and jumping have priority for sure.
+            thisMove.vAllowedDistance = thisMove.yDistance;
         }
         else if (from.isInPowderSnow() && thisMove.yDistance > 0.0 && BridgeMisc.hasLeatherBootsOn(player)) {
             // Climbing inside powder snow... Non vanilla. 
             thisMove.vAllowedDistance = Magic.snowClimbSpeedAscend;
         }
         else if (yDistance == 0.0 && thisMove.setBackYDistance == 0.0 && (thisMove.from.onGround || thisMove.touchedGroundWorkaround)) {
-            // Leaving ground, but with negative motion: stepping down a slope, not actually jumping
-            thisMove.vAllowedDistance = 0.0;
+            // WORKAROUD: Allow the first step-down move (Gravity isn't yet applied in this phase) 
+            thisMove.vAllowedDistance = thisMove.yDistance;
         }
         else if (!fromOnGround && toOnGround && thisMove.yDistance < 0.0) {
-            // TODO: Handle this stupid move in a way that can prevent 1-block step cheats and also be reliable enough.
-            // Allow the movement for the moment.
+            // WORKAROUND: Allow touch-down movements (first movement that has contact with ground after an in-air phase). We are missing Minecraft's collision logic here so we cannot predict this movement.
+            // This allows for 1-block step cheats, but it's better than having tons of workarounds to deal with.
+            // TODO: Minecraft's collision logic.
             thisMove.vAllowedDistance = thisMove.yDistance;
         }
         else {
             // Otherwise, a fully in-air move (friction).
             // Initialize with momentum.
             thisMove.vAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
-            // Honey block sliding mechanic (With levitation, the player will ascend)
+            // Honey block sliding mechanic (With levitation, the player will just ascend)
             if (from.isSlidingDown() && !hasLevitation) {
                 if (lastMove.yDistance < -Magic.SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD) {
                     // Speed is static in this case
@@ -1245,7 +1248,7 @@ public class SurvivalFly extends Check {
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         // 1: Attempt to release the item upon a NoSlow Violation, if set so in the configuration.
         //    This is less invasive than a direct set back as item-use is handled badly in this game.
-        if (cc.survivalFlyResetItem && hDistanceAboveLimit > 0.0001 && (cData.isUsingItem || player.isBlocking())) {
+        if (cc.survivalFlyResetItem && hDistanceAboveLimit > 0.0 && (cData.isUsingItem || player.isBlocking())) {
             tags.add("itemreset");
             // Handle through nms
             if (mcAccess.getHandle().resetActiveItem(player)) {
@@ -1505,7 +1508,7 @@ public class SurvivalFly extends Check {
 
 
     /**
-     * Simple (limit-based, non-predictiv) on-climbable vertical distance checking.
+     * Simple (limit-based, non-predictive) on-climbable vertical distance checking.
      * Handled in a separate method to reduce the complexity of vDistRel workarounds.
      * 
      * @param player
